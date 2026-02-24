@@ -1,0 +1,16 @@
+{
+  "name": "MemoTiles Okey",
+  "short_name": "MemoTiles",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#3e2723",
+  "theme_color": "#3e2723",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

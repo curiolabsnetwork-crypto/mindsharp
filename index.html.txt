@@ -1,0 +1,576 @@
+const { useState, useEffect, useCallback, useRef } = React;
+
+const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
+
+const GRID_CONFIGS = {
+  '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'      },
+  '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium'    },
+  '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'      },
+  '10x8': { rows: 8, cols: 10, pairs: 40, maxNum: 10, label: '80 Tiles (10×8)', difficulty: 'Very Hard' },
+};
+
+const PREVIEW_TILES = [
+  { color: '#E8000A', number: 1, rot: -8,  y:  4 },
+  { color: '#29B6F6', number: 4, rot:  4,  y: -6 },
+  { color: '#F9A825', number: 7, rot: -5,  y:  8 },
+  { color: '#212121', number: 9, rot:  7,  y: -3 },
+];
+
+function generateTiles(pairs, maxNum) {
+  const colorCount = TILE_COLORS.length;
+  const uniquePairs = [];
+  for (let n = 1; n <= maxNum; n++) {
+    for (let c = 0; c < colorCount; c++) {
+      uniquePairs.push({ number: n, color: TILE_COLORS[c] });
+    }
+  }
+  for (let i = uniquePairs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [uniquePairs[i], uniquePairs[j]] = [uniquePairs[j], uniquePairs[i]];
+  }
+  const selected = uniquePairs.slice(0, pairs);
+  const allTiles = [...selected, ...selected].map((p, idx) => ({
+    id: idx, number: p.number, color: p.color, flipped: false, matched: false,
+  }));
+  for (let i = allTiles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allTiles[i], allTiles[j]] = [allTiles[j], allTiles[i]];
+  }
+  return allTiles;
+}
+
+function calcScore({ pairs, moves, time, comboBonus }) {
+  const baseScore = pairs * 100;
+  const movePenalty = Math.max(0, (moves - pairs) * 8);
+  const timePenalty = Math.floor(time * 1.5);
+  return Math.max(0, baseScore - movePenalty - timePenalty + comboBonus);
+}
+
+function useSound() {
+  const ctx = useRef(null);
+  const getCtx = () => {
+    if (!ctx.current) { try { ctx.current = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+    return ctx.current;
+  };
+  const play = (type) => {
+    const ac = getCtx(); if (!ac) return;
+    if (type === 'win') {
+      [523,659,784,1047].forEach((f,i) => {
+        const o2=ac.createOscillator(); const g2=ac.createGain();
+        o2.connect(g2); g2.connect(ac.destination); o2.frequency.value=f;
+        g2.gain.setValueAtTime(0.12,ac.currentTime+i*0.12);
+        g2.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.12+0.3);
+        o2.start(ac.currentTime+i*0.12); o2.stop(ac.currentTime+i*0.12+0.3);
+      }); return;
+    }
+    if (type === 'combo3') {
+      [523,659,784,880,1047].forEach((f,i) => {
+        const o2=ac.createOscillator(); const g2=ac.createGain();
+        o2.connect(g2); g2.connect(ac.destination);
+        o2.type='sine'; o2.frequency.value=f;
+        g2.gain.setValueAtTime(0.18,ac.currentTime+i*0.07);
+        g2.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.07+0.25);
+        o2.start(ac.currentTime+i*0.07); o2.stop(ac.currentTime+i*0.07+0.25);
+      }); return;
+    }
+    if (type === 'combo') {
+      [660,880].forEach((f,i) => {
+        const o2=ac.createOscillator(); const g2=ac.createGain();
+        o2.connect(g2); g2.connect(ac.destination);
+        o2.type='sine'; o2.frequency.value=f;
+        g2.gain.setValueAtTime(0.14,ac.currentTime+i*0.1);
+        g2.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.1+0.25);
+        o2.start(ac.currentTime+i*0.1); o2.stop(ac.currentTime+i*0.1+0.25);
+      }); return;
+    }
+    const o = ac.createOscillator(); const g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    if (type === 'flip')  { o.frequency.value=440; g.gain.setValueAtTime(0.1,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.1); }
+    else if (type === 'match') { o.frequency.value=660; o.frequency.setValueAtTime(880,ac.currentTime+0.1); g.gain.setValueAtTime(0.15,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.3); }
+    else if (type === 'fail')  { o.frequency.value=220; g.gain.setValueAtTime(0.08,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.2); }
+    o.start(); o.stop(ac.currentTime+0.3);
+  };
+  return play;
+}
+
+function formatTime(s) { const m = Math.floor(s/60); return `${m}:${String(s%60).padStart(2,'0')}`; }
+
+function Tile({ tile, onClick, size }) {
+  const isVisible = tile.flipped || tile.matched;
+  const s = size;
+  const tileH = s * 1.45;
+  const dimpleSize = s * 0.28;
+  return (
+    <div onClick={() => !tile.matched && !tile.flipped && onClick(tile.id)}
+      style={{ width: s, height: tileH, perspective: '600px', cursor: tile.matched ? 'default' : 'pointer', flexShrink: 0 }}>
+      <div style={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d',
+        transform: isVisible ? 'rotateY(180deg)' : 'rotateY(0deg)', transition: 'transform 0.35s cubic-bezier(.4,2,.6,1)' }}>
+        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden',
+          borderRadius: 8, background: 'linear-gradient(160deg, #F8F3E2 60%, #EDE5C8 100%)',
+          border: '2px solid #c8b98a', boxShadow: '0 4px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.8)' }} />
+        <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden',
+          transform: 'rotateY(180deg)', borderRadius: 8,
+          background: 'linear-gradient(160deg, #FDFAF0 60%, #EDE5C8 100%)',
+          border: `2px solid ${tile.matched ? '#bbb' : '#c8b98a'}`,
+          boxShadow: tile.matched ? 'inset 0 1px 2px rgba(255,255,255,0.5)' : '0 5px 12px rgba(0,0,0,0.28), inset 0 1px 2px rgba(255,255,255,0.9)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+          paddingTop: s * 0.06, opacity: tile.matched ? 0.45 : 1, overflow: 'hidden', boxSizing: 'border-box' }}>
+          <span style={{ color: tile.color, fontWeight: 900, fontSize: s * 0.72, fontFamily: 'Georgia, serif',
+            lineHeight: 1, letterSpacing: -1, textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            marginTop: s * 0.02, WebkitTextStroke: '0.5px rgba(0,0,0,0.15)' }}>{tile.number}</span>
+          <div style={{ flex: 1 }} />
+          <div style={{ width: dimpleSize * 1.08, height: dimpleSize * 1.08, borderRadius: '50%',
+            background: 'radial-gradient(circle at 40% 35%, #d8cfa8, #b8a870)',
+            boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.35), inset 0 1px 3px rgba(0,0,0,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: s * 0.11 }}>
+            <span style={{ color: tile.color, fontSize: dimpleSize * 0.6, lineHeight: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))' }}>♥</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryChange, onClearCategory }) {
+  const categories = Object.entries(GRID_CONFIGS).map(([key, val]) => ({ key, label: val.difficulty }));
+  const filtered = scores.filter(s => s.mode === activeCategory);
+  const sortedScores = [...filtered].sort((a, b) => {
+    if (sortBy === 'score') return b.score - a.score;
+    if (sortBy === 'time')  return a.time - b.time;
+    if (sortBy === 'moves') return a.moves - b.moves;
+    return 0;
+  });
+  const tabStyle = (key) => ({
+    flex: 1, padding: '7px 2px', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700,
+    background: activeCategory === key ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.08)',
+    color: activeCategory === key ? '#fff' : '#ffe082',
+    boxShadow: activeCategory === key ? '0 2px 8px rgba(243,156,18,0.4)' : 'none',
+    transition: 'all 0.2s',
+  });
+  const sortBtnStyle = (key) => ({
+    background: 'none', border: 'none',
+    color: sortBy === key ? '#fff' : '#ffe082',
+    cursor: 'pointer', fontSize: 11, fontWeight: sortBy === key ? 900 : 600,
+    textDecoration: sortBy === key ? 'underline' : 'none', padding: '0 4px',
+  });
+  return (
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+        {categories.map(cat => (
+          <button key={cat.key} style={tabStyle(cat.key)} onClick={() => onCategoryChange(cat.key)}>{cat.label}</button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 2, marginBottom: 6, paddingRight: 4 }}>
+        <span style={{ color: '#ffe082', fontSize: 11, alignSelf: 'center', marginRight: 4 }}>Sort:</span>
+        <button style={sortBtnStyle('score')} onClick={() => onSortChange('score')}>Score</button>
+        <button style={sortBtnStyle('moves')} onClick={() => onSortChange('moves')}>Moves</button>
+        <button style={sortBtnStyle('time')}  onClick={() => onSortChange('time')}>Time</button>
+      </div>
+      {sortedScores.length === 0
+        ? <p style={{ color: '#ffe082', textAlign: 'center', fontSize: 13, margin: '16px 0' }}>No games yet for this category</p>
+        : (
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {sortedScores.slice(0,10).map((s, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '6px 10px', marginBottom: 4,
+                background: i === 0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
+                borderRadius: 8, fontSize: 12,
+                border: i === 0 ? '1px solid rgba(255,200,0,0.4)' : '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontWeight: 700, color: i===0?'#ffe066':'#fff', width: 22 }}>#{i+1}</span>
+                <span style={{ color: '#fff', fontWeight: 600, flex: 1 }}>{s.user || 'Guest'}</span>
+                <span style={{ color: '#ffe082', fontWeight: 800, width: 52, textAlign: 'right' }}>{s.score ? s.score.toLocaleString() : '-'}</span>
+                <span style={{ color: '#ffe082', width: 42, textAlign: 'right' }}>{s.moves}mv</span>
+                <span style={{ color: '#ffe082', width: 42, textAlign: 'right' }}>{formatTime(s.time)}</span>
+              </div>
+            ))}
+          </div>
+        )
+      }
+      {filtered.length > 0 && (
+        <button onClick={() => onClearCategory(activeCategory)}
+          style={{ width: '100%', marginTop: 8, padding: '8px', borderRadius: 10, border: '1.5px solid #c0392b',
+            background: 'rgba(0,0,0,0.3)', color: '#e74c3c', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+          Clear {GRID_CONFIGS[activeCategory].difficulty} Scores
+        </button>
+      )}
+    </div>
+  );
+}
+
+function WinModal({ moves, time, mode, score, comboBonus, onReplay, onMenu }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+      <div style={{ background: 'linear-gradient(160deg,#fdf6e3,#f0e0b0)', borderRadius: 20, padding: '28px 24px',
+        textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.5)', border: '3px solid #c8a96e',
+        maxWidth: 300, width: '90%', animation: 'popIn 0.4s cubic-bezier(.4,2,.6,1)' }}>
+        <div style={{ fontSize: 48, marginBottom: 6 }}>🎉</div>
+        <h2 style={{ color: '#7a3e00', fontFamily: 'Georgia,serif', margin: '0 0 2px', fontSize: 22 }}>You Win!</h2>
+        <p style={{ color: '#a07840', margin: '0 0 16px', fontSize: 13 }}>{mode} Board</p>
+        <div style={{ background: 'linear-gradient(135deg,#f39c12,#e67e22)', borderRadius: 14, padding: '12px 0', marginBottom: 16, boxShadow: '0 4px 16px rgba(230,126,34,0.4)' }}>
+          <div style={{ color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: 1, opacity: 0.85 }}>FINAL SCORE</div>
+          <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, lineHeight: 1.1 }}>{score.toLocaleString()}</div>
+          {comboBonus > 0 && <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 2 }}>🔥 +{comboBonus} combo bonus</div>}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 18 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#E8000A' }}>{moves}</div>
+            <div style={{ fontSize: 11, color: '#a07840' }}>Moves</div>
+          </div>
+          <div style={{ width: 1, background: '#c8a96e' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#29B6F6' }}>{formatTime(time)}</div>
+            <div style={{ fontSize: 11, color: '#a07840' }}>Time</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onMenu} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: '2px solid #c8a96e', background: 'transparent', color: '#7a5c2e', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Menu</button>
+          <button onClick={onReplay} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#f39c12,#e67e22)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Play Again</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen]     = useState('menu');
+  const [mode, setMode]         = useState('8x4');
+  const [tiles, setTiles]       = useState([]);
+  const [flipped, setFlipped]   = useState([]);
+  const [moves, setMoves]       = useState(0);
+  const [matched, setMatched]   = useState(0);
+  const [time, setTime]         = useState(0);
+  const [running, setRunning]   = useState(false);
+  const [won, setWon]           = useState(false);
+  const [shake, setShake]       = useState(null);
+  const [matchAnim, setMatchAnim] = useState([]);
+  const [score, setScore]       = useState(0);
+  const [comboBonus, setComboBonus] = useState(0);
+  const [combo, setCombo]       = useState(0);
+  const [sortBy, setSortBy]         = useState('score');
+  const [scoreCategory, setScoreCategory] = useState('8x4');
+  const [user, setUser]             = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
+  const [tempUser, setTempUser]     = useState('');
+  const [scores, setScores]         = useState(() => { try { return JSON.parse(localStorage.getItem('memotiles_scores') || '[]'); } catch { return []; } });
+
+  const comboBonusRef = useRef(0);
+  const comboRef      = useRef(0);
+  const lockRef       = useRef(false);
+  const play          = useSound();
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setTime(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  const startGame = useCallback((m) => {
+    const cfg = GRID_CONFIGS[m];
+    setTiles(generateTiles(cfg.pairs, cfg.maxNum));
+    setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+    setRunning(false); setWon(false); lockRef.current = false;
+    setMode(m); setScreen('game');
+    setScore(0); setComboBonus(0); setCombo(0);
+    comboBonusRef.current = 0; comboRef.current = 0;
+  }, []);
+
+  const handleTile = useCallback((id) => {
+    if (lockRef.current) return;
+    if (!running) setRunning(true);
+    play('flip');
+    setTiles(prev => prev.map(t => t.id === id ? { ...t, flipped: true } : t));
+    setFlipped(prev => {
+      const next = [...prev, id];
+      if (next.length === 2) {
+        lockRef.current = true;
+        setMoves(m => m + 1);
+        setTimeout(() => {
+          setTiles(cur => {
+            const [a, b] = next.map(fid => cur.find(t => t.id === fid));
+            if (a && b && a.number === b.number && a.color === b.color) {
+              const newCombo = comboRef.current + 1;
+              comboRef.current = newCombo;
+              setCombo(newCombo);
+              let bonusPts = newCombo >= 3 ? 60 : (newCombo === 2 ? 25 : 0);
+              if (newCombo >= 3) play('combo3');
+              else if (newCombo === 2) play('combo');
+              else play('match');
+              comboBonusRef.current += bonusPts;
+              setComboBonus(b => b + bonusPts);
+              setMatchAnim([a.id, b.id]);
+              setTimeout(() => setMatchAnim([]), 600);
+              const newTiles = cur.map(t => next.includes(t.id) ? { ...t, matched: true, flipped: false } : t);
+              const newMatchedCount = newTiles.filter(t => t.matched).length / 2;
+              setMatched(newMatchedCount);
+              const cfg = GRID_CONFIGS[mode];
+              if (newMatchedCount === cfg.pairs) {
+                setRunning(false); setWon(true); play('win');
+                setMoves(mv => {
+                  setTime(tm => {
+                    const finalScore = calcScore({ pairs: cfg.pairs, moves: mv+1, time: tm, comboBonus: comboBonusRef.current });
+                    setScore(finalScore);
+                    setScores(s => {
+                      const entry = { user: user || 'Guest', mode, moves: mv+1, time: tm, score: finalScore };
+                      const ns = [...s, entry].sort((a,b) => b.score - a.score);
+                      try { localStorage.setItem('memotiles_scores', JSON.stringify(ns)); } catch {}
+                      return ns;
+                    });
+                    return tm;
+                  });
+                  return mv;
+                });
+              }
+              lockRef.current = false;
+              return newTiles;
+            } else {
+              comboRef.current = 0; setCombo(0); play('fail');
+              setShake(next); setTimeout(() => setShake(null), 400);
+              const reset = cur.map(t => next.includes(t.id) ? { ...t, flipped: false } : t);
+              lockRef.current = false;
+              return reset;
+            }
+          });
+          setFlipped([]);
+        }, 900);
+      }
+      return next;
+    });
+  }, [running, mode, play, user]);
+
+  const cfg    = GRID_CONFIGS[mode];
+  const totalPairs = cfg ? cfg.pairs : 0;
+  const tileW  = Math.floor((330 - 4 * (cfg.cols - 1)) / cfg.cols);
+
+  const woodBg = {
+  backgroundImage: "url('/wood_bg.png')",
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  backgroundColor: '#2b1a10',
+};
+
+  const boardBg = {
+    backgroundColor: 'transparent',
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', width: '100%', maxWidth: 430, margin: '0 auto', ...woodBg,
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      fontFamily: "'Segoe UI', sans-serif", userSelect: 'none', position: 'relative', overflow: 'hidden' }}>
+      <style>{`
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+        @keyframes matchPop { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
+        @keyframes comboBanner { 0%{transform:scaleX(0);opacity:0} 20%{transform:scaleX(1);opacity:1} 80%{opacity:1} 100%{opacity:0} }
+        .shake-tile { animation: shake 0.35s ease; }
+        .match-tile { animation: matchPop 0.5s ease; }
+      `}</style>
+
+     {/* Readability Overlay */}
+<div style={{
+  position: 'absolute',
+  inset: 0,
+  zIndex: 2,
+  pointerEvents: 'none',
+  background: 'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.15), rgba(0,0,0,0.55))'
+}} />
+
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 10, width: '100%', minHeight: '100vh',
+        padding: '50px 46px 40px', boxSizing: 'border-box',
+        display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+        {/* MENU */}
+        {screen === 'menu' && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <h1 style={{ margin: '0 0 6px', fontFamily: "'Georgia', serif", fontSize: 44, fontWeight: 900,
+              background: 'linear-gradient(160deg, #fff9c4 0%, #ffe066 40%, #ffb300 70%, #ff8f00 100%)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))', textAlign: 'center' }}>MindSharp</h1>
+            <p style={{ color: '#fff', fontSize: 12, margin: '0 0 20px',
+              textShadow: '0 1px 6px rgba(0,0,0,0.9)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
+              background: 'rgba(0,0,0,0.35)', padding: '3px 14px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)' }}>
+              Memory and Focus Workout
+            </p>
+
+            {/* Preview Tiles */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 10, marginBottom: 22, height: 76 }}>
+              {PREVIEW_TILES.map((pt, idx) => {
+                const tw = 44, th = 63, ds = 13;
+                return (
+                  <div key={idx} style={{ width: tw, height: th, borderRadius: 7,
+                    background: 'linear-gradient(160deg, #FDFAF0 60%, #EDE5C8 100%)',
+                    border: '1.5px solid #c8b98a',
+                    boxShadow: '0 5px 12px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.9)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    justifyContent: 'flex-start', paddingTop: 5, boxSizing: 'border-box',
+                    transform: `rotate(${pt.rot}deg) translateY(${pt.y}px)`, flexShrink: 0 }}>
+                    <span style={{ color: pt.color, fontWeight: 900, fontSize: 28, fontFamily: 'Georgia, serif', lineHeight: 1,
+                      textShadow: '0 2px 4px rgba(0,0,0,0.2)', WebkitTextStroke: '0.5px rgba(0,0,0,0.15)' }}>{pt.number}</span>
+                    <div style={{ flex: 1 }} />
+                    <div style={{ width: ds, height: ds, borderRadius: '50%',
+                      background: 'radial-gradient(circle at 40% 35%, #d8cfa8, #b8a870)',
+                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.35)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+                      <span style={{ color: pt.color, fontSize: 7, lineHeight: 1 }}>♥</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Username gate */}
+            {!user ? (
+              <div style={{ width: '100%', background: 'rgba(0,0,0,0.55)', borderRadius: 16, padding: 20,
+                border: '1px solid rgba(255,255,255,0.2)', textAlign: 'center', marginBottom: 12 }}>
+                <p style={{ color: '#ffe082', fontWeight: 800, marginBottom: 10, margin: '0 0 10px' }}>Enter Username</p>
+                <input type="text" value={tempUser} onChange={e => setTempUser(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && tempUser.trim()) { setUser(tempUser.trim()); try { localStorage.setItem('memotiles_user', tempUser.trim()); } catch {} } }}
+                  placeholder="Your name…"
+                  style={{ width: '100%', padding: '11px', borderRadius: 10, border: 'none', marginBottom: 10, fontSize: 15, textAlign: 'center', boxSizing: 'border-box' }} />
+                <button onClick={() => { if (tempUser.trim()) { setUser(tempUser.trim()); try { localStorage.setItem('memotiles_user', tempUser.trim()); } catch {} } }}
+                  style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none',
+                    background: 'linear-gradient(135deg,#f39c12,#e67e22)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>Save</button>
+              </div>
+            ) : (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '6px 12px',
+                  border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <span style={{ color: '#ffe082', fontSize: 13, fontWeight: 700 }}>👤 {user}</span>
+                  <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); } catch {} }}
+                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 11, cursor: 'pointer' }}>Change</button>
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 16, padding: 15, border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <p style={{ color: '#ffe082', fontWeight: 800, margin: '0 0 10px', textAlign: 'center', fontSize: 14 }}>Select Board</p>
+                  {Object.entries(GRID_CONFIGS).map(([key, val]) => (
+                    <button key={key} onClick={() => setMode(key)} style={{
+                      width: '100%', padding: '12px 14px', marginBottom: 7, borderRadius: 10,
+                      border: `2px solid ${mode === key ? '#ffb300' : 'rgba(255,255,255,0.2)'}`,
+                      background: mode === key ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
+                      color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      boxShadow: mode === key ? '0 4px 14px rgba(243,156,18,0.4)' : 'none',
+                    }}>
+                      <span>{val.label}</span>
+                      <span style={{ fontSize: 11, background: 'rgba(0,0,0,0.25)', borderRadius: 6, padding: '2px 8px' }}>{val.difficulty}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <button onClick={() => startGame(mode)} style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none',
+                  background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
+                  boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
+                <button onClick={() => setScreen('scores')} style={{ width: '100%', padding: '12px', borderRadius: 14,
+                  border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
+                  color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>🏆 High Scores</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SCORES */}
+        {screen === 'scores' && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <button onClick={() => setScreen('menu')} style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.2)',
+                color: '#ffe082', borderRadius: 10, padding: '7px 13px', cursor: 'pointer', fontSize: 16 }}>←</button>
+              <h2 style={{ color: '#ffe082', fontFamily: 'Georgia,serif', margin: 0, fontSize: 20,
+                textShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>🏆 High Scores</h2>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: 16, padding: '14px 10px',
+              border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
+              <ScoreBoard
+                scores={scores}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                activeCategory={scoreCategory}
+                onCategoryChange={setScoreCategory}
+                onClearCategory={(cat) => {
+                  const ns = scores.filter(s => s.mode !== cat);
+                  setScores(ns);
+                  try { localStorage.setItem('memotiles_scores', JSON.stringify(ns)); } catch {}
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* GAME */}
+        {screen === 'game' && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {/* Header */}
+            <div style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', borderRadius: 10 }}>
+              <button onClick={() => { setRunning(false); setScreen('menu'); }}
+                style={{ background: 'none', border: 'none', color: '#ffe082', fontSize: 20, cursor: 'pointer' }}>←</button>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#ffe082', fontWeight: 900, fontSize: 16 }}>{score.toLocaleString()}</div>
+                  <div style={{ color: '#c8a96e', fontSize: 9, letterSpacing: 0.5 }}>SCORE</div>
+                </div>
+                <div style={{ width: 1, background: '#7a5c2e' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#f5d78e', fontWeight: 800, fontSize: 16 }}>{moves}</div>
+                  <div style={{ color: '#c8a96e', fontSize: 9 }}>MOVES</div>
+                </div>
+                <div style={{ width: 1, background: '#7a5c2e' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#f5d78e', fontWeight: 800, fontSize: 16 }}>{formatTime(time)}</div>
+                  <div style={{ color: '#c8a96e', fontSize: 9 }}>TIME</div>
+                </div>
+                <div style={{ width: 1, background: '#7a5c2e' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ color: '#f5d78e', fontWeight: 800, fontSize: 16 }}>{matched}/{totalPairs}</div>
+                  <div style={{ color: '#c8a96e', fontSize: 9 }}>PAIRS</div>
+                </div>
+              </div>
+              <button onClick={() => startGame(mode)}
+                style={{ background: 'none', border: 'none', color: '#ffe082', fontSize: 20, cursor: 'pointer' }}>↺</button>
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+              <div style={{ height: '100%', background: 'linear-gradient(90deg,#27ae60,#2ecc71)',
+                width: `${(matched/totalPairs)*100}%`, transition: 'width 0.4s ease', borderRadius: 2 }} />
+            </div>
+
+            {/* Combo banner */}
+            {combo >= 2 && (
+              <div style={{ width: '100%', padding: '4px 0', textAlign: 'center',
+                background: combo >= 3 ? 'linear-gradient(90deg,rgba(243,156,18,0.9),rgba(230,126,34,0.9))' : 'linear-gradient(90deg,rgba(39,174,96,0.85),rgba(46,204,113,0.85))',
+                color: '#fff', fontWeight: 900, fontSize: combo >= 3 ? 14 : 12, letterSpacing: 1,
+                animation: 'comboBanner 0.4s ease' }}>
+                {combo >= 3 ? `🔥 COMBO x${combo} — AMAZING!` : `⚡ Combo x${combo}!`}
+              </div>
+            )}
+
+            {/* Board */}
+            <div style={{ padding: '8px', ...boardBg, width: '100%', boxSizing: 'border-box',
+              boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)', borderRadius: 12, border: '2px solid rgba(90,54,32,0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cfg.cols}, ${tileW}px)`, gap: '4px', justifyContent: 'center' }}>
+                {tiles.map(tile => (
+                  <div key={tile.id} className={(shake && shake.includes(tile.id) ? 'shake-tile ' : '') + (matchAnim.includes(tile.id) ? 'match-tile' : '')}>
+                    <Tile tile={tile} onClick={handleTile} size={tileW} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ color: '#f5d78e', fontSize: 11, textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>
+              {cfg.label} · {cfg.difficulty}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {won && (
+        <WinModal moves={moves} time={time} mode={mode} score={score} comboBonus={comboBonus}
+          onReplay={() => startGame(mode)}
+          onMenu={() => { setWon(false); setScreen('menu'); }} />
+      )}
+    </div>
+  );
+}
