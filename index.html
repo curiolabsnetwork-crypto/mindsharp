@@ -212,7 +212,14 @@ async function fetchScoresFromCloud(mode) {
 }
 
 function formatTime(s) { const m = Math.floor(s/60); return `${m}:${String(s%60).padStart(2,'0')}`; }
-
+function formatDate(ts) {
+  if (!ts) return "-";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const day = String(d.getDate()).padStart(2,'0');
+  const mon = String(d.getMonth()+1).padStart(2,'0');
+  const yr  = String(d.getFullYear()).slice(-2);
+  return `${day}-${mon}-${yr}`;
+}
 function Tile({ tile, onClick, size }) {
   const isVisible = tile.flipped || tile.matched;
   const s = size;
@@ -289,8 +296,8 @@ function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryCh
       {sortedScores.length === 0
         ? <p style={{ color: '#ffe082', textAlign: 'center', fontSize: 13, margin: '16px 0' }}>No games yet for this category</p>
         : (
-          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-            {sortedScores.slice(0,10).map((s, i) => (
+          <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+            {sortedScores.map((s, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '6px 10px', marginBottom: 4,
                 background: i === 0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
@@ -301,6 +308,9 @@ function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryCh
                 <span style={{ color: '#ffe082', fontWeight: 800, width: 52, textAlign: 'right' }}>{s.score ? s.score.toLocaleString() : '-'}</span>
                 <span style={{ color: '#ffe082', width: 42, textAlign: 'right' }}>{s.moves}mv</span>
                 <span style={{ color: '#ffe082', width: 42, textAlign: 'right' }}>{formatTime(s.time)}</span>
+                <span style={{ color: 'rgba(255,224,130,0.7)', width: 58, textAlign: 'right', fontSize: 11 }}>
+  {formatDate(s.createdAt)}
+</span>
               </div>
             ))}
           </div>
@@ -317,7 +327,17 @@ function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryCh
   );
 }
 
-function WinModal({ moves, time, mode, score, comboBonus, onReplay, onMenu, onScores, user }) {
+function WinModal({ 
+  moves, 
+  time, 
+  mode, 
+  score, 
+  comboBonus, 
+  rank,          // 👈 EKLENDİ
+  onReplay, 
+  onMenu,
+  onScores       // 👈 EKLENDİ (buton için)
+}) {
   const [sharing, setSharing] = React.useState(false);
 
   // Sertifika görselini Canvas ile üret (PNG dataURL döner)
@@ -526,10 +546,20 @@ function WinModal({ moves, time, mode, score, comboBonus, onReplay, onMenu, onSc
 
         {/* yeni butonlar */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-          <button onClick={onScores} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: '2px solid rgba(0,0,0,0.15)',
-            background: 'rgba(0,0,0,0.08)', color: '#7a5c2e', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
-            🏆 High Scores
-          </button>
+          <button onClick={onScores}
+  style={{
+    width:'100%',
+    marginTop:10,
+    padding:'10px 0',
+    borderRadius:12,
+    border:'none',
+    background:'linear-gradient(135deg,#2980b9,#3498db)',
+    color:'#fff',
+    fontWeight:700,
+    cursor:'pointer'
+  }}>
+  🏆 High Scores
+</button>
           <button onClick={shareCertificate} disabled={sharing} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
             background: sharing ? 'rgba(243,156,18,0.6)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
             color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
@@ -557,6 +587,9 @@ function WinModal({ moves, time, mode, score, comboBonus, onReplay, onMenu, onSc
 }
 
 function App() {
+  const [rank, setRank] = useState(null);
+const scoresRef = useRef([]);
+useEffect(() => { scoresRef.current = scores; }, [scores]);
   const [screen, setScreen]     = useState('menu');
   const [mode, setMode]         = useState('8x4');
   const [scores, setScores] = useState([]);
@@ -595,7 +628,7 @@ function App() {
   const unsub = db
     .collection('scores')
     .orderBy('score', 'desc')
-    .limit(200)
+    .limit(500)
     .onSnapshot(
       (snap) => {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -690,7 +723,34 @@ function App() {
       });
 
       setScore(finalScore);
+// ✅ Rank hesapla (aynı mode içindeki skorlarla)
+const now = new Date();
+const dd = String(now.getDate()).padStart(2,'0');
+const mm = String(now.getMonth()+1).padStart(2,'0');
+const yy = String(now.getFullYear()).slice(-2);
+const dateStr = `${dd}-${mm}-${yy}`;
 
+// Bu oyunun entry'si
+const myEntry = {
+  user: user || 'Guest',
+  mode,
+  moves: mv + 1,
+  time: tm,
+  score: finalScore,
+  date: dateStr,
+};
+
+// Mevcut skorlar + bu skor → sıralama → rank bul
+const sameMode = (scoresRef.current || []).filter(s => s.mode === mode);
+const merged = [...sameMode, myEntry].sort((a,b) => (b.score||0) - (a.score||0));
+const myRank = merged.findIndex(s =>
+  (s.user === myEntry.user) &&
+  (s.score === myEntry.score) &&
+  (s.time === myEntry.time) &&
+  (s.moves === myEntry.moves)
+) + 1;
+
+setRank(myRank);
       // Tek yerden yaz: submitScoreToCloud yeterli
       submitScoreToCloud({
         user: user || "Guest",
@@ -699,7 +759,20 @@ function App() {
         time: tm,
         score: finalScore,
       });
+setTimeout(async () => {
+  if (!db) return;
 
+  const snap = await db
+    .collection("scores")
+    .where("mode", "==", mode)
+    .orderBy("score", "desc")
+    .get();
+
+  const scoresList = snap.docs.map(d => d.data());
+  const position = scoresList.findIndex(s => s.score === finalScore);
+
+  if (position >= 0) setRank(position + 1);
+}, 600);
       return tm;
     });
 
