@@ -45,6 +45,8 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -66,7 +68,8 @@ const firebaseConfig = {
   appId: "1:520056575924:web:4aff3dbee97a38650cc4e1",
   measurementId: "G-9HCMNEQBF6"
 };
-
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 let db = null;
 
 try {
@@ -372,12 +375,28 @@ function App() {
 }, [screen, scoreCategory]);
   const [user, setUser]             = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
   const [tempUser, setTempUser]     = useState('');
-  const [scores, setScores]         = useState(() => { try { return JSON.parse(localStorage.getItem('memotiles_scores') || '[]'); } catch { return []; } });
-
+const [scores, setScores] = useState([]);
   const comboBonusRef = useRef(0);
   const comboRef      = useRef(0);
   const lockRef       = useRef(false);
   const play          = useSound();
+  useEffect(() => {
+  const unsub = db
+    .collection('scores')
+    .orderBy('score', 'desc')
+    .limit(200)
+    .onSnapshot(
+      (snap) => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setScores(list);
+      },
+      (err) => {
+        console.log('Firestore read error:', err);
+      }
+    );
+
+  return () => unsub();
+}, []);
   const boardRef = useRef(null);
   const [boardWidth, setBoardWidth] = useState(330);
 
@@ -459,11 +478,8 @@ function App() {
   time: tm,
   score: finalScore
 });
-                    setScores(s => {
-                      const entry = { user: user || 'Guest', mode, moves: mv+1, time: tm, score: finalScore };
-                      const ns = [...s, entry].sort((a,b) => b.score - a.score);
-                      try { localStorage.setItem('memotiles_scores', JSON.stringify(ns)); } catch {}
-                      return ns;
+                   const entry = { user: user || 'Guest', mode, moves: mv+1, time: tm, score: finalScore, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+db.collection('scores').add(entry).catch(e => console.log('Firestore write error:', e));
                     });
                     return tm;
                   });
