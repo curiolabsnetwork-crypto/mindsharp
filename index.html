@@ -43,6 +43,8 @@
 
   <!-- Babel (JSX çalıştırmak için) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -54,6 +56,26 @@
     3) En alta "ReactDOM.createRoot(...).render(<App />)" ekli olmalı (sende zaten var/yoksa ekle).
   -->
   <script type="text/babel">
+    // === Firebase Init ===
+const firebaseConfig = {
+  apiKey: "AIzaSyBqtoU6DrecyhCvjYoWOtOcCyadNMDu5dY",
+  authDomain: "mindsharp-af404.firebaseapp.com",
+  projectId: "mindsharp-af404",
+  storageBucket: "mindsharp-af404.firebasestorage.app",
+  messagingSenderId: "520056575924",
+  appId: "1:520056575924:web:4aff3dbee97a38650cc4e1",
+  measurementId: "G-9HCMNEQBF6"
+};
+
+let db = null;
+
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  console.log("Firebase connected");
+} catch (e) {
+  console.warn("Firebase error:", e);
+}
 const { useState, useEffect, useCallback, useRef } = React;
 
 const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
@@ -101,8 +123,42 @@ function calcScore({ pairs, moves, time, comboBonus }) {
   const timePenalty = Math.floor(time * 1.5);
   return Math.max(0, baseScore - movePenalty - timePenalty + comboBonus);
 }
+async function submitScoreToCloud({ user, mode, moves, time, score }) {
+  if (!db) return;
 
-function useSound() {
+  try {
+    await db.collection("scores").add({
+      user: user || "Guest",
+      mode,
+      moves,
+      time,
+      score,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log("Score sent to cloud");
+  } catch (e) {
+    console.warn("Cloud submit failed:", e);
+  }
+}
+async function fetchScoresFromCloud(mode) {
+  if (!db) return [];
+
+  try {
+    const snap = await db
+      .collection("scores")
+      .where("mode", "==", mode)
+      .orderBy("score", "desc")
+      .limit(50)
+      .get();
+
+    return snap.docs.map(d => d.data());
+  } catch (e) {
+    console.warn("Fetch failed:", e);
+    return [];
+  }
+}
+    function useSound() {
   const ctx = useRef(null);
   const getCtx = () => {
     if (!ctx.current) { try { ctx.current = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
@@ -306,6 +362,14 @@ function App() {
   const [combo, setCombo]       = useState(0);
   const [sortBy, setSortBy]         = useState('score');
   const [scoreCategory, setScoreCategory] = useState('8x4');
+  useEffect(() => {
+  if (screen !== "scores") return;
+
+  (async () => {
+    const cloudScores = await fetchScoresFromCloud(scoreCategory);
+    if (cloudScores.length) setScores(cloudScores);
+  })();
+}, [screen, scoreCategory]);
   const [user, setUser]             = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
   const [tempUser, setTempUser]     = useState('');
   const [scores, setScores]         = useState(() => { try { return JSON.parse(localStorage.getItem('memotiles_scores') || '[]'); } catch { return []; } });
@@ -387,7 +451,14 @@ function App() {
                 setMoves(mv => {
                   setTime(tm => {
                     const finalScore = calcScore({ pairs: cfg.pairs, moves: mv+1, time: tm, comboBonus: comboBonusRef.current });
-                    setScore(finalScore);
+                   setScore(finalScore);
+                    submitScoreToCloud({
+  user: user || 'Guest',
+  mode,
+  moves: mv + 1,
+  time: tm,
+  score: finalScore
+});
                     setScores(s => {
                       const entry = { user: user || 'Guest', mode, moves: mv+1, time: tm, score: finalScore };
                       const ns = [...s, entry].sort((a,b) => b.score - a.score);
