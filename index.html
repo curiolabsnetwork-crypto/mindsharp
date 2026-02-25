@@ -379,6 +379,8 @@ function App() {
   const lockRef       = useRef(false);
   const play          = useSound();
   useEffect(() => {
+  if (!db) return;
+
   const unsub = db
     .collection('scores')
     .orderBy('score', 'desc')
@@ -388,9 +390,7 @@ function App() {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         setScores(list);
       },
-      (err) => {
-        console.log('Firestore read error:', err);
-      }
+      (err) => console.log('Firestore read error:', err)
     );
 
   return () => unsub();
@@ -464,26 +464,37 @@ function App() {
               setMatched(newMatchedCount);
               const cfg = GRID_CONFIGS[mode];
               if (newMatchedCount === cfg.pairs) {
-                setRunning(false); setWon(true); play('win');
-                setMoves(mv => {
-                  setTime(tm => {
-                    const finalScore = calcScore({ pairs: cfg.pairs, moves: mv+1, time: tm, comboBonus: comboBonusRef.current });
-                   setScore(finalScore);
-                    submitScoreToCloud({
-  user: user || 'Guest',
-  mode,
-  moves: mv + 1,
-  time: tm,
-  score: finalScore
-});
-                   const entry = { user: user || 'Guest', mode, moves: mv+1, time: tm, score: finalScore, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
-db.collection('scores').add(entry).catch(e => console.log('Firestore write error:', e));
-                    });
-                    return tm;
-                  });
-                  return mv;
-                });
-              }
+  setRunning(false);
+  setWon(true);
+  play('win');
+
+  // mevcut state değerleriyle skor hesapla + Firestore'a yaz
+  setMoves((mv) => {
+    setTime((tm) => {
+      const finalScore = calcScore({
+        pairs: cfg.pairs,
+        moves: mv + 1,
+        time: tm,
+        comboBonus: comboBonusRef.current,
+      });
+
+      setScore(finalScore);
+
+      // Tek yerden yaz: submitScoreToCloud yeterli
+      submitScoreToCloud({
+        user: user || "Guest",
+        mode,
+        moves: mv + 1,
+        time: tm,
+        score: finalScore,
+      });
+
+      return tm;
+    });
+
+    return mv;
+  });
+}
               lockRef.current = false;
               return newTiles;
             } else {
