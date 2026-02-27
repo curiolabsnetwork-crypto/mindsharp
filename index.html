@@ -59,7 +59,7 @@
 
 <body>
   <div id="root"></div>
-
+<div id="msFooter" class="ms-footer">© 2026 MindSharp. All rights reserved.</div>
   <!--
     1) Aşağıdaki script'in type'ı "text/babel" olmalı.
     2) Senin 600 satırlık kodu BURAYA yapıştıracaksın.
@@ -821,6 +821,19 @@ setTimeout(async () => {
     <div style={{ minHeight: '100vh', width: '100%', maxWidth: 430, margin: '0 auto', ...woodBg,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       fontFamily: "'Segoe UI', sans-serif", userSelect: 'none', position: 'relative', overflow: 'hidden' }}>
+      .ms-footer{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 224, 130, 0.75); /* altın ton, temaya uyumlu */
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  z-index: 9999;
+  pointer-events: none; /* tıklamaları engellemesin */
+  user-select: none;
+}
       <style>{`        
       .contentWrap { padding: 50px 46px 40px; }
         @media (max-width: 420px) {
