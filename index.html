@@ -847,33 +847,7 @@ setTimeout(async () => {
         @keyframes comboBanner { 0%{transform:scaleX(0);opacity:0} 20%{transform:scaleX(1);opacity:1} 80%{opacity:1} 100%{opacity:0} }
         .shake-tile { animation: shake 0.35s ease; }
         .match-tile { animation: matchPop 0.5s ease; }
-      `}
-      /* --- GAME hint (3s) --- */
-.ms-hint {
-  width: calc(100% - 24px);
-  margin: 10px 12px 0;
-  padding: 8px 12px;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 224, 130, 0.95);
-  background: rgba(0, 0, 0, 0.38);
-  border: 1px solid rgba(255, 224, 130, 0.18);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
-  backdrop-filter: blur(4px);
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity .35s ease, transform .35s ease;
-  pointer-events: none;
-  z-index: 50;
-}
-
-.ms-hint.hide {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-      </style>
+      `}</style>
 
      {/* Readability Overlay */}
 <div style={{
@@ -1007,8 +981,7 @@ setTimeout(async () => {
 
         {/* GAME */}
         {screen === 'game' && (
-     
-  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {/* Header */}
             <div style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center',
               justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', borderRadius: 10 }}>
@@ -1053,7 +1026,6 @@ setTimeout(async () => {
                 animation: 'comboBanner 0.4s ease' }}>
                 {combo >= 3 ? `🔥 COMBO x${combo} — AMAZING!` : `⚡ Combo x${combo}!`}
               </div>
-
             )}
 
             {/* Board */}
