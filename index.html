@@ -652,6 +652,14 @@ useEffect(() => { scoresRef.current = scores; }, [scores]);
   const [sortBy, setSortBy]         = useState('score');
   const [scoreCategory, setScoreCategory] = useState('8x4');
   useEffect(() => {
+  if (screen !== 'game') return;
+
+  setShowHint(true);
+  const t = setTimeout(() => setShowHint(false), 3000);
+
+  return () => clearTimeout(t);
+}, [screen]);
+  useEffect(() => {
   if (screen !== "scores") return;
 
   (async () => {
