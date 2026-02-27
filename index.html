@@ -59,7 +59,14 @@
 
 <body>
   <div id="root"></div>
-
+<!-- Top-right actions: Language + Settings -->
+<div class="ms-top-actions" id="msTopActions" aria-label="Top actions">
+  <div class="ms-lang-pill" id="msLangPill" title="Language">
+    <span id="msLangCode">EN</span>
+    <span class="ms-caret">▾</span>
+  </div>
+  <button class="ms-gear-btn" id="msGearBtn" title="Settings" aria-label="Settings">⚙︎</button>
+</div>
   <!--
     1) Aşağıdaki script'in type'ı "text/babel" olmalı.
     2) Senin 600 satırlık kodu BURAYA yapıştıracaksın.
@@ -563,13 +570,13 @@ function WinModal({
   }}>
   🏆 High Scores
 </button>
-          <button onClick={shareCertificate} disabled={sharing} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
+           <button onClick={shareCertificate} disabled={sharing} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
             background: sharing ? 'rgba(243,156,18,0.6)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
             color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
             {sharing ? "Preparing..." : "📤 Share"}
           </button>
         </div>
-
+<div class="ms-menu-footer">© 2026 MindSharp. All rights reserved.</div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onMenu} style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: '2px solid #c8a96e',
             background: 'transparent', color: '#7a5c2e', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
@@ -821,6 +828,192 @@ setTimeout(async () => {
     <div style={{ minHeight: '100vh', width: '100%', maxWidth: 430, margin: '0 auto', ...woodBg,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       fontFamily: "'Segoe UI', sans-serif", userSelect: 'none', position: 'relative', overflow: 'hidden' }}>
+      <style>
+/* ========= MindSharp Settings + Language + Footer ========= */
+
+/* Top-right row: language pill + gear */
+.ms-top-actions{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 50;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ms-lang-pill{
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(30, 20, 14, 0.40);
+  color: rgba(255,255,255,0.92);
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(6px);
+}
+.ms-lang-pill .ms-caret{
+  opacity: 0.75;
+  font-weight: 900;
+}
+
+.ms-gear-btn{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(30, 20, 14, 0.40);
+  color: rgba(255,255,255,0.92);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+.ms-gear-btn:active, .ms-lang-pill:active{
+  transform: scale(0.98);
+}
+
+/* Settings sheet overlay */
+.ms-sheet-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.50);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: none;
+}
+.ms-sheet-overlay.open{ display:block; }
+
+.ms-sheet{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: -420px; /* hidden */
+  z-index: 210;
+  background: rgba(43, 28, 20, 0.92);
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  padding: 14px 14px 18px;
+  box-shadow: 0 -12px 34px rgba(0,0,0,0.45);
+  transition: bottom 220ms ease;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.ms-sheet.open{ bottom: 0; }
+
+.ms-sheet-handle{
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.22);
+  margin: 6px auto 12px;
+}
+
+.ms-sheet-title{
+  color: rgba(255,255,255,0.92);
+  font-weight: 800;
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.ms-setting-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  margin-bottom: 10px;
+}
+.ms-setting-row .label{
+  color: rgba(255,255,255,0.90);
+  font-weight: 700;
+  font-size: 14px;
+}
+.ms-setting-row .sub{
+  color: rgba(255,255,255,0.60);
+  font-weight: 600;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Toggle */
+.ms-toggle{
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.14);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ms-toggle::after{
+  content:"";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.90);
+  transition: left 160ms ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.30);
+}
+.ms-toggle.on{
+  background: rgba(255, 153, 0, 0.52); /* MindSharp orange vibe */
+  border-color: rgba(255, 153, 0, 0.40);
+}
+.ms-toggle.on::after{ left: 25px; }
+
+/* Language dropdown */
+.ms-select{
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.92);
+  border-radius: 12px;
+  padding: 10px 10px;
+  font-weight: 700;
+}
+
+/* Sheet footer */
+.ms-sheet-footer{
+  margin-top: 8px;
+  padding-top: 10px;
+  text-align: center;
+  color: rgba(255,255,255,0.55);
+  font-size: 12px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+
+/* Menu footer line (your requested placement) */
+.ms-menu-footer{
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  opacity: 0.65;
+}
+
+/* Ensure the container used for top actions can position absolute children.
+   If your top header container already relative, ignore.
+*/
+.ms-relative{ position: relative; }
+
+</style>
+      
+      
+      
       <style>{`        
       .contentWrap { padding: 50px 46px 40px; }
         @media (max-width: 420px) {
@@ -1053,9 +1246,266 @@ setTimeout(async () => {
   </script>
 
   <!-- PWA service worker (opsiyonel) -->
-  <script>
-    // Eğer ileride service worker eklersen, burada register edebilirsin.
-    // Şimdilik boş bırakıyoruz.
-  </script>
+<script>
+/* ========= MindSharp Settings + Language + Sound state ========= */
+
+(function(){
+  const LS = {
+    lang: 'ms_lang',
+    sfx: 'ms_sfx',
+    music: 'ms_music'
+  };
+
+  // ------- Simple i18n dictionary (you can expand keys later) -------
+  const I18N = {
+    en: {
+      settings_title: "Settings",
+      settings_sfx: "Sound Effects",
+      settings_sfx_sub: "Tile flip, buttons, win",
+      settings_music: "Ambience Music",
+      settings_music_sub: "Background atmosphere",
+      settings_language: "Language",
+      settings_language_sub: "UI text"
+    },
+    tr: {
+      settings_title: "Ayarlar",
+      settings_sfx: "Ses Efektleri",
+      settings_sfx_sub: "Taş çevirme, butonlar, kazanma",
+      settings_music: "Ortam Müziği",
+      settings_music_sub: "Arka plan atmosferi",
+      settings_language: "Dil",
+      settings_language_sub: "Arayüz metni"
+    },
+    de: { settings_title:"Einstellungen", settings_sfx:"Soundeffekte", settings_sfx_sub:"Steine, Buttons, Sieg", settings_music:"Ambient-Musik", settings_music_sub:"Hintergrundatmosphäre", settings_language:"Sprache", settings_language_sub:"UI-Text" },
+    fr: { settings_title:"Paramètres", settings_sfx:"Effets sonores", settings_sfx_sub:"Tuiles, boutons, victoire", settings_music:"Ambiance", settings_music_sub:"Atmosphère de fond", settings_language:"Langue", settings_language_sub:"Texte UI" },
+    ru: { settings_title:"Настройки", settings_sfx:"Звуковые эффекты", settings_sfx_sub:"Плитки, кнопки, победа", settings_music:"Фоновая музыка", settings_music_sub:"Атмосфера", settings_language:"Язык", settings_language_sub:"Текст интерфейса" },
+    es: { settings_title:"Ajustes", settings_sfx:"Efectos de sonido", settings_sfx_sub:"Fichas, botones, victoria", settings_music:"Música ambiente", settings_music_sub:"Atmósfera", settings_language:"Idioma", settings_language_sub:"Texto UI" },
+    it: { settings_title:"Impostazioni", settings_sfx:"Effetti sonori", settings_sfx_sub:"Tessere, pulsanti, vittoria", settings_music:"Musica d’ambiente", settings_music_sub:"Atmosfera", settings_language:"Lingua", settings_language_sub:"Testo UI" },
+    el: { settings_title:"Ρυθμίσεις", settings_sfx:"Ηχητικά εφέ", settings_sfx_sub:"Πλακίδια, κουμπιά, νίκη", settings_music:"Ατμόσφαιρα", settings_music_sub:"Μουσική φόντου", settings_language:"Γλώσσα", settings_language_sub:"Κείμενο UI" },
+    ar: { settings_title:"الإعدادات", settings_sfx:"مؤثرات صوتية", settings_sfx_sub:"البطاقات، الأزرار، الفوز", settings_music:"موسيقى خلفية", settings_music_sub:"الأجواء", settings_language:"اللغة", settings_language_sub:"نص الواجهة" },
+    hi: { settings_title:"सेटिंग्स", settings_sfx:"साउंड इफेक्ट्स", settings_sfx_sub:"टाइल, बटन, जीत", settings_music:"एंबियंस म्यूज़िक", settings_music_sub:"बैकग्राउंड माहौल", settings_language:"भाषा", settings_language_sub:"UI टेक्स्ट" },
+    zh: { settings_title:"设置", settings_sfx:"音效", settings_sfx_sub:"翻牌、按钮、胜利", settings_music:"氛围音乐", settings_music_sub:"背景氛围", settings_language:"语言", settings_language_sub:"界面文字" },
+    ja: { settings_title:"設定", settings_sfx:"効果音", settings_sfx_sub:"タイル、ボタン、勝利", settings_music:"環境音楽", settings_music_sub:"背景の雰囲気", settings_language:"言語", settings_language_sub:"UIテキスト" }
+  };
+
+  function getDefaultLang(){
+    const saved = localStorage.getItem(LS.lang);
+    if (saved && I18N[saved]) return saved;
+
+    // Try device language, fallback EN
+    const nav = (navigator.language || 'en').toLowerCase();
+    const short = nav.split('-')[0];
+    return I18N[short] ? short : 'en';
+  }
+
+  const state = {
+    lang: getDefaultLang(),
+    sfx: localStorage.getItem(LS.sfx) ? localStorage.getItem(LS.sfx) === '1' : true,
+    music: localStorage.getItem(LS.music) ? localStorage.getItem(LS.music) === '1' : true
+  };
+
+  // ------- Elements -------
+  const gearBtn = document.getElementById('msGearBtn');
+  const langPill = document.getElementById('msLangPill');
+  const langCode = document.getElementById('msLangCode');
+
+  const overlay = document.getElementById('msSheetOverlay');
+  const sheet = document.getElementById('msSheet');
+
+  const toggleSfx = document.getElementById('msToggleSfx');
+  const toggleMusic = document.getElementById('msToggleMusic');
+  const langSelect = document.getElementById('msLangSelect');
+
+  const bgMusic = document.getElementById('bgMusic');
+
+  if (!gearBtn || !overlay || !sheet || !toggleSfx || !toggleMusic || !langSelect || !langPill || !langCode) {
+    console.warn('[MindSharp] Settings UI elements not found. Make sure you pasted HTML blocks correctly.');
+    return;
+  }
+
+  // ------- Sheet open/close -------
+  function openSheet(){
+    overlay.classList.add('open');
+    sheet.classList.add('open');
+  }
+  function closeSheet(){
+    overlay.classList.remove('open');
+    sheet.classList.remove('open');
+  }
+
+  gearBtn.addEventListener('click', openSheet);
+  langPill.addEventListener('click', openSheet);
+  overlay.addEventListener('click', closeSheet);
+
+  // Close with ESC
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape') closeSheet();
+  });
+
+  // ------- Toggles -------
+  function setToggle(el, on){
+    el.classList.toggle('on', !!on);
+  }
+
+  function persist(){
+    localStorage.setItem(LS.lang, state.lang);
+    localStorage.setItem(LS.sfx, state.sfx ? '1' : '0');
+    localStorage.setItem(LS.music, state.music ? '1' : '0');
+  }
+
+  toggleSfx.addEventListener('click', ()=>{
+    state.sfx = !state.sfx;
+    setToggle(toggleSfx, state.sfx);
+    persist();
+    // Optional tiny click sound hook (if you have one)
+  });
+
+  toggleMusic.addEventListener('click', ()=>{
+    state.music = !state.music;
+    setToggle(toggleMusic, state.music);
+    persist();
+    syncMusicPlayback();
+  });
+
+  // ------- Language -------
+  function updateLangUI(){
+    const upper = (state.lang || 'en').toUpperCase();
+    // Turkish: TR etc. we want EN default shown; mapping for greek etc
+    const map = { en:'EN', tr:'TR', de:'DE', fr:'FR', ru:'RU', es:'ES', it:'IT', el:'EL', ar:'AR', hi:'HI', zh:'ZH', ja:'JA' };
+    langCode.textContent = map[state.lang] || upper;
+    langSelect.value = state.lang;
+
+    // RTL support for Arabic
+    if (state.lang === 'ar') {
+      document.documentElement.setAttribute('dir', 'rtl');
+    } else {
+      document.documentElement.setAttribute('dir', 'ltr');
+    }
+  }
+
+  function applyI18n(){
+    const dict = I18N[state.lang] || I18N.en;
+    document.querySelectorAll('[data-i18n]').forEach(node=>{
+      const key = node.getAttribute('data-i18n');
+      if (dict[key]) node.textContent = dict[key];
+    });
+    updateLangUI();
+  }
+
+  langSelect.addEventListener('change', ()=>{
+    const v = langSelect.value;
+    state.lang = I18N[v] ? v : 'en';
+    persist();
+    applyI18n();
+
+    // Eğer oyunun diğer metinlerini de çevireceksen:
+    // 1) ilgili elementlere data-i18n="..." ekle
+    // 2) burada applyI18n() zaten güncelleyecek
+  });
+
+  // ------- Music (autoplay rules) -------
+  // Browsers require user interaction before play(). We'll try on any click.
+  let userInteracted = false;
+
+  function syncMusicPlayback(){
+    if (!bgMusic) return;
+    if (!state.music) {
+      bgMusic.pause();
+      return;
+    }
+    if (userInteracted) {
+      // play() may still fail; ignore safely
+      bgMusic.play().catch(()=>{});
+    }
+  }
+
+  // first user gesture => allow music if enabled
+  window.addEventListener('pointerdown', ()=>{
+    if (!userInteracted) {
+      userInteracted = true;
+      syncMusicPlayback();
+    }
+  }, { once:false, passive:true });
+
+  // ------- SFX helper (you can call this from your code) -------
+  // Example usage: window.msPlaySfx(document.getElementById('flipSfx'));
+  window.msIsSfxOn = ()=> state.sfx;
+  window.msIsMusicOn = ()=> state.music;
+  window.msGetLang = ()=> state.lang;
+
+  window.msPlaySfx = (audioEl)=>{
+    try{
+      if (!state.sfx) return;
+      if (!audioEl) return;
+      audioEl.currentTime = 0;
+      audioEl.play().catch(()=>{});
+    }catch(_){}
+  };
+
+  // ------- Init -------
+  setToggle(toggleSfx, state.sfx);
+  setToggle(toggleMusic, state.music);
+  applyI18n();
+  syncMusicPlayback();
+
+})();
+</script>
+
+  <!-- Settings Overlay + Sheet -->
+<div class="ms-sheet-overlay" id="msSheetOverlay"></div>
+
+<div class="ms-sheet" id="msSheet" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="ms-sheet-handle"></div>
+  <div class="ms-sheet-title" data-i18n="settings_title">Settings</div>
+
+  <!-- SFX -->
+  <div class="ms-setting-row">
+    <div>
+      <div class="label" data-i18n="settings_sfx">Sound Effects</div>
+      <div class="sub" data-i18n="settings_sfx_sub">Tile flip, buttons, win</div>
+    </div>
+    <div class="ms-toggle" id="msToggleSfx" aria-label="Toggle sound effects"></div>
+  </div>
+
+  <!-- Music -->
+  <div class="ms-setting-row">
+    <div>
+      <div class="label" data-i18n="settings_music">Ambience Music</div>
+      <div class="sub" data-i18n="settings_music_sub">Background atmosphere</div>
+    </div>
+    <div class="ms-toggle" id="msToggleMusic" aria-label="Toggle ambience music"></div>
+  </div>
+
+  <!-- Language -->
+  <div class="ms-setting-row">
+    <div>
+      <div class="label" data-i18n="settings_language">Language</div>
+      <div class="sub" data-i18n="settings_language_sub">UI text</div>
+    </div>
+    <select class="ms-select" id="msLangSelect" aria-label="Select language">
+      <!-- codes: default EN -->
+      <option value="en">EN</option>
+      <option value="tr">TR</option>
+      <option value="de">DE</option>
+      <option value="fr">FR</option>
+      <option value="ru">RU</option>
+      <option value="es">ES</option>
+      <option value="it">IT</option>
+      <option value="el">EL</option>
+      <option value="ar">AR</option>
+      <option value="hi">HI</option>
+      <option value="zh">ZH</option>
+      <option value="ja">JA</option>
+    </select>
+  </div>
+
+  <div class="ms-sheet-footer">© 2026 MindSharp. All rights reserved.</div>
+</div>
+
+<!-- Ambience music audio (put your file path) -->
+<audio id="bgMusic" preload="auto" loop>
+  <!-- ÖNEMLİ: Dosyayı repo'ya koyunca yolunu güncelle -->
+  <source src="./audio/ambience.mp3" type="audio/mpeg">
+</audio>
 </body>
 </html>
