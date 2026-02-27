@@ -634,6 +634,7 @@ function App() {
 const scoresRef = useRef([]);
 useEffect(() => { scoresRef.current = scores; }, [scores]);
   const [screen, setScreen]     = useState('menu');
+  const [showHint, setShowHint] = useState(false);
   const [mode, setMode]         = useState('8x4');
   const [scores, setScores] = useState([]);
   const [tiles, setTiles]       = useState([]);
