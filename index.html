@@ -101,12 +101,7 @@ try {
   console.warn("Firebase error:", e);
 }
     const { useState, useEffect, useCallback, useRef } = React;
-    React.useEffect(() => {
-  setShowHint(true);
-  const t = setTimeout(() => setShowHint(false), 3000);
-  return () => clearTimeout(t);
-}, []);
-const [showHint, setShowHint] = React.useState(true);
+
 const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
 
 const GRID_CONFIGS = {
@@ -847,31 +842,6 @@ setTimeout(async () => {
           .contentWrap { padding: 44px 18px 32px; }
         }
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-       .ms-hint {
-    text-align: center;
-    font-size: 12px;
-    color: rgba(255,224,130,0.88);
-    margin: 6px 0 10px;
-    letter-spacing: 0.4px;
-    text-shadow: 0 1px 10px rgba(0,0,0,0.35);
-    user-select: none;
-    pointer-events: none;
-    animation: msHintIn 260ms ease-out both;
-  }
-
-  .ms-hint.hide {
-    animation: msHintOut 420ms ease-in both;
-  }
-
-  @keyframes msHintIn {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes msHintOut {
-    from { opacity: 1; transform: translateY(0); }
-    to   { opacity: 0; transform: translateY(-8px); }
-  }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
         @keyframes matchPop { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
         @keyframes comboBanner { 0%{transform:scaleX(0);opacity:0} 20%{transform:scaleX(1);opacity:1} 80%{opacity:1} 100%{opacity:0} }
@@ -1011,10 +981,7 @@ setTimeout(async () => {
 
         {/* GAME */}
         {screen === 'game' && (
-  <div className={"ms-hint" + (showHint ? "" : " hide")}>
-      Find the pairs fast. Sharpen your mind.
-    </div>      
-  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {/* Header */}
             <div style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center',
               justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', borderRadius: 10 }}>
