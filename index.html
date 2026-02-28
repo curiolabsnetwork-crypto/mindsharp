@@ -1575,5 +1575,12 @@ const handleTile = useCallback((id) => {
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('[SW] Registered'))
+        .catch(err => console.warn('[SW] Failed:', err));
+    }
+  </script>
 </body>
 </html>
