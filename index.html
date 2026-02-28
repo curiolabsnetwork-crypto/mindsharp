@@ -348,199 +348,429 @@
     }
 
     // ✅ FIX 1: user prop eklendi WinModal'a
-    function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, onMenu, onScores }) {
-      const [sharing, setSharing] = React.useState(false);
+// ============================================================
+// YENİ WinModal — Kodunuzdaki eski function WinModal() { }
+// bloğunu tamamen SİLİP bu kodla değiştirin.
+// Başka hiçbir şeye dokunmayın.
+// ============================================================
 
-      const buildCertificateDataUrl = async () => {
-        const w = 1080, h = 1920;
-        const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        const bg = new Image();
-        bg.crossOrigin = "anonymous";
-        bg.src = "./wood_bg.png";
-        await new Promise((res) => { bg.onload = res; bg.onerror = res; });
-        ctx.fillStyle = "#2b1a10";
-        ctx.fillRect(0,0,w,h);
-        try {
-          const r = Math.max(w / bg.width, h / bg.height);
-          const dw = bg.width * r, dh = bg.height * r;
-          const dx = (w - dw)/2, dy = (h - dh)/2;
-          ctx.drawImage(bg, dx, dy, dw, dh);
-        } catch(e){}
-        const grad = ctx.createRadialGradient(w*0.5, h*0.28, 10, w*0.5, h*0.35, h*0.75);
-        grad.addColorStop(0, "rgba(0,0,0,0.10)");
-        grad.addColorStop(1, "rgba(0,0,0,0.72)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0,0,w,h);
-        const cardX = 90, cardY = 420, cardW = w - 180, cardH = 980, radius = 44;
-        const roundRect = (x,y,ww,hh,rr) => {
-          ctx.beginPath();
-          ctx.moveTo(x+rr,y);
-          ctx.arcTo(x+ww,y,x+ww,y+hh,rr);
-          ctx.arcTo(x+ww,y+hh,x,y+hh,rr);
-          ctx.arcTo(x,y+hh,x,y,rr);
-          ctx.arcTo(x,y,x+ww,y,rr);
-          ctx.closePath();
-        };
-        ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.55)";
-        ctx.shadowBlur = 40;
-        ctx.shadowOffsetY = 16;
-        roundRect(cardX, cardY, cardW, cardH, radius);
-        ctx.fillStyle = "rgba(253,246,227,0.96)";
-        ctx.fill();
-        ctx.restore();
-        roundRect(cardX, cardY, cardW, cardH, radius);
-        ctx.lineWidth = 8;
-        ctx.strokeStyle = "rgba(200,169,110,0.9)";
-        ctx.stroke();
-        ctx.fillStyle = "#7a3e00";
-        ctx.font = "900 74px Georgia, serif";
-        ctx.textAlign = "center";
-        ctx.fillText("MindSharp", w/2, cardY + 120);
-        ctx.fillStyle = "rgba(122,62,0,0.75)";
-        ctx.font = "700 34px Segoe UI, Arial";
-        ctx.fillText("Certificate of Completion", w/2, cardY + 178);
-        const name = (user || "Guest").trim() || "Guest";
-        ctx.fillStyle = "#2b1a10";
-        ctx.font = "800 56px Segoe UI, Arial";
-        ctx.fillText(name, w/2, cardY + 290);
-        ctx.strokeStyle = "rgba(122,92,46,0.35)";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(cardX + 70, cardY + 330);
-        ctx.lineTo(cardX + cardW - 70, cardY + 330);
-        ctx.stroke();
-        const pX = cardX + 70, pY = cardY + 390, pW = cardW - 140, pH = 210, pr = 36;
-        ctx.save();
-        ctx.shadowColor = "rgba(230,126,34,0.45)";
-        ctx.shadowBlur = 22;
-        ctx.shadowOffsetY = 10;
-        ctx.beginPath();
-        ctx.moveTo(pX+pr,pY);
-        ctx.arcTo(pX+pW,pY,pX+pW,pY+pH,pr);
-        ctx.arcTo(pX+pW,pY+pH,pX,pY+pH,pr);
-        ctx.arcTo(pX,pY+pH,pX,pY,pr);
-        ctx.arcTo(pX,pY,pX+pW,pY,pr);
-        ctx.closePath();
-        const og = ctx.createLinearGradient(pX, pY, pX+pW, pY+pH);
-        og.addColorStop(0, "#f39c12");
-        og.addColorStop(1, "#e67e22");
-        ctx.fillStyle = og;
-        ctx.fill();
-        ctx.restore();
-        ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.font = "800 26px Segoe UI, Arial";
-        ctx.fillText("FINAL SCORE", w/2, pY + 64);
-        ctx.fillStyle = "#fff";
-        ctx.font = "900 120px Segoe UI, Arial";
-        ctx.fillText(score.toLocaleString(), w/2, pY + 162);
-        ctx.fillStyle = "rgba(43,26,16,0.85)";
-        ctx.font = "800 36px Segoe UI, Arial";
-        ctx.fillText(`${mode} • ${GRID_CONFIGS[mode]?.difficulty || ""}`, w/2, cardY + 690);
-        ctx.font = "700 34px Segoe UI, Arial";
-        ctx.fillText(`Moves: ${moves}    Time: ${formatTime(time)}`, w/2, cardY + 760);
-        if (comboBonus > 0) {
-          ctx.fillStyle = "rgba(231,76,60,0.95)";
-          ctx.font = "900 34px Segoe UI, Arial";
-          ctx.fillText(`🔥 Combo Bonus: +${comboBonus}`, w/2, cardY + 820);
+function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, onMenu, onScores }) {
+  const [sharing, setSharing] = React.useState(false);
+  const [confetti, setConfetti] = React.useState([]);
+
+  React.useEffect(() => {
+    const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f','#1abc9c','#e67e22'];
+    const shapes = ['■','●','▲','★','◆'];
+    const pieces = Array.from({ length: 38 }, (_, i) => ({
+      id: i,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      shape: shapes[Math.floor(Math.random() * shapes.length)],
+      left: Math.random() * 100,
+      delay: Math.random() * 2.5,
+      duration: 2.5 + Math.random() * 2,
+      size: 8 + Math.random() * 10,
+      rotate: Math.random() * 720,
+    }));
+    setConfetti(pieces);
+  }, []);
+
+  const getRankInfo = () => {
+    if (!rank) return { label: 'Well Played!', color: '#95a5a6', bg: 'rgba(149,165,166,0.15)' };
+    if (rank === 1) return { label: '👑 NEW RECORD!', color: '#f1c40f', bg: 'rgba(241,196,15,0.2)', glow: true };
+    if (rank <= 3) return { label: '🥈 TOP 3 — Amazing!', color: '#e67e22', bg: 'rgba(230,126,34,0.18)' };
+    if (rank <= 10) return { label: '⭐ Top 10 — Great Job!', color: '#27ae60', bg: 'rgba(39,174,96,0.15)' };
+    return { label: `Rank #${rank}`, color: '#7f8c8d', bg: 'rgba(127,140,141,0.12)' };
+  };
+  const rankInfo = getRankInfo();
+
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+
+  const buildCertificate = async () => {
+    const W = 1080, H = 1920;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const bgImg = new Image();
+    bgImg.crossOrigin = 'anonymous';
+    bgImg.src = './wood_bg.png';
+    await new Promise(r => { bgImg.onload = r; bgImg.onerror = r; });
+    ctx.fillStyle = '#2b1a10';
+    ctx.fillRect(0, 0, W, H);
+    try {
+      const r = Math.max(W / bgImg.width, H / bgImg.height);
+      ctx.drawImage(bgImg, (W - bgImg.width*r)/2, (H - bgImg.height*r)/2, bgImg.width*r, bgImg.height*r);
+    } catch(e) {}
+
+    const vg = ctx.createRadialGradient(W/2, H*0.4, 50, W/2, H*0.4, H*0.7);
+    vg.addColorStop(0, 'rgba(0,0,0,0.15)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = 60, cy = 180, cw = W-120, ch = H-380, cr = 48;
+    const rr = (x,y,w,h,r) => {
+      ctx.beginPath();
+      ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+    };
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20;
+    rr(cx,cy,cw,ch,cr);
+    const cardGrad = ctx.createLinearGradient(cx, cy, cx, cy+ch);
+    cardGrad.addColorStop(0, '#fdf6e3');
+    cardGrad.addColorStop(0.5, '#fef9ed');
+    cardGrad.addColorStop(1, '#f5e6c8');
+    ctx.fillStyle = cardGrad; ctx.fill();
+    ctx.restore();
+
+    rr(cx,cy,cw,ch,cr);
+    ctx.lineWidth = 10; ctx.strokeStyle = '#c8a96e'; ctx.stroke();
+    rr(cx+14,cy+14,cw-28,ch-28,cr-8);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(200,169,110,0.5)'; ctx.stroke();
+
+    const corners = [[cx+40,cy+40],[cx+cw-40,cy+40],[cx+40,cy+ch-40],[cx+cw-40,cy+ch-40]];
+    corners.forEach(([x,y]) => {
+      ctx.save();
+      ctx.fillStyle = '#c8a96e'; ctx.font = 'bold 52px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('✦', x, y); ctx.restore();
+    });
+
+    ctx.save();
+    ctx.textAlign='center';
+    ctx.font = '900 96px Georgia, serif';
+    const titleGrad = ctx.createLinearGradient(W/2-200, 0, W/2+200, 0);
+    titleGrad.addColorStop(0,'#8B4513'); titleGrad.addColorStop(0.5,'#c8860a'); titleGrad.addColorStop(1,'#8B4513');
+    ctx.fillStyle = titleGrad;
+    ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=8;
+    ctx.fillText('MindSharp', W/2, cy+130);
+    ctx.restore();
+
+    const bx=cx+80, by=cy+178, bw=cw-160, bh=68, br=12;
+    rr(bx,by,bw,bh,br);
+    const bannerG=ctx.createLinearGradient(bx,by,bx+bw,by);
+    bannerG.addColorStop(0,'#b8860b'); bannerG.addColorStop(0.5,'#f0c040'); bannerG.addColorStop(1,'#b8860b');
+    ctx.fillStyle=bannerG; ctx.fill();
+    ctx.save();
+    ctx.textAlign='center'; ctx.font='800 32px Segoe UI, Arial';
+    ctx.fillStyle='#5a2d00';
+    ctx.fillText('A C H I E V E M E N T', W/2, by+44);
+    ctx.restore();
+
+    if (rank) {
+      const rankColor = rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d';
+      const rankLabel = rank===1?'NEW RECORD!':rank<=3?'TOP 3 — Amazing!':rank<=10?`Top 10!`:`Rank #${rank}`;
+      ctx.save();
+      ctx.textAlign='center'; ctx.font='900 36px Segoe UI';
+      ctx.fillStyle=rankColor;
+      ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=6;
+      ctx.fillText(rankLabel, W/2, cy+298);
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.textAlign='center';
+    ctx.font='700 36px Segoe UI, Arial'; ctx.fillStyle='rgba(100,60,10,0.8)';
+    ctx.fillText('Congratulations!', W/2, cy+368);
+    ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle='#3d1a00';
+    ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=8;
+    ctx.fillText((user||'Guest').trim(), W/2, cy+458);
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle='rgba(180,140,80,0.4)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx+100,cy+492); ctx.lineTo(cx+cw-100,cy+492); ctx.stroke();
+    ctx.restore();
+
+    const spx=cx+70, spy=cy+524, spw=cw-140, sph=240, spr=28;
+    rr(spx,spy,spw,sph,spr);
+    ctx.save();
+    ctx.shadowColor='rgba(200,120,0,0.4)'; ctx.shadowBlur=28; ctx.shadowOffsetY=10;
+    const scoreG=ctx.createLinearGradient(spx,spy,spx+spw,spy+sph);
+    scoreG.addColorStop(0,'#e67e22'); scoreG.addColorStop(1,'#c0392b');
+    ctx.fillStyle=scoreG; ctx.fill();
+    ctx.restore();
+    rr(spx,spy,spw,sph,spr);
+    ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.stroke();
+    ctx.save();
+    ctx.textAlign='center';
+    ctx.font='800 28px Segoe UI'; ctx.fillStyle='rgba(255,255,255,0.85)';
+    ctx.fillText('S C O R E', W/2, spy+60);
+    ctx.font='900 148px Segoe UI, Arial'; ctx.fillStyle='#fff';
+    ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=12;
+    ctx.fillText(score.toLocaleString(), W/2, spy+190);
+    ctx.restore();
+    if (comboBonus>0) {
+      ctx.save();
+      ctx.textAlign='center'; ctx.font='700 30px Segoe UI'; ctx.fillStyle='rgba(255,255,200,0.9)';
+      ctx.fillText(`🔥 +${comboBonus} Combo Bonus`, W/2, spy+228);
+      ctx.restore();
+    }
+
+    const statsY=cy+820;
+    const cols3=[
+      { label:'MOVES', value:moves, color:'#e74c3c' },
+      { label:'TIME',  value:formatTime(time), color:'#3498db' },
+      { label:'RANK',  value:rank?`#${rank}`:'-', color:rank===1?'#f1c40f':rank<=3?'#e67e22':'#27ae60' },
+    ];
+    const colW=(cw-140)/3;
+    cols3.forEach((col,i) => {
+      const colX=cx+70+i*(colW)+colW/2;
+      if(i>0){ ctx.save(); ctx.strokeStyle='rgba(180,140,80,0.35)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx+70+i*colW,statsY-30); ctx.lineTo(cx+70+i*colW,statsY+140); ctx.stroke(); ctx.restore(); }
+      ctx.save();
+      ctx.textAlign='center';
+      ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.6)';
+      ctx.fillText(col.label, colX, statsY);
+      ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle=col.color;
+      ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=6;
+      ctx.fillText(col.value, colX, statsY+90);
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.strokeStyle='rgba(180,140,80,0.3)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx+100,statsY+160); ctx.lineTo(cx+cw-100,statsY+160); ctx.stroke();
+    ctx.textAlign='center'; ctx.font='600 28px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.55)';
+    ctx.fillText(`✦  ${dateStr}  ✦`, W/2, statsY+210);
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign='center'; ctx.font='italic 700 28px Georgia, serif';
+    ctx.fillStyle='rgba(100,60,10,0.65)';
+    ctx.fillText('"Train your mind — 1 minute a day."', W/2, statsY+278);
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign='center'; ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.5)';
+    ctx.fillText('mindsharpgame.netlify.app', W/2, H-100);
+    ctx.restore();
+
+    const confColors=['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
+    for(let i=0;i<60;i++){
+      ctx.save(); ctx.fillStyle=confColors[i%confColors.length]; ctx.globalAlpha=0.65;
+      ctx.fillRect(Math.random()*W, cy+Math.random()*160, 8+Math.random()*10, 4+Math.random()*6);
+      ctx.restore();
+    }
+
+    return canvas.toDataURL('image/png');
+  };
+
+  const handleShare = async () => {
+    try {
+      setSharing(true);
+      const dataUrl = await buildCertificate();
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], 'mindsharp-certificate.png', { type:'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files:[file] })) {
+        await navigator.share({ title:'MindSharp Certificate', text:`I scored ${score.toLocaleString()} on MindSharp! 🧠`, files:[file] });
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = dataUrl; a.download = 'mindsharp-certificate.png';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch(e) { console.warn(e); }
+    finally { setSharing(false); }
+  };
+
+  const diffLabel = GRID_CONFIGS[mode]?.difficulty || mode;
+
+  return (
+    <div style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(0,0,0,0.72)',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      overflowY:'auto', padding:'12px 0',
+    }}>
+      <style>{`
+        @keyframes confettiFall {
+          0%   { transform: translateY(-20px) rotate(0deg); opacity:1; }
+          100% { transform: translateY(380px) rotate(var(--rot)); opacity:0; }
         }
-        ctx.fillStyle = "rgba(122,92,46,0.9)";
-        ctx.font = "700 30px Segoe UI, Arial";
-        ctx.fillText("Train short-term memory & focus — 1 minute a day.", w/2, cardY + 910);
-        ctx.fillStyle = "rgba(255,255,255,0.8)";
-        ctx.font = "700 28px Segoe UI, Arial";
-        ctx.fillText("Play: mindsharpgame.netlify.app", w/2, h - 120);
-        return canvas.toDataURL("image/png");
-      };
-
-      const shareCertificate = async () => {
-        try {
-          setSharing(true);
-          const dataUrl = await buildCertificateDataUrl();
-          const res = await fetch(dataUrl);
-          const blob = await res.blob();
-          const file = new File([blob], "mindsharp-certificate.png", { type: "image/png" });
-          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: "MindSharp Certificate",
-              text: "I just completed a MindSharp board!",
-              files: [file]
-            });
-            return;
-          }
-          const a = document.createElement("a");
-          a.href = dataUrl;
-          a.download = "mindsharp-certificate.png";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          alert("Sertifika indirildi. Sosyal medyada paylaşabilirsin ✅");
-        } catch (e) {
-          console.log(e);
-          alert("Paylaşım/indirime geçilemedi. (Tarayıcı izinleri olabilir)");
-        } finally {
-          setSharing(false);
+        @keyframes cardSlideUp {
+          from { transform: translateY(40px) scale(0.94); opacity:0; }
+          to   { transform: translateY(0) scale(1); opacity:1; }
         }
-      };
+        @keyframes scorePop {
+          0%   { transform: scale(0.6); opacity:0; }
+          70%  { transform: scale(1.08); }
+          100% { transform: scale(1); opacity:1; }
+        }
+        @keyframes rankGlow {
+          0%,100% { box-shadow: 0 0 8px currentColor; }
+          50%     { box-shadow: 0 0 22px currentColor, 0 0 40px rgba(241,196,15,0.4); }
+        }
+        @keyframes shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+      `}</style>
 
-      return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
-          <div style={{ background: 'linear-gradient(160deg,#fdf6e3,#f0e0b0)', borderRadius: 20, padding: '26px 22px',
-            textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.5)', border: '3px solid #c8a96e',
-            maxWidth: 320, width: '92%', animation: 'popIn 0.4s cubic-bezier(.4,2,.6,1)' }}>
-            <div style={{ fontSize: 46, marginBottom: 4 }}>🎉</div>
-            <h2 style={{ color: '#7a3e00', fontFamily: 'Georgia,serif', margin: '0 0 2px', fontSize: 22 }}>You Win!</h2>
-            <p style={{ color: '#a07840', margin: '0 0 14px', fontSize: 13 }}>{mode} Board</p>
-            <div style={{ background: 'linear-gradient(135deg,#f39c12,#e67e22)', borderRadius: 14, padding: '12px 0', marginBottom: 14, boxShadow: '0 4px 16px rgba(230,126,34,0.4)' }}>
-              <div style={{ color: '#fff', fontSize: 11, fontWeight: 800, letterSpacing: 1, opacity: 0.9 }}>FINAL SCORE</div>
-              <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, lineHeight: 1.1 }}>{score.toLocaleString()}</div>
-              {comboBonus > 0 && <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 2 }}>🔥 +{comboBonus} combo bonus</div>}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 14 }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#E8000A' }}>{moves}</div>
-                <div style={{ fontSize: 11, color: '#a07840' }}>Moves</div>
-              </div>
-              <div style={{ width: 1, background: '#c8a96e' }} />
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#29B6F6' }}>{formatTime(time)}</div>
-                <div style={{ fontSize: 11, color: '#a07840' }}>Time</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-              <button onClick={onScores}
-                style={{ width:'100%', marginTop:10, padding:'10px 0', borderRadius:12, border:'none',
-                  background:'linear-gradient(135deg,#2980b9,#3498db)', color:'#fff', fontWeight:700, cursor:'pointer' }}>
-                🏆 High Scores
-              </button>
-              <button onClick={shareCertificate} disabled={sharing}
-                style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-                  background: sharing ? 'rgba(243,156,18,0.6)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
-                  color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
-                {sharing ? "Preparing..." : "📤 Share"}
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={onMenu}
-                style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: '2px solid #c8a96e',
-                  background: 'transparent', color: '#7a5c2e', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
-                Menu
-              </button>
-              <button onClick={onReplay}
-                style={{ flex: 1, padding: '11px 0', borderRadius: 12, border: 'none',
-                  background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
-                Play Again
-              </button>
-            </div>
-            <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(122,92,46,0.9)' }}>
-              Share your certificate to challenge friends ✨
+      {confetti.map(p => (
+        <div key={p.id} style={{
+          position:'fixed',
+          left:`${p.left}%`, top:'-10px',
+          color:p.color, fontSize:p.size,
+          animation:`confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
+          '--rot':`${p.rotate}deg`,
+          pointerEvents:'none', zIndex:300, userSelect:'none',
+        }}>{p.shape}</div>
+      ))}
+
+      <div style={{
+        position:'relative',
+        width:'92%', maxWidth:360,
+        background:'linear-gradient(160deg, #fdf8ec 0%, #fef5da 50%, #f5e6c3 100%)',
+        borderRadius:24,
+        border:'3px solid #c8a96e',
+        boxShadow:'0 0 0 6px rgba(200,169,110,0.2), 0 24px 64px rgba(0,0,0,0.55)',
+        animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
+        overflow:'hidden',
+      }}>
+        <div style={{ position:'absolute', inset:8, borderRadius:18, border:'1.5px solid rgba(200,169,110,0.35)', pointerEvents:'none', zIndex:1 }}/>
+
+        {[
+          { top:14, left:14 }, { top:14, right:14 },
+          { bottom:14, left:14 }, { bottom:14, right:14 }
+        ].map((pos,i) => (
+          <div key={i} style={{ position:'absolute', ...pos, color:'#c8a96e', fontSize:18, pointerEvents:'none', zIndex:2 }}>✦</div>
+        ))}
+
+        <div style={{ padding:'20px 18px 16px', position:'relative', zIndex:3 }}>
+
+          {/* Header */}
+          <div style={{ textAlign:'center', marginBottom:8 }}>
+            <div style={{ fontSize:34, marginBottom:2 }}>🎉</div>
+            <h2 style={{
+              margin:'0 0 4px', fontFamily:'Georgia, serif', fontSize:28, fontWeight:900,
+              background:'linear-gradient(135deg, #7a3e00 0%, #c8860a 50%, #7a3e00 100%)',
+              backgroundSize:'200% auto',
+              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+              animation:'shimmer 3s linear infinite',
+            }}>MindSharp</h2>
+            <div style={{
+              display:'inline-block',
+              background:'linear-gradient(90deg, #b8860b, #f0c040, #b8860b)',
+              borderRadius:20, padding:'2px 14px',
+            }}>
+              <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>A C H I E V E M E N T</span>
             </div>
           </div>
+
+          {/* Rank badge */}
+          {rank && (
+            <div style={{
+              textAlign:'center', marginBottom:8,
+              background:rankInfo.bg,
+              border:`1.5px solid ${rankInfo.color}`,
+              borderRadius:12, padding:'5px 12px',
+              animation: rank===1 ? 'rankGlow 1.8s ease infinite' : 'none',
+            }}>
+              <span style={{ color:rankInfo.color, fontWeight:900, fontSize:13 }}>{rankInfo.label}</span>
+            </div>
+          )}
+
+          {/* Congrats + İsim */}
+          <div style={{ textAlign:'center', marginBottom:10 }}>
+            <div style={{ color:'rgba(100,60,10,0.65)', fontSize:11, fontWeight:700 }}>Congratulations!</div>
+            <div style={{ color:'#3d1a00', fontWeight:900, fontSize:19, fontFamily:'Georgia, serif' }}>
+              {(user||'Guest').trim()}
+            </div>
+            <div style={{ color:'rgba(120,80,20,0.55)', fontSize:10, marginTop:1 }}>{diffLabel} Board</div>
+          </div>
+
+          {/* Skor kutusu */}
+          <div style={{
+            background:'linear-gradient(135deg, #e67e22, #c0392b)',
+            borderRadius:14, padding:'10px 0 8px',
+            textAlign:'center',
+            boxShadow:'0 6px 20px rgba(200,80,20,0.38)',
+            marginBottom:10,
+            animation:'scorePop 0.5s 0.2s cubic-bezier(.22,1.2,.36,1) both',
+          }}>
+            <div style={{ color:'rgba(255,255,255,0.85)', fontSize:9, fontWeight:800, letterSpacing:2 }}>S C O R E</div>
+            <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.05, textShadow:'0 2px 8px rgba(0,0,0,0.25)' }}>
+              {score.toLocaleString()}
+            </div>
+            {comboBonus>0 && (
+              <div style={{ color:'rgba(255,255,200,0.9)', fontSize:10, marginTop:2, fontWeight:700 }}>
+                🔥 +{comboBonus} Combo Bonus
+              </div>
+            )}
+          </div>
+
+          {/* Stats 3 kolon */}
+          <div style={{
+            display:'flex', justifyContent:'center',
+            background:'rgba(200,169,110,0.12)',
+            borderRadius:12, padding:'8px 0',
+            marginBottom:10,
+            border:'1px solid rgba(200,169,110,0.25)',
+          }}>
+            {[
+              { label:'MOVES', value:moves, color:'#e74c3c' },
+              { label:'TIME',  value:formatTime(time), color:'#2980b9' },
+              { label:'RANK',  value:rank?`#${rank}`:'-',
+                color:rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d' },
+            ].map((s,i) => (
+              <React.Fragment key={s.label}>
+                {i>0 && <div style={{ width:1, background:'rgba(200,169,110,0.4)', margin:'0 4px' }}/>}
+                <div style={{ flex:1, textAlign:'center' }}>
+                  <div style={{ fontSize:9, color:'rgba(100,60,10,0.55)', fontWeight:700, marginBottom:1 }}>{s.label}</div>
+                  <div style={{
+                    fontSize:19, fontWeight:900, color:s.color,
+                    textShadow: s.label==='RANK'&&rank===1 ? '0 0 10px rgba(241,196,15,0.7)' : 'none',
+                  }}>{s.value}</div>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Tarih */}
+          <div style={{ textAlign:'center', color:'rgba(120,80,20,0.5)', fontSize:10, marginBottom:10, fontWeight:600 }}>
+            ✦ {dateStr} ✦
+          </div>
+
+          {/* Butonlar */}
+          <div style={{ display:'flex', gap:7, marginBottom:7 }}>
+            <button onClick={onScores} style={{
+              flex:1, padding:'9px 0', borderRadius:11, border:'none',
+              background:'linear-gradient(135deg,#2980b9,#3498db)',
+              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+              boxShadow:'0 3px 10px rgba(52,152,219,0.35)',
+            }}>🏆 High Scores</button>
+            <button onClick={handleShare} disabled={sharing} style={{
+              flex:1, padding:'9px 0', borderRadius:11, border:'none',
+              background:sharing?'rgba(230,126,34,0.5)':'linear-gradient(135deg,#f39c12,#e67e22)',
+              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+              boxShadow:'0 3px 10px rgba(230,126,34,0.35)',
+            }}>{sharing?'⏳ Wait...':'📤 Share'}</button>
+          </div>
+          <div style={{ display:'flex', gap:7, marginBottom:8 }}>
+            <button onClick={onMenu} style={{
+              flex:1, padding:'9px 0', borderRadius:11,
+              border:'2px solid #c8a96e', background:'transparent',
+              color:'#7a5c2e', fontWeight:800, fontSize:12, cursor:'pointer',
+            }}>← Menu</button>
+            <button onClick={onReplay} style={{
+              flex:1, padding:'9px 0', borderRadius:11, border:'none',
+              background:'linear-gradient(135deg,#27ae60,#2ecc71)',
+              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+              boxShadow:'0 3px 10px rgba(46,204,113,0.35)',
+            }}>▶ Play Again</button>
+          </div>
+
+          <div style={{ textAlign:'center', fontSize:9, color:'rgba(120,80,20,0.45)', fontStyle:'italic' }}>
+            Share your certificate to challenge friends ✨
+          </div>
         </div>
-      );
-    }
+      </div>
+    </div>
+  );
+}
 
     function App() {
       // ✅ FIX 2: scores state ÖNCE tanımlandı, scoresRef SONRA
