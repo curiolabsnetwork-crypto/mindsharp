@@ -318,20 +318,20 @@
             : (
               <div style={{ maxHeight: 340, overflowY: 'auto' }}>
                 {sortedScores.map((s, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '6px 10px', marginBottom: 4,
-                    background: i === 0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
-                    borderRadius: 8, fontSize: 12,
-                    border: i === 0 ? '1px solid rgba(255,200,0,0.4)' : '1px solid rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontWeight: 700, color: i===0?'#ffe066':'#fff', width: 22 }}>#{i+1}</span>
-                    <span style={{ color: '#fff', fontWeight: 600, flex: 1 }}>{s.user || 'Guest'}</span>
-                    <span style={{ color: '#ffe082', fontWeight: 800, width: 52, textAlign: 'right' }}>{s.score ? s.score.toLocaleString() : '-'}</span>
-                    <span style={{ color: '#ffe082', width: 42, textAlign: 'right' }}>{s.moves}mv</span>
-                    <span style={{ color: '#ffe082', width: 42, textAlign: 'right' }}>{formatTime(s.time)}</span>
-                    <span style={{ color: 'rgba(255,224,130,0.7)', width: 58, textAlign: 'right', fontSize: 11 }}>
-                      {formatDate(s.createdAt)}
-                    </span>
-                  </div>
+               <div key={i} style={{ display: 'flex', alignItems: 'center',
+  padding: '6px 8px', marginBottom: 4, gap: 4,
+  background: i === 0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
+  borderRadius: 8, fontSize: 11,
+  border: i === 0 ? '1px solid rgba(255,200,0,0.4)' : '1px solid rgba(255,255,255,0.05)' }}>
+  <span style={{ fontWeight: 700, color: i===0?'#ffe066':'#fff', minWidth: 36, flexShrink: 0 }}>#{i+1}</span>
+  <span style={{ color: '#fff', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.user || 'Guest'}</span>
+  <span style={{ color: '#ffe082', fontWeight: 800, minWidth: 44, textAlign: 'right', flexShrink: 0 }}>{s.score ? s.score.toLocaleString() : '-'}</span>
+  <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{s.moves}mv</span>
+  <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{formatTime(s.time)}</span>
+  <span style={{ color: 'rgba(255,224,130,0.7)', minWidth: 52, textAlign: 'right', flexShrink: 0, fontSize: 10 }}>
+    {formatDate(s.createdAt)}
+  </span>
+</div>
                 ))}
               </div>
             )
