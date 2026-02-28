@@ -57,7 +57,7 @@
       padding: 8px 12px;
       border-radius: 12px;
       text-align: center;
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 700;
       color: #ffffff;
       text-shadow: 0 0 12px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.8);
@@ -579,7 +579,7 @@
       useEffect(() => {
         if (screen !== 'game') return;
         setShowHint(true);
-        const t = setTimeout(() => setShowHint(false), 3000);
+        const t = setTimeout(() => setShowHint(false), 5000);
         return () => clearTimeout(t);
       }, [screen]);
 
