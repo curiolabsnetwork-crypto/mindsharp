@@ -777,9 +777,8 @@ function useSettings() {
     catch { return def; }
   };
   const [sfx,       setSfxRaw]       = React.useState(() => load('sfx', true));
-  const [music,     setMusicRaw]     = React.useState(() => load('music', true));
-  const [vibration, setVibrationRaw] = React.useState(() => load('vibration', true));
-
+  const [music,     setMusicRaw]     = React.useState(() => load('music', false));
+const [vibration, setVibrationRaw] = React.useState(() => load('vibration', false));
   const save = (key, val) => { try { localStorage.setItem('ms_' + key, JSON.stringify(val)); } catch {} };
 
   const setSfx       = v => { setSfxRaw(v);       save('sfx', v); };
@@ -1205,10 +1204,10 @@ const settings = useSettings();
         comboBonusRef.current = 0; comboRef.current = 0;
       }, []);
 
-      const handleTile = useCallback((id) => {
-        if (lockRef.current) return;
-        if (!running) setRunning(true);
-        play('flip');
+const handleTile = useCallback((id) => {
+  if (lockRef.current) return;
+  if (!running) setRunning(true);
+  if (settings.sfx) play('flip');
         setTiles(prev => prev.map(t => t.id === id ? { ...t, flipped: true } : t));
         setFlipped(prev => {
           const next = [...prev, id];
@@ -1224,8 +1223,12 @@ const settings = useSettings();
                   setCombo(newCombo);
                   let bonusPts = newCombo >= 3 ? 60 : (newCombo === 2 ? 25 : 0);
                   if (newCombo >= 3) play('combo3');
+                    if (settings.sfx) play('combo3');
                   else if (newCombo === 2) play('combo');
+                    if (settings.sfx) play('combo');
                   else play('match');
+                  if (settings.sfx) play('match');
+                  if (settings.vibration && navigator.vibrate) navigator.vibrate(40);
                   comboBonusRef.current += bonusPts;
                   setComboBonus(b => b + bonusPts);
                   setMatchAnim([a.id, b.id]);
@@ -1238,6 +1241,7 @@ const settings = useSettings();
                     setRunning(false);
                     setWon(true);
                     play('win');
+                    if (settings.sfx) play('win');
                     setMoves((mv) => {
                       setTime((tm) => {
                         const finalScore = calcScore({
@@ -1295,6 +1299,8 @@ const settings = useSettings();
                   return newTiles;
                 } else {
                   comboRef.current = 0; setCombo(0); play('fail');
+                  if (settings.sfx) play('fail');
+                  if (settings.vibration && navigator.vibrate) navigator.vibrate([30, 20, 30]);
                   setShake(next); setTimeout(() => setShake(null), 400);
                   const reset = cur.map(t => next.includes(t.id) ? { ...t, flipped: false } : t);
                   lockRef.current = false;
@@ -1306,7 +1312,7 @@ const settings = useSettings();
           }
           return next;
         });
-      }, [running, mode, play, user]);
+      }, [running, mode, play, user, settings.sfx]);
 
       const cfg    = GRID_CONFIGS[mode];
       const totalPairs = cfg ? cfg.pairs : 0;
