@@ -205,6 +205,7 @@ async function fetchScoresFromCloud(mode) {
     console.warn("Fetch failed:", e);
     return [];
   }
+  }
 async function fetchRankInCloud({ mode, score, limit = 300 }) {
   if (!db) return null;
 
