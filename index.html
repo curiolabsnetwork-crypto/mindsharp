@@ -566,8 +566,19 @@ function WinModal({
 
         <div style={{ fontSize: 46, marginBottom: 4 }}>🎉</div>
         <h2 style={{ color: '#7a3e00', fontFamily: 'Georgia,serif', margin: '0 0 2px', fontSize: 22 }}>You Win!</h2>
-        <p style={{ color: '#a07840', margin: '0 0 14px', fontSize: 13 }}>{mode} Board</p>
+        <p style={{ color: '#a07840', margin: '0 0 10px', fontSize: 13 }}>
+  {mode} Board • {GRID_CONFIGS[mode]?.difficulty || ""}
+</p>
 
+{/* Ranks */}
+<div style={{ display:'flex', justifyContent:'center', gap:10, marginBottom: 14, flexWrap:'wrap' }}>
+  <div style={{ background:'rgba(0,0,0,0.18)', border:'1px solid rgba(200,169,110,0.35)', padding:'6px 10px', borderRadius:999, fontSize:12, color:'#7a5c2e', fontWeight:800 }}>
+    Mode Rank: <span style={{ color:'#2b1a10' }}>#{rankMode ?? "-"}</span>
+  </div>
+  <div style={{ background:'rgba(0,0,0,0.18)', border:'1px solid rgba(200,169,110,0.35)', padding:'6px 10px', borderRadius:999, fontSize:12, color:'#7a5c2e', fontWeight:800 }}>
+    Overall Rank: <span style={{ color:'#2b1a10' }}>#{rankOverall ?? "-"}</span>
+  </div>
+</div>
         <div style={{ background: 'linear-gradient(135deg,#f39c12,#e67e22)', borderRadius: 14, padding: '12px 0', marginBottom: 14, boxShadow: '0 4px 16px rgba(230,126,34,0.4)' }}>
           <div style={{ color: '#fff', fontSize: 11, fontWeight: 800, letterSpacing: 1, opacity: 0.9 }}>FINAL SCORE</div>
           <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, lineHeight: 1.1 }}>{score.toLocaleString()}</div>
