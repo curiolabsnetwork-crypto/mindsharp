@@ -205,25 +205,6 @@ async function fetchScoresFromCloud(mode) {
     console.warn("Fetch failed:", e);
     return [];
   }
-  }
-async function fetchRankInCloud({ mode, score, limit = 300 }) {
-  if (!db) return null;
-
-  try {
-    let q = db.collection("scores").orderBy("score", "desc").limit(limit);
-    if (mode) q = q.where("mode", "==", mode);
-
-    const snap = await q.get();
-    const list = snap.docs.map(d => d.data());
-
-    const idx = list.findIndex(x => (x.score || 0) <= score);
-    if (idx === -1) return `>${limit}`;
-    return idx + 1;
-  } catch (e) {
-    console.warn("Rank fetch failed:", e);
-    return null;
-  }
-}
 }
     function useSound() {
   const ctx = useRef(null);
