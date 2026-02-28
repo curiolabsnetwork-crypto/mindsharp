@@ -771,7 +771,335 @@ function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, 
     </div>
   );
 }
+function useSettings() {
+  const load = (key, def) => {
+    try { const v = localStorage.getItem('ms_' + key); return v === null ? def : JSON.parse(v); }
+    catch { return def; }
+  };
+  const [sfx,       setSfxRaw]       = React.useState(() => load('sfx', true));
+  const [music,     setMusicRaw]     = React.useState(() => load('music', true));
+  const [vibration, setVibrationRaw] = React.useState(() => load('vibration', true));
 
+  const save = (key, val) => { try { localStorage.setItem('ms_' + key, JSON.stringify(val)); } catch {} };
+
+  const setSfx       = v => { setSfxRaw(v);       save('sfx', v); };
+  const setMusic     = v => { setMusicRaw(v);     save('music', v); };
+  const setVibration = v => { setVibrationRaw(v); save('vibration', v); };
+
+  return { sfx, setSfx, music, setMusic, vibration, setVibration };
+}
+
+
+// ── ADIM 1B: LegalModal ─────────────────────────────────────
+function LegalModal({ type, onClose }) {
+  const content = {
+    privacy: {
+      title: '🔒 Privacy Policy',
+      body: `Last updated: February 2026
+
+MindSharp ("we", "our", or "us") is operated by Mendebur Studios.
+
+DATA WE COLLECT
+• Username you enter (stored locally on your device)
+• Game scores and statistics (stored in Firebase Firestore)
+• No email, phone, or personal identity data is collected
+
+HOW WE USE DATA
+• To display leaderboards and track your progress
+• We do not sell or share your data with third parties
+
+THIRD-PARTY SERVICES
+• Firebase (Google) — score storage. Subject to Google's Privacy Policy.
+
+CHILDREN
+This app does not knowingly collect data from children under 13.
+
+CONTACT
+privacy@mendebur.com`
+    },
+    terms: {
+      title: '📋 Terms of Service',
+      body: `Last updated: February 2026
+
+By using MindSharp, you agree to these terms.
+
+USE OF THE APP
+• MindSharp is provided for personal, non-commercial use
+• You must not attempt to cheat, hack, or manipulate game scores
+• We reserve the right to remove scores that appear fraudulent
+
+INTELLECTUAL PROPERTY
+• All game content, design, and code © 2026 Mendebur Studios
+• You may not copy, modify, or redistribute without permission
+
+DISCLAIMER
+• The app is provided "as is" without warranty of any kind
+• We are not liable for any data loss or damages
+
+CHANGES
+We may update these terms at any time. Continued use means acceptance.
+
+CONTACT
+legal@mendebur.com`
+    },
+    about: {
+      title: '🎮 About MindSharp',
+      body: `MindSharp v1.0
+© 2026 Mendebur Studios
+
+MindSharp is a memory and focus training game designed to sharpen your short-term memory, pattern recognition, and cognitive speed — in just 1 minute a day.
+
+HOW TO PLAY
+• Flip tiles to find matching pairs (same number + same color)
+• Complete the board with minimum moves and maximum speed
+• Chain consecutive matches for combo bonuses
+
+DIFFICULTY LEVELS
+• Easy     — 32 tiles (8×4)
+• Medium   — 40 tiles (8×5)
+• Hard     — 56 tiles (8×7)
+• Very Hard — 80 tiles (10×8)
+
+SCORING
+Base score + combo bonuses − move penalty − time penalty
+
+DEVELOPED BY
+Mendebur Studios — Istanbul, Turkey
+
+"Train your mind — 1 minute a day." 🧠`
+    },
+    contact: {
+      title: '✉️ Contact Us',
+      body: `We'd love to hear from you!
+
+📧 General: hello@mendebur.com
+🐛 Bug reports: bugs@mendebur.com
+💡 Suggestions: feedback@mendebur.com
+
+🌐 Website: mendebur.com
+📱 Instagram: @mindsharpmobile
+
+Response time: 1-3 business days
+
+Mendebur Studios
+Istanbul, Turkey 🇹🇷`
+    },
+  };
+
+  const c = content[type];
+  if (!c) return null;
+
+  return (
+    <div style={{
+      position:'fixed', inset:0, zIndex:500,
+      background:'rgba(0,0,0,0.75)',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      padding:'16px',
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width:'100%', maxWidth:360,
+        background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
+        borderRadius:20,
+        border:'2px solid #c8a96e',
+        boxShadow:'0 20px 60px rgba(0,0,0,0.5)',
+        maxHeight:'80vh',
+        display:'flex', flexDirection:'column',
+        overflow:'hidden',
+      }}>
+        {/* Başlık */}
+        <div style={{
+          padding:'14px 18px',
+          borderBottom:'1px solid rgba(200,169,110,0.3)',
+          display:'flex', justifyContent:'space-between', alignItems:'center',
+          background:'rgba(200,169,110,0.15)',
+        }}>
+          <span style={{ fontWeight:900, fontSize:15, color:'#3d1a00' }}>{c.title}</span>
+          <button onClick={onClose} style={{
+            background:'none', border:'none', fontSize:20,
+            color:'#7a5c2e', cursor:'pointer', lineHeight:1,
+          }}>✕</button>
+        </div>
+        {/* İçerik */}
+        <div style={{ overflowY:'auto', padding:'16px 18px' }}>
+          <pre style={{
+            margin:0,
+            fontFamily:"'Segoe UI', sans-serif",
+            fontSize:12, lineHeight:1.7,
+            color:'#4a2a00',
+            whiteSpace:'pre-wrap',
+            wordBreak:'break-word',
+          }}>{c.body}</pre>
+        </div>
+        <div style={{ padding:'12px 18px', borderTop:'1px solid rgba(200,169,110,0.3)' }}>
+          <button onClick={onClose} style={{
+            width:'100%', padding:'10px',
+            borderRadius:12, border:'2px solid #c8a96e',
+            background:'transparent', color:'#7a5c2e',
+            fontWeight:800, fontSize:13, cursor:'pointer',
+          }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── ADIM 1C: SettingsModal ───────────────────────────────────
+function SettingsModal({ onClose, settings }) {
+  const [legalType, setLegalType] = React.useState(null);
+
+  // App Store / Play Store linkleri — kendi linklerini gir
+  const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
+  const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
+
+  const handleShare = async () => {
+    const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
+    if (navigator.share) {
+      try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
+    }
+    try { await navigator.clipboard.writeText(text); alert('Link copied! Share it with friends 🎉'); } catch {}
+  };
+
+  const Toggle = ({ value, onChange }) => (
+    <div onClick={() => onChange(!value)} style={{
+      width:44, height:24, borderRadius:12,
+      background: value ? 'linear-gradient(135deg,#27ae60,#2ecc71)' : 'rgba(0,0,0,0.2)',
+      position:'relative', cursor:'pointer',
+      transition:'background 0.25s',
+      border: value ? 'none' : '1px solid rgba(255,255,255,0.2)',
+      flexShrink:0,
+    }}>
+      <div style={{
+        position:'absolute',
+        top:2, left: value ? 22 : 2,
+        width:20, height:20, borderRadius:'50%',
+        background:'#fff',
+        boxShadow:'0 2px 4px rgba(0,0,0,0.3)',
+        transition:'left 0.25s',
+      }}/>
+    </div>
+  );
+
+  const Row = ({ icon, label, right }) => (
+    <div style={{
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      padding:'11px 14px',
+      borderBottom:'1px solid rgba(200,169,110,0.15)',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
+        <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
+      </div>
+      {right}
+    </div>
+  );
+
+  const LinkRow = ({ icon, label, onClick }) => (
+    <div onClick={onClick} style={{
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      padding:'11px 14px',
+      borderBottom:'1px solid rgba(200,169,110,0.15)',
+      cursor:'pointer',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
+        <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
+      </div>
+      <span style={{ color:'#c8a96e', fontSize:14 }}>›</span>
+    </div>
+  );
+
+  const SectionHeader = ({ label }) => (
+    <div style={{
+      padding:'8px 14px 4px',
+      fontSize:10, fontWeight:800,
+      color:'rgba(100,60,10,0.5)',
+      letterSpacing:1.5,
+      textTransform:'uppercase',
+    }}>{label}</div>
+  );
+
+  return (
+    <>
+      <div style={{
+        position:'fixed', inset:0, zIndex:400,
+        background:'rgba(0,0,0,0.72)',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        padding:'16px',
+      }} onClick={onClose}>
+        <div onClick={e => e.stopPropagation()} style={{
+          width:'100%', maxWidth:360,
+          background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
+          borderRadius:22,
+          border:'2px solid #c8a96e',
+          boxShadow:'0 20px 60px rgba(0,0,0,0.55)',
+          overflow:'hidden',
+          animation:'cardSlideUp 0.35s cubic-bezier(.22,1.2,.36,1) both',
+          maxHeight:'88vh',
+          display:'flex', flexDirection:'column',
+        }}>
+
+          {/* Header */}
+          <div style={{
+            padding:'14px 18px',
+            background:'linear-gradient(135deg, rgba(200,169,110,0.25), rgba(200,169,110,0.1))',
+            borderBottom:'1px solid rgba(200,169,110,0.3)',
+            display:'flex', justifyContent:'space-between', alignItems:'center',
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:20 }}>⚙️</span>
+              <span style={{ fontWeight:900, fontSize:17, color:'#3d1a00', fontFamily:'Georgia,serif' }}>Settings</span>
+            </div>
+            <button onClick={onClose} style={{
+              background:'rgba(0,0,0,0.1)', border:'none',
+              width:28, height:28, borderRadius:'50%',
+              color:'#7a5c2e', fontSize:14, cursor:'pointer',
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}>✕</button>
+          </div>
+
+          {/* Scrollable content */}
+          <div style={{ overflowY:'auto', flex:1 }}>
+
+            {/* SOUND */}
+            <SectionHeader label="Sound" />
+            <Row icon="🔊" label="Sound Effects"
+              right={<Toggle value={settings.sfx} onChange={settings.setSfx} />} />
+            <Row icon="🎵" label="Music"
+              right={<Toggle value={settings.music} onChange={settings.setMusic} />} />
+            <Row icon="📳" label="Vibration"
+              right={<Toggle value={settings.vibration} onChange={settings.setVibration} />} />
+
+            {/* SOCIAL */}
+            <SectionHeader label="Social" />
+            <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
+            <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />
+            <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />
+
+            {/* INFO */}
+            <SectionHeader label="Info" />
+            <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
+            <LinkRow icon="✉️" label="Contact Us"          onClick={() => setLegalType('contact')} />
+            <LinkRow icon="🔒" label="Privacy Policy"      onClick={() => setLegalType('privacy')} />
+            <LinkRow icon="📋" label="Terms of Service"    onClick={() => setLegalType('terms')} />
+
+            {/* Version */}
+            <div style={{
+              textAlign:'center', padding:'14px 0 10px',
+              fontSize:11, color:'rgba(100,60,10,0.4)', fontWeight:600,
+            }}>
+              MindSharp v1.0 · © 2026 Mendebur Studios
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {legalType && (
+        <LegalModal type={legalType} onClose={() => setLegalType(null)} />
+      )}
+    </>
+  );
+}
     function App() {
       // ✅ FIX 2: scores state ÖNCE tanımlandı, scoresRef SONRA
       const [screen, setScreen]     = useState('menu');
@@ -800,7 +1128,8 @@ function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, 
       const [scoreCategory, setScoreCategory] = useState('8x4');
       const [user, setUser]         = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
       const [tempUser, setTempUser] = useState('');
-
+const settings = useSettings();
+  const [showSettings, setShowSettings] = React.useState(false);
       const comboBonusRef = useRef(0);
       const comboRef      = useRef(0);
       const lockRef       = useRef(false);
@@ -1004,7 +1333,8 @@ function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, 
             @media (max-width: 420px) {
               .contentWrap { padding: 44px 18px 32px; }
             }
-            @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            @keyframes popIn { f
+            rom { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
             @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
             @keyframes matchPop { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
             @keyframes comboBanner { 0%{transform:scaleX(0);opacity:0} 20%{transform:scaleX(1);opacity:1} 80%{opacity:1} 100%{opacity:0} }
@@ -1023,11 +1353,20 @@ function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, 
             {/* MENU */}
             {screen === 'menu' && (
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <h1 style={{ margin: '0 0 6px', fontFamily: "'Georgia', serif", fontSize: 44, fontWeight: 900,
-                  background: 'linear-gradient(160deg, #fff9c4 0%, #ffe066 40%, #ffb300 70%, #ff8f00 100%)',
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))', textAlign: 'center' }}>MindSharp</h1>
-                <p style={{ color: '#fff', fontSize: 12, margin: '0 0 20px',
+                <div style={{ width:'100%', position:'relative', display:'flex', justifyContent:'center', alignItems:'center', marginBottom:6 }}>
+  <h1 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 44, fontWeight: 900,
+    background: 'linear-gradient(160deg, #fff9c4 0%, #ffe066 40%, #ffb300 70%, #ff8f00 100%)',
+    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))', textAlign: 'center' }}>MindSharp</h1>
+  <button onClick={() => setShowSettings(true)} style={{
+    position:'absolute', right:0,
+    background:'rgba(0,0,0,0.35)',
+    border:'1px solid rgba(255,255,255,0.2)',
+    borderRadius:10, width:36, height:36,
+    display:'flex', alignItems:'center', justifyContent:'center',
+    cursor:'pointer', fontSize:18,
+  }}>⚙️</button>
+</div>                <p style={{ color: '#fff', fontSize: 12, margin: '0 0 20px',
                   textShadow: '0 1px 6px rgba(0,0,0,0.9)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
                   background: 'rgba(0,0,0,0.35)', padding: '3px 14px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)' }}>
                   Memory and Focus Workout
@@ -1206,22 +1545,28 @@ function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, 
 
           {/* ✅ FIX 4: user prop artık WinModal'a geçiliyor */}
           {won && (
-            <WinModal
-              moves={moves}
-              time={time}
-              mode={mode}
-              score={score}
-              comboBonus={comboBonus}
-              rank={rank}
-              user={user}
-              onReplay={() => startGame(mode)}
-              onMenu={() => { setWon(false); setScreen('menu'); }}
-              onScores={() => { setWon(false); setScreen('scores'); }}
-            />
-          )}
-        </div>
-      );
-    }
+        <WinModal
+          moves={moves}
+          time={time}
+          mode={mode}
+          score={score}
+          comboBonus={comboBonus}
+          rank={rank}
+          user={user}
+          onReplay={() => startGame(mode)}
+          onMenu={() => { setWon(false); setScreen('menu'); }}
+          onScores={() => { setWon(false); setScreen('scores'); }}
+        />
+      )}
+      {showSettings && (
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          settings={settings}
+        />
+      )}
+    </div>
+  );
+}
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
