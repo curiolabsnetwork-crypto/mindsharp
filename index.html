@@ -46,7 +46,7 @@
     }
     /* Footer - CSS ile (React'e dokunmadan) */
 body::after{
-  content:"©2026 Mendebur Studios. All rights reserved.";
+  content:"© 2026 MindSharp is a Mendebur production. All rights reserved.";
   position: fixed;
   left: 0;
   right: 0;
@@ -66,8 +66,8 @@ body::after{
   padding: 8px 12px;
   border-radius: 12px;
   text-align: center;
-  font-size: 15px;!important;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
   color: rgba(255, 224, 130, 0.95);
   background: rgba(0, 0, 0, 0.38);
   border: 1px solid rgba(255, 224, 130, 0.18);
@@ -133,7 +133,8 @@ const GRID_CONFIGS = {
   '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'      },
   '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium'    },
   '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'      },
-  };
+  '10x8': { rows: 8, cols: 10, pairs: 40, maxNum: 10, label: '80 Tiles (10×8)', difficulty: 'Very Hard' },
+};
 
 const PREVIEW_TILES = [
   { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -566,19 +567,8 @@ function WinModal({
 
         <div style={{ fontSize: 46, marginBottom: 4 }}>🎉</div>
         <h2 style={{ color: '#7a3e00', fontFamily: 'Georgia,serif', margin: '0 0 2px', fontSize: 22 }}>You Win!</h2>
-        <p style={{ color: '#a07840', margin: '0 0 10px', fontSize: 13 }}>
-  {mode} Board • {GRID_CONFIGS[mode]?.difficulty || ""}
-</p>
+        <p style={{ color: '#a07840', margin: '0 0 14px', fontSize: 13 }}>{mode} Board</p>
 
-{/* Ranks */}
-<div style={{ display:'flex', justifyContent:'center', gap:10, marginBottom: 14, flexWrap:'wrap' }}>
-  <div style={{ background:'rgba(0,0,0,0.18)', border:'1px solid rgba(200,169,110,0.35)', padding:'6px 10px', borderRadius:999, fontSize:12, color:'#7a5c2e', fontWeight:800 }}>
-    Mode Rank: <span style={{ color:'#2b1a10' }}>#{rankMode ?? "-"}</span>
-  </div>
-  <div style={{ background:'rgba(0,0,0,0.18)', border:'1px solid rgba(200,169,110,0.35)', padding:'6px 10px', borderRadius:999, fontSize:12, color:'#7a5c2e', fontWeight:800 }}>
-    Overall Rank: <span style={{ color:'#2b1a10' }}>#{rankOverall ?? "-"}</span>
-  </div>
-</div>
         <div style={{ background: 'linear-gradient(135deg,#f39c12,#e67e22)', borderRadius: 14, padding: '12px 0', marginBottom: 14, boxShadow: '0 4px 16px rgba(230,126,34,0.4)' }}>
           <div style={{ color: '#fff', fontSize: 11, fontWeight: 800, letterSpacing: 1, opacity: 0.9 }}>FINAL SCORE</div>
           <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, lineHeight: 1.1 }}>{score.toLocaleString()}</div>
@@ -1026,7 +1016,9 @@ setTimeout(async () => {
         {/* GAME */}
         {screen === 'game' && (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-       
+           <div className={"ms-hint" + (showHint ? "" : " hide")}>
+  Find the pairs fast. Sharpen your mind.
+</div>
             {/* Header */}
             <div style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center',
               justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', borderRadius: 10 }}>
@@ -1074,16 +1066,10 @@ setTimeout(async () => {
             )}
 
             {/* Board */}
-            {/* Hint (3 seconds) — outside the board frame */}
-<div className={"ms-hint mid" + (showHint ? "" : " hide")}style={{ fontSize: 18 }}>
-    Match all pairs with minimum moves and maximum speed.
-</div>
-<div style={{ height: 10 }} />
             <div ref={boardRef} style={{ padding: '8px', ...boardBg, width: '100%', maxWidth: '100%',
   boxSizing: 'border-box', overflow: 'hidden',
   boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)', borderRadius: 12, border: '2px solid rgba(90,54,32,0.6)' }}>
-
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cfg.cols}, ${tileW}px)`, gap: `${GAP}px`, justifyContent: 'center' }}>
+  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cfg.cols}, ${tileW}px)`, gap: `${GAP}px`, justifyContent: 'center' }}>
                 {tiles.map(tile => (
                   <div key={tile.id} className={(shake && shake.includes(tile.id) ? 'shake-tile ' : '') + (matchAnim.includes(tile.id) ? 'match-tile' : '')}>
                     <Tile tile={tile} onClick={handleTile} size={tileW} />
