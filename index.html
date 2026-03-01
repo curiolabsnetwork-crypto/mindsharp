@@ -51,9 +51,10 @@
       pointer-events: none;
       user-select: none;
     }
+    /* BUG FIX #7: margin: 6 → 6px */
     .ms-hint {
       width: calc(100% - 24px);
-      margin: 0px 12px 6;
+      margin: 0px 12px 6px;
       padding: 8px 12px;
       border-radius: 12px;
       text-align: center;
@@ -108,9 +109,9 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'      },
-      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium'    },
-      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'      },
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'   },
+      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium' },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'   },
     };
     const PREVIEW_TILES = [
       { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -175,10 +176,27 @@
           .orderBy("score", "desc")
           .limit(50)
           .get();
-        return snap.docs.map(d => d.data());
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
       } catch (e) {
         console.warn("Fetch failed:", e);
         return [];
+      }
+    }
+
+    // BUG FIX #4: Firebase'den silme fonksiyonu eklendi
+    async function clearScoresFromCloud(mode) {
+      if (!db) return;
+      try {
+        const snap = await db
+          .collection("scores")
+          .where("mode", "==", mode)
+          .get();
+        const batch = db.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        console.log(`Cleared ${snap.docs.length} scores for mode ${mode}`);
+      } catch (e) {
+        console.warn("Clear failed:", e);
       }
     }
 
@@ -318,19 +336,20 @@
             : (
               <div style={{ maxHeight: 340, overflowY: 'auto' }}>
                 {sortedScores.map((s, i) => (
-               <div key={i} style={{ display: 'flex', alignItems: 'center',
-  padding: '6px 8px', marginBottom: 4, gap: 4,
-  background: i === 0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
-  borderRadius: 8, fontSize: 11,
-  border: i === 0 ? '1px solid rgba(255,200,0,0.4)' : '1px solid rgba(255,255,255,0.05)' }}>
-<span style={{ fontWeight: 700, color: i===0?'#ffe066':'#fff', minWidth: 52, flexShrink: 0 }}>#{i+1}</span>  <span style={{ color: '#fff', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.user || 'Guest'}</span>
-  <span style={{ color: '#ffe082', fontWeight: 800, minWidth: 44, textAlign: 'right', flexShrink: 0 }}>{s.score ? s.score.toLocaleString() : '-'}</span>
-  <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{s.moves}mv</span>
-  <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{formatTime(s.time)}</span>
-  <span style={{ color: 'rgba(255,224,130,0.7)', minWidth: 52, textAlign: 'right', flexShrink: 0, fontSize: 10 }}>
-    {formatDate(s.createdAt)}
-  </span>
-</div>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center',
+                    padding: '6px 8px', marginBottom: 4, gap: 4,
+                    background: i === 0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
+                    borderRadius: 8, fontSize: 11,
+                    border: i === 0 ? '1px solid rgba(255,200,0,0.4)' : '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontWeight: 700, color: i===0?'#ffe066':'#fff', minWidth: 52, flexShrink: 0 }}>#{i+1}</span>
+                    <span style={{ color: '#fff', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.user || 'Guest'}</span>
+                    <span style={{ color: '#ffe082', fontWeight: 800, minWidth: 44, textAlign: 'right', flexShrink: 0 }}>{s.score ? s.score.toLocaleString() : '-'}</span>
+                    <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{s.moves}mv</span>
+                    <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{formatTime(s.time)}</span>
+                    <span style={{ color: 'rgba(255,224,130,0.7)', minWidth: 52, textAlign: 'right', flexShrink: 0, fontSize: 10 }}>
+                      {formatDate(s.createdAt)}
+                    </span>
+                  </div>
                 ))}
               </div>
             )
@@ -346,454 +365,439 @@
       );
     }
 
-    // ✅ FIX 1: user prop eklendi WinModal'a
-// ============================================================
-// YENİ WinModal — Kodunuzdaki eski function WinModal() { }
-// bloğunu tamamen SİLİP bu kodla değiştirin.
-// Başka hiçbir şeye dokunmayın.
-// ============================================================
+    function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, onMenu, onScores }) {
+      const [sharing, setSharing] = React.useState(false);
+      const [confetti, setConfetti] = React.useState([]);
 
-function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, onMenu, onScores }) {
-  const [sharing, setSharing] = React.useState(false);
-  const [confetti, setConfetti] = React.useState([]);
+      React.useEffect(() => {
+        const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f','#1abc9c','#e67e22'];
+        const shapes = ['■','●','▲','★','◆'];
+        const pieces = Array.from({ length: 38 }, (_, i) => ({
+          id: i,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          left: Math.random() * 100,
+          delay: Math.random() * 2.5,
+          duration: 2.5 + Math.random() * 2,
+          size: 8 + Math.random() * 10,
+          rotate: Math.random() * 720,
+        }));
+        setConfetti(pieces);
+      }, []);
 
-  React.useEffect(() => {
-    const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f','#1abc9c','#e67e22'];
-    const shapes = ['■','●','▲','★','◆'];
-    const pieces = Array.from({ length: 38 }, (_, i) => ({
-      id: i,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      shape: shapes[Math.floor(Math.random() * shapes.length)],
-      left: Math.random() * 100,
-      delay: Math.random() * 2.5,
-      duration: 2.5 + Math.random() * 2,
-      size: 8 + Math.random() * 10,
-      rotate: Math.random() * 720,
-    }));
-    setConfetti(pieces);
-  }, []);
+      const getRankInfo = () => {
+        if (!rank) return { label: 'Well Played!', color: '#95a5a6', bg: 'rgba(149,165,166,0.15)' };
+        if (rank === 1) return { label: '👑 NEW RECORD!', color: '#f1c40f', bg: 'rgba(241,196,15,0.2)', glow: true };
+        if (rank <= 3) return { label: '🥈 TOP 3 — Amazing!', color: '#e67e22', bg: 'rgba(230,126,34,0.18)' };
+        if (rank <= 10) return { label: '⭐ Top 10 — Great Job!', color: '#27ae60', bg: 'rgba(39,174,96,0.15)' };
+        return { label: `Rank #${rank}`, color: '#7f8c8d', bg: 'rgba(127,140,141,0.12)' };
+      };
+      const rankInfo = getRankInfo();
 
-  const getRankInfo = () => {
-    if (!rank) return { label: 'Well Played!', color: '#95a5a6', bg: 'rgba(149,165,166,0.15)' };
-    if (rank === 1) return { label: '👑 NEW RECORD!', color: '#f1c40f', bg: 'rgba(241,196,15,0.2)', glow: true };
-    if (rank <= 3) return { label: '🥈 TOP 3 — Amazing!', color: '#e67e22', bg: 'rgba(230,126,34,0.18)' };
-    if (rank <= 10) return { label: '⭐ Top 10 — Great Job!', color: '#27ae60', bg: 'rgba(39,174,96,0.15)' };
-    return { label: `Rank #${rank}`, color: '#7f8c8d', bg: 'rgba(127,140,141,0.12)' };
-  };
-  const rankInfo = getRankInfo();
+      const today = new Date();
+      const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
 
-  const today = new Date();
-  const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+      const buildCertificate = async () => {
+        const W = 1080, H = 1920;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
 
-  const buildCertificate = async () => {
-    const W = 1080, H = 1920;
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d');
+        const bgImg = new Image();
+        bgImg.crossOrigin = 'anonymous';
+        bgImg.src = './wood_bg.png';
+        await new Promise(r => { bgImg.onload = r; bgImg.onerror = r; });
+        ctx.fillStyle = '#2b1a10';
+        ctx.fillRect(0, 0, W, H);
+        try {
+          const r = Math.max(W / bgImg.width, H / bgImg.height);
+          ctx.drawImage(bgImg, (W - bgImg.width*r)/2, (H - bgImg.height*r)/2, bgImg.width*r, bgImg.height*r);
+        } catch(e) {}
 
-    const bgImg = new Image();
-    bgImg.crossOrigin = 'anonymous';
-    bgImg.src = './wood_bg.png';
-    await new Promise(r => { bgImg.onload = r; bgImg.onerror = r; });
-    ctx.fillStyle = '#2b1a10';
-    ctx.fillRect(0, 0, W, H);
-    try {
-      const r = Math.max(W / bgImg.width, H / bgImg.height);
-      ctx.drawImage(bgImg, (W - bgImg.width*r)/2, (H - bgImg.height*r)/2, bgImg.width*r, bgImg.height*r);
-    } catch(e) {}
+        const vg = ctx.createRadialGradient(W/2, H*0.4, 50, W/2, H*0.4, H*0.7);
+        vg.addColorStop(0, 'rgba(0,0,0,0.15)');
+        vg.addColorStop(1, 'rgba(0,0,0,0.75)');
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
 
-    const vg = ctx.createRadialGradient(W/2, H*0.4, 50, W/2, H*0.4, H*0.7);
-    vg.addColorStop(0, 'rgba(0,0,0,0.15)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.75)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, W, H);
+        const cx = 60, cy = 180, cw = W-120, ch = H-380, cr = 48;
+        const rr = (x,y,w,h,r) => {
+          ctx.beginPath();
+          ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+          ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+        };
 
-    const cx = 60, cy = 180, cw = W-120, ch = H-380, cr = 48;
-    const rr = (x,y,w,h,r) => {
-      ctx.beginPath();
-      ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-      ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
-    };
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20;
+        rr(cx,cy,cw,ch,cr);
+        const cardGrad = ctx.createLinearGradient(cx, cy, cx, cy+ch);
+        cardGrad.addColorStop(0, '#fdf6e3');
+        cardGrad.addColorStop(0.5, '#fef9ed');
+        cardGrad.addColorStop(1, '#f5e6c8');
+        ctx.fillStyle = cardGrad; ctx.fill();
+        ctx.restore();
 
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20;
-    rr(cx,cy,cw,ch,cr);
-    const cardGrad = ctx.createLinearGradient(cx, cy, cx, cy+ch);
-    cardGrad.addColorStop(0, '#fdf6e3');
-    cardGrad.addColorStop(0.5, '#fef9ed');
-    cardGrad.addColorStop(1, '#f5e6c8');
-    ctx.fillStyle = cardGrad; ctx.fill();
-    ctx.restore();
+        rr(cx,cy,cw,ch,cr);
+        ctx.lineWidth = 10; ctx.strokeStyle = '#c8a96e'; ctx.stroke();
+        rr(cx+14,cy+14,cw-28,ch-28,cr-8);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(200,169,110,0.5)'; ctx.stroke();
 
-    rr(cx,cy,cw,ch,cr);
-    ctx.lineWidth = 10; ctx.strokeStyle = '#c8a96e'; ctx.stroke();
-    rr(cx+14,cy+14,cw-28,ch-28,cr-8);
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(200,169,110,0.5)'; ctx.stroke();
+        const corners = [[cx+40,cy+40],[cx+cw-40,cy+40],[cx+40,cy+ch-40],[cx+cw-40,cy+ch-40]];
+        corners.forEach(([x,y]) => {
+          ctx.save();
+          ctx.fillStyle = '#c8a96e'; ctx.font = 'bold 52px serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('✦', x, y); ctx.restore();
+        });
 
-    const corners = [[cx+40,cy+40],[cx+cw-40,cy+40],[cx+40,cy+ch-40],[cx+cw-40,cy+ch-40]];
-    corners.forEach(([x,y]) => {
-      ctx.save();
-      ctx.fillStyle = '#c8a96e'; ctx.font = 'bold 52px serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('✦', x, y); ctx.restore();
-    });
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.font = '900 96px Georgia, serif';
+        const titleGrad = ctx.createLinearGradient(W/2-200, 0, W/2+200, 0);
+        titleGrad.addColorStop(0,'#8B4513'); titleGrad.addColorStop(0.5,'#c8860a'); titleGrad.addColorStop(1,'#8B4513');
+        ctx.fillStyle = titleGrad;
+        ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=8;
+        ctx.fillText('MindSharp', W/2, cy+130);
+        ctx.restore();
 
-    ctx.save();
-    ctx.textAlign='center';
-    ctx.font = '900 96px Georgia, serif';
-    const titleGrad = ctx.createLinearGradient(W/2-200, 0, W/2+200, 0);
-    titleGrad.addColorStop(0,'#8B4513'); titleGrad.addColorStop(0.5,'#c8860a'); titleGrad.addColorStop(1,'#8B4513');
-    ctx.fillStyle = titleGrad;
-    ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=8;
-    ctx.fillText('MindSharp', W/2, cy+130);
-    ctx.restore();
+        const bx=cx+80, by=cy+178, bw=cw-160, bh=68, br=12;
+        rr(bx,by,bw,bh,br);
+        const bannerG=ctx.createLinearGradient(bx,by,bx+bw,by);
+        bannerG.addColorStop(0,'#b8860b'); bannerG.addColorStop(0.5,'#f0c040'); bannerG.addColorStop(1,'#b8860b');
+        ctx.fillStyle=bannerG; ctx.fill();
+        ctx.save();
+        ctx.textAlign='center'; ctx.font='800 32px Segoe UI, Arial';
+        ctx.fillStyle='#5a2d00';
+        ctx.fillText('A C H I E V E M E N T', W/2, by+44);
+        ctx.restore();
 
-    const bx=cx+80, by=cy+178, bw=cw-160, bh=68, br=12;
-    rr(bx,by,bw,bh,br);
-    const bannerG=ctx.createLinearGradient(bx,by,bx+bw,by);
-    bannerG.addColorStop(0,'#b8860b'); bannerG.addColorStop(0.5,'#f0c040'); bannerG.addColorStop(1,'#b8860b');
-    ctx.fillStyle=bannerG; ctx.fill();
-    ctx.save();
-    ctx.textAlign='center'; ctx.font='800 32px Segoe UI, Arial';
-    ctx.fillStyle='#5a2d00';
-    ctx.fillText('A C H I E V E M E N T', W/2, by+44);
-    ctx.restore();
-
-    if (rank) {
-      const rankColor = rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d';
-      const rankLabel = rank===1?'NEW RECORD!':rank<=3?'TOP 3 — Amazing!':rank<=10?`Top 10!`:`Rank #${rank}`;
-      ctx.save();
-      ctx.textAlign='center'; ctx.font='900 36px Segoe UI';
-      ctx.fillStyle=rankColor;
-      ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=6;
-      ctx.fillText(rankLabel, W/2, cy+298);
-      ctx.restore();
-    }
-
-    ctx.save();
-    ctx.textAlign='center';
-    ctx.font='700 36px Segoe UI, Arial'; ctx.fillStyle='rgba(100,60,10,0.8)';
-    ctx.fillText('Congratulations!', W/2, cy+368);
-    ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle='#3d1a00';
-    ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=8;
-    ctx.fillText((user||'Guest').trim(), W/2, cy+458);
-    ctx.restore();
-
-    ctx.save();
-    ctx.strokeStyle='rgba(180,140,80,0.4)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(cx+100,cy+492); ctx.lineTo(cx+cw-100,cy+492); ctx.stroke();
-    ctx.restore();
-
-    const spx=cx+70, spy=cy+524, spw=cw-140, sph=240, spr=28;
-    rr(spx,spy,spw,sph,spr);
-    ctx.save();
-    ctx.shadowColor='rgba(200,120,0,0.4)'; ctx.shadowBlur=28; ctx.shadowOffsetY=10;
-    const scoreG=ctx.createLinearGradient(spx,spy,spx+spw,spy+sph);
-    scoreG.addColorStop(0,'#e67e22'); scoreG.addColorStop(1,'#c0392b');
-    ctx.fillStyle=scoreG; ctx.fill();
-    ctx.restore();
-    rr(spx,spy,spw,sph,spr);
-    ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.stroke();
-    ctx.save();
-    ctx.textAlign='center';
-    ctx.font='800 28px Segoe UI'; ctx.fillStyle='rgba(255,255,255,0.85)';
-    ctx.fillText('S C O R E', W/2, spy+60);
-    ctx.font='900 148px Segoe UI, Arial'; ctx.fillStyle='#fff';
-    ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=12;
-    ctx.fillText(score.toLocaleString(), W/2, spy+190);
-    ctx.restore();
-    if (comboBonus>0) {
-      ctx.save();
-      ctx.textAlign='center'; ctx.font='700 30px Segoe UI'; ctx.fillStyle='rgba(255,255,200,0.9)';
-      ctx.fillText(`🔥 +${comboBonus} Combo Bonus`, W/2, spy+228);
-      ctx.restore();
-    }
-
-    const statsY=cy+820;
-    const cols3=[
-      { label:'MOVES', value:moves, color:'#e74c3c' },
-      { label:'TIME',  value:formatTime(time), color:'#3498db' },
-      { label:'RANK',  value:rank?`#${rank}`:'-', color:rank===1?'#f1c40f':rank<=3?'#e67e22':'#27ae60' },
-    ];
-    const colW=(cw-140)/3;
-    cols3.forEach((col,i) => {
-      const colX=cx+70+i*(colW)+colW/2;
-      if(i>0){ ctx.save(); ctx.strokeStyle='rgba(180,140,80,0.35)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx+70+i*colW,statsY-30); ctx.lineTo(cx+70+i*colW,statsY+140); ctx.stroke(); ctx.restore(); }
-      ctx.save();
-      ctx.textAlign='center';
-      ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.6)';
-      ctx.fillText(col.label, colX, statsY);
-      ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle=col.color;
-      ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=6;
-      ctx.fillText(col.value, colX, statsY+90);
-      ctx.restore();
-    });
-
-    ctx.save();
-    ctx.strokeStyle='rgba(180,140,80,0.3)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(cx+100,statsY+160); ctx.lineTo(cx+cw-100,statsY+160); ctx.stroke();
-    ctx.textAlign='center'; ctx.font='600 28px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.55)';
-    ctx.fillText(`✦  ${dateStr}  ✦`, W/2, statsY+210);
-    ctx.restore();
-
-    ctx.save();
-    ctx.textAlign='center'; ctx.font='italic 700 28px Georgia, serif';
-    ctx.fillStyle='rgba(100,60,10,0.65)';
-    ctx.fillText('"Train your mind — 1 minute a day."', W/2, statsY+278);
-    ctx.restore();
-
-    ctx.save();
-    ctx.textAlign='center'; ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.5)';
-    ctx.fillText('mindsharpgame.netlify.app', W/2, H-100);
-    ctx.restore();
-
-    const confColors=['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
-    for(let i=0;i<60;i++){
-      ctx.save(); ctx.fillStyle=confColors[i%confColors.length]; ctx.globalAlpha=0.65;
-      ctx.fillRect(Math.random()*W, cy+Math.random()*160, 8+Math.random()*10, 4+Math.random()*6);
-      ctx.restore();
-    }
-
-    return canvas.toDataURL('image/png');
-  };
-
-  const handleShare = async () => {
-    try {
-      setSharing(true);
-      const dataUrl = await buildCertificate();
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], 'mindsharp-certificate.png', { type:'image/png' });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files:[file] })) {
-        await navigator.share({ title:'MindSharp Certificate', text:`I scored ${score.toLocaleString()} on MindSharp! 🧠`, files:[file] });
-        return;
-      }
-      const a = document.createElement('a');
-      a.href = dataUrl; a.download = 'mindsharp-certificate.png';
-      document.body.appendChild(a); a.click(); a.remove();
-    } catch(e) { console.warn(e); }
-    finally { setSharing(false); }
-  };
-
-  const diffLabel = GRID_CONFIGS[mode]?.difficulty || mode;
-
-  return (
-    <div style={{
-      position:'fixed', inset:0, zIndex:200,
-      background:'rgba(0,0,0,0.72)',
-      display:'flex', alignItems:'center', justifyContent:'center',
-      overflowY:'auto', padding:'12px 0',
-    }}>
-      <style>{`
-        @keyframes confettiFall {
-          0%   { transform: translateY(-20px) rotate(0deg); opacity:1; }
-          100% { transform: translateY(380px) rotate(var(--rot)); opacity:0; }
+        if (rank) {
+          const rankColor = rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d';
+          const rankLabel = rank===1?'NEW RECORD!':rank<=3?'TOP 3 — Amazing!':rank<=10?`Top 10!`:`Rank #${rank}`;
+          ctx.save();
+          ctx.textAlign='center'; ctx.font='900 36px Segoe UI';
+          ctx.fillStyle=rankColor;
+          ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=6;
+          ctx.fillText(rankLabel, W/2, cy+298);
+          ctx.restore();
         }
-        @keyframes cardSlideUp {
-          from { transform: translateY(40px) scale(0.94); opacity:0; }
-          to   { transform: translateY(0) scale(1); opacity:1; }
+
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.font='700 36px Segoe UI, Arial'; ctx.fillStyle='rgba(100,60,10,0.8)';
+        ctx.fillText('Congratulations!', W/2, cy+368);
+        ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle='#3d1a00';
+        ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=8;
+        ctx.fillText((user||'Guest').trim(), W/2, cy+458);
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle='rgba(180,140,80,0.4)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx+100,cy+492); ctx.lineTo(cx+cw-100,cy+492); ctx.stroke();
+        ctx.restore();
+
+        const spx=cx+70, spy=cy+524, spw=cw-140, sph=240, spr=28;
+        rr(spx,spy,spw,sph,spr);
+        ctx.save();
+        ctx.shadowColor='rgba(200,120,0,0.4)'; ctx.shadowBlur=28; ctx.shadowOffsetY=10;
+        const scoreG=ctx.createLinearGradient(spx,spy,spx+spw,spy+sph);
+        scoreG.addColorStop(0,'#e67e22'); scoreG.addColorStop(1,'#c0392b');
+        ctx.fillStyle=scoreG; ctx.fill();
+        ctx.restore();
+        rr(spx,spy,spw,sph,spr);
+        ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.stroke();
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.font='800 28px Segoe UI'; ctx.fillStyle='rgba(255,255,255,0.85)';
+        ctx.fillText('S C O R E', W/2, spy+60);
+        ctx.font='900 148px Segoe UI, Arial'; ctx.fillStyle='#fff';
+        ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=12;
+        ctx.fillText(score.toLocaleString(), W/2, spy+190);
+        ctx.restore();
+        if (comboBonus>0) {
+          ctx.save();
+          ctx.textAlign='center'; ctx.font='700 30px Segoe UI'; ctx.fillStyle='rgba(255,255,200,0.9)';
+          ctx.fillText(`🔥 +${comboBonus} Combo Bonus`, W/2, spy+228);
+          ctx.restore();
         }
-        @keyframes scorePop {
-          0%   { transform: scale(0.6); opacity:0; }
-          70%  { transform: scale(1.08); }
-          100% { transform: scale(1); opacity:1; }
+
+        const statsY=cy+820;
+        const cols3=[
+          { label:'MOVES', value:moves, color:'#e74c3c' },
+          { label:'TIME',  value:formatTime(time), color:'#3498db' },
+          { label:'RANK',  value:rank?`#${rank}`:'-', color:rank===1?'#f1c40f':rank<=3?'#e67e22':'#27ae60' },
+        ];
+        const colW=(cw-140)/3;
+        cols3.forEach((col,i) => {
+          const colX=cx+70+i*(colW)+colW/2;
+          if(i>0){ ctx.save(); ctx.strokeStyle='rgba(180,140,80,0.35)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx+70+i*colW,statsY-30); ctx.lineTo(cx+70+i*colW,statsY+140); ctx.stroke(); ctx.restore(); }
+          ctx.save();
+          ctx.textAlign='center';
+          ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.6)';
+          ctx.fillText(col.label, colX, statsY);
+          ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle=col.color;
+          ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=6;
+          ctx.fillText(col.value, colX, statsY+90);
+          ctx.restore();
+        });
+
+        ctx.save();
+        ctx.strokeStyle='rgba(180,140,80,0.3)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx+100,statsY+160); ctx.lineTo(cx+cw-100,statsY+160); ctx.stroke();
+        ctx.textAlign='center'; ctx.font='600 28px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.55)';
+        ctx.fillText(`✦  ${dateStr}  ✦`, W/2, statsY+210);
+        ctx.restore();
+
+        ctx.save();
+        ctx.textAlign='center'; ctx.font='italic 700 28px Georgia, serif';
+        ctx.fillStyle='rgba(100,60,10,0.65)';
+        ctx.fillText('"Train your mind — 1 minute a day."', W/2, statsY+278);
+        ctx.restore();
+
+        ctx.save();
+        ctx.textAlign='center'; ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.5)';
+        ctx.fillText('mindsharpgame.netlify.app', W/2, H-100);
+        ctx.restore();
+
+        const confColors=['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
+        for(let i=0;i<60;i++){
+          ctx.save(); ctx.fillStyle=confColors[i%confColors.length]; ctx.globalAlpha=0.65;
+          ctx.fillRect(Math.random()*W, cy+Math.random()*160, 8+Math.random()*10, 4+Math.random()*6);
+          ctx.restore();
         }
-        @keyframes rankGlow {
-          0%,100% { box-shadow: 0 0 8px currentColor; }
-          50%     { box-shadow: 0 0 22px currentColor, 0 0 40px rgba(241,196,15,0.4); }
-        }
-        @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-      `}</style>
 
-      {confetti.map(p => (
-        <div key={p.id} style={{
-          position:'fixed',
-          left:`${p.left}%`, top:'-10px',
-          color:p.color, fontSize:p.size,
-          animation:`confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
-          '--rot':`${p.rotate}deg`,
-          pointerEvents:'none', zIndex:300, userSelect:'none',
-        }}>{p.shape}</div>
-      ))}
+        return canvas.toDataURL('image/png');
+      };
 
-      <div style={{
-        position:'relative',
-        width:'92%', maxWidth:360,
-        background:'linear-gradient(160deg, #fdf8ec 0%, #fef5da 50%, #f5e6c3 100%)',
-        borderRadius:24,
-        border:'3px solid #c8a96e',
-        boxShadow:'0 0 0 6px rgba(200,169,110,0.2), 0 24px 64px rgba(0,0,0,0.55)',
-        animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
-        overflow:'hidden',
-      }}>
-        <div style={{ position:'absolute', inset:8, borderRadius:18, border:'1.5px solid rgba(200,169,110,0.35)', pointerEvents:'none', zIndex:1 }}/>
+      const handleShare = async () => {
+        try {
+          setSharing(true);
+          const dataUrl = await buildCertificate();
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          const file = new File([blob], 'mindsharp-certificate.png', { type:'image/png' });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files:[file] })) {
+            await navigator.share({ title:'MindSharp Certificate', text:`I scored ${score.toLocaleString()} on MindSharp! 🧠`, files:[file] });
+            return;
+          }
+          const a = document.createElement('a');
+          a.href = dataUrl; a.download = 'mindsharp-certificate.png';
+          document.body.appendChild(a); a.click(); a.remove();
+        } catch(e) { console.warn(e); }
+        finally { setSharing(false); }
+      };
 
-        {[
-          { top:14, left:14 }, { top:14, right:14 },
-          { bottom:14, left:14 }, { bottom:14, right:14 }
-        ].map((pos,i) => (
-          <div key={i} style={{ position:'absolute', ...pos, color:'#c8a96e', fontSize:18, pointerEvents:'none', zIndex:2 }}>✦</div>
-        ))}
+      const diffLabel = GRID_CONFIGS[mode]?.difficulty || mode;
 
-        <div style={{ padding:'20px 18px 16px', position:'relative', zIndex:3 }}>
+      return (
+        <div style={{
+          position:'fixed', inset:0, zIndex:200,
+          background:'rgba(0,0,0,0.72)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          overflowY:'auto', padding:'12px 0',
+        }}>
+          <style>{`
+            @keyframes confettiFall {
+              0%   { transform: translateY(-20px) rotate(0deg); opacity:1; }
+              100% { transform: translateY(380px) rotate(var(--rot)); opacity:0; }
+            }
+            @keyframes cardSlideUp {
+              from { transform: translateY(40px) scale(0.94); opacity:0; }
+              to   { transform: translateY(0) scale(1); opacity:1; }
+            }
+            @keyframes scorePop {
+              0%   { transform: scale(0.6); opacity:0; }
+              70%  { transform: scale(1.08); }
+              100% { transform: scale(1); opacity:1; }
+            }
+            @keyframes rankGlow {
+              0%,100% { box-shadow: 0 0 8px currentColor; }
+              50%     { box-shadow: 0 0 22px currentColor, 0 0 40px rgba(241,196,15,0.4); }
+            }
+            @keyframes shimmer {
+              0%   { background-position: -200% center; }
+              100% { background-position: 200% center; }
+            }
+          `}</style>
 
-          {/* Header */}
-          <div style={{ textAlign:'center', marginBottom:8 }}>
-            <div style={{ fontSize:34, marginBottom:2 }}>🎉</div>
-            <h2 style={{
-              margin:'0 0 4px', fontFamily:'Georgia, serif', fontSize:28, fontWeight:900,
-              background:'linear-gradient(135deg, #7a3e00 0%, #c8860a 50%, #7a3e00 100%)',
-              backgroundSize:'200% auto',
-              WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-              animation:'shimmer 3s linear infinite',
-            }}>MindSharp</h2>
-            <div style={{
-              display:'inline-block',
-              background:'linear-gradient(90deg, #b8860b, #f0c040, #b8860b)',
-              borderRadius:20, padding:'2px 14px',
-            }}>
-              <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>A C H I E V E M E N T</span>
-            </div>
-          </div>
+          {confetti.map(p => (
+            <div key={p.id} style={{
+              position:'fixed',
+              left:`${p.left}%`, top:'-10px',
+              color:p.color, fontSize:p.size,
+              animation:`confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
+              '--rot':`${p.rotate}deg`,
+              pointerEvents:'none', zIndex:300, userSelect:'none',
+            }}>{p.shape}</div>
+          ))}
 
-          {/* Rank badge */}
-          {rank && (
-            <div style={{
-              textAlign:'center', marginBottom:8,
-              background:rankInfo.bg,
-              border:`1.5px solid ${rankInfo.color}`,
-              borderRadius:12, padding:'5px 12px',
-              animation: rank===1 ? 'rankGlow 1.8s ease infinite' : 'none',
-            }}>
-              <span style={{ color:rankInfo.color, fontWeight:900, fontSize:13 }}>{rankInfo.label}</span>
-            </div>
-          )}
-
-          {/* Congrats + İsim */}
-          <div style={{ textAlign:'center', marginBottom:10 }}>
-            <div style={{ color:'rgba(100,60,10,0.65)', fontSize:11, fontWeight:700 }}>Congratulations!</div>
-            <div style={{ color:'#3d1a00', fontWeight:900, fontSize:19, fontFamily:'Georgia, serif' }}>
-              {(user||'Guest').trim()}
-            </div>
-            <div style={{ color:'rgba(120,80,20,0.55)', fontSize:10, marginTop:1 }}>{diffLabel} Board</div>
-          </div>
-
-          {/* Skor kutusu */}
           <div style={{
-            background:'linear-gradient(135deg, #e67e22, #c0392b)',
-            borderRadius:14, padding:'10px 0 8px',
-            textAlign:'center',
-            boxShadow:'0 6px 20px rgba(200,80,20,0.38)',
-            marginBottom:10,
-            animation:'scorePop 0.5s 0.2s cubic-bezier(.22,1.2,.36,1) both',
+            position:'relative',
+            width:'92%', maxWidth:360,
+            background:'linear-gradient(160deg, #fdf8ec 0%, #fef5da 50%, #f5e6c3 100%)',
+            borderRadius:24,
+            border:'3px solid #c8a96e',
+            boxShadow:'0 0 0 6px rgba(200,169,110,0.2), 0 24px 64px rgba(0,0,0,0.55)',
+            animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
+            overflow:'hidden',
           }}>
-            <div style={{ color:'rgba(255,255,255,0.85)', fontSize:9, fontWeight:800, letterSpacing:2 }}>S C O R E</div>
-            <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.05, textShadow:'0 2px 8px rgba(0,0,0,0.25)' }}>
-              {score.toLocaleString()}
-            </div>
-            {comboBonus>0 && (
-              <div style={{ color:'rgba(255,255,200,0.9)', fontSize:10, marginTop:2, fontWeight:700 }}>
-                🔥 +{comboBonus} Combo Bonus
-              </div>
-            )}
-          </div>
+            <div style={{ position:'absolute', inset:8, borderRadius:18, border:'1.5px solid rgba(200,169,110,0.35)', pointerEvents:'none', zIndex:1 }}/>
 
-          {/* Stats 3 kolon */}
-          <div style={{
-            display:'flex', justifyContent:'center',
-            background:'rgba(200,169,110,0.12)',
-            borderRadius:12, padding:'8px 0',
-            marginBottom:10,
-            border:'1px solid rgba(200,169,110,0.25)',
-          }}>
             {[
-              { label:'MOVES', value:moves, color:'#e74c3c' },
-              { label:'TIME',  value:formatTime(time), color:'#2980b9' },
-              { label:'RANK',  value:rank?`#${rank}`:'-',
-                color:rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d' },
-            ].map((s,i) => (
-              <React.Fragment key={s.label}>
-                {i>0 && <div style={{ width:1, background:'rgba(200,169,110,0.4)', margin:'0 4px' }}/>}
-                <div style={{ flex:1, textAlign:'center' }}>
-                  <div style={{ fontSize:9, color:'rgba(100,60,10,0.55)', fontWeight:700, marginBottom:1 }}>{s.label}</div>
-                  <div style={{
-                    fontSize:19, fontWeight:900, color:s.color,
-                    textShadow: s.label==='RANK'&&rank===1 ? '0 0 10px rgba(241,196,15,0.7)' : 'none',
-                  }}>{s.value}</div>
-                </div>
-              </React.Fragment>
+              { top:14, left:14 }, { top:14, right:14 },
+              { bottom:14, left:14 }, { bottom:14, right:14 }
+            ].map((pos,i) => (
+              <div key={i} style={{ position:'absolute', ...pos, color:'#c8a96e', fontSize:18, pointerEvents:'none', zIndex:2 }}>✦</div>
             ))}
-          </div>
 
-          {/* Tarih */}
-          <div style={{ textAlign:'center', color:'rgba(120,80,20,0.5)', fontSize:10, marginBottom:10, fontWeight:600 }}>
-            ✦ {dateStr} ✦
-          </div>
+            <div style={{ padding:'20px 18px 16px', position:'relative', zIndex:3 }}>
+              <div style={{ textAlign:'center', marginBottom:8 }}>
+                <div style={{ fontSize:34, marginBottom:2 }}>🎉</div>
+                <h2 style={{
+                  margin:'0 0 4px', fontFamily:'Georgia, serif', fontSize:28, fontWeight:900,
+                  background:'linear-gradient(135deg, #7a3e00 0%, #c8860a 50%, #7a3e00 100%)',
+                  backgroundSize:'200% auto',
+                  WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+                  animation:'shimmer 3s linear infinite',
+                }}>MindSharp</h2>
+                <div style={{
+                  display:'inline-block',
+                  background:'linear-gradient(90deg, #b8860b, #f0c040, #b8860b)',
+                  borderRadius:20, padding:'2px 14px',
+                }}>
+                  <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>A C H I E V E M E N T</span>
+                </div>
+              </div>
 
-          {/* Butonlar */}
-          <div style={{ display:'flex', gap:7, marginBottom:7 }}>
-            <button onClick={onScores} style={{
-              flex:1, padding:'9px 0', borderRadius:11, border:'none',
-              background:'linear-gradient(135deg,#2980b9,#3498db)',
-              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
-              boxShadow:'0 3px 10px rgba(52,152,219,0.35)',
-            }}>🏆 High Scores</button>
-            <button onClick={handleShare} disabled={sharing} style={{
-              flex:1, padding:'9px 0', borderRadius:11, border:'none',
-              background:sharing?'rgba(230,126,34,0.5)':'linear-gradient(135deg,#f39c12,#e67e22)',
-              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
-              boxShadow:'0 3px 10px rgba(230,126,34,0.35)',
-            }}>{sharing?'⏳ Wait...':'📤 Share'}</button>
-          </div>
-          <div style={{ display:'flex', gap:7, marginBottom:8 }}>
-            <button onClick={onMenu} style={{
-              flex:1, padding:'9px 0', borderRadius:11,
-              border:'2px solid #c8a96e', background:'transparent',
-              color:'#7a5c2e', fontWeight:800, fontSize:12, cursor:'pointer',
-            }}>← Menu</button>
-            <button onClick={onReplay} style={{
-              flex:1, padding:'9px 0', borderRadius:11, border:'none',
-              background:'linear-gradient(135deg,#27ae60,#2ecc71)',
-              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
-              boxShadow:'0 3px 10px rgba(46,204,113,0.35)',
-            }}>▶ Play Again</button>
-          </div>
+              {rank && (
+                <div style={{
+                  textAlign:'center', marginBottom:8,
+                  background:rankInfo.bg,
+                  border:`1.5px solid ${rankInfo.color}`,
+                  borderRadius:12, padding:'5px 12px',
+                  animation: rank===1 ? 'rankGlow 1.8s ease infinite' : 'none',
+                }}>
+                  <span style={{ color:rankInfo.color, fontWeight:900, fontSize:13 }}>{rankInfo.label}</span>
+                </div>
+              )}
 
-          <div style={{ textAlign:'center', fontSize:9, color:'rgba(120,80,20,0.45)', fontStyle:'italic' }}>
-            Share your certificate to challenge friends ✨
+              <div style={{ textAlign:'center', marginBottom:10 }}>
+                <div style={{ color:'rgba(100,60,10,0.65)', fontSize:11, fontWeight:700 }}>Congratulations!</div>
+                <div style={{ color:'#3d1a00', fontWeight:900, fontSize:19, fontFamily:'Georgia, serif' }}>
+                  {(user||'Guest').trim()}
+                </div>
+                <div style={{ color:'rgba(120,80,20,0.55)', fontSize:10, marginTop:1 }}>{diffLabel} Board</div>
+              </div>
+
+              <div style={{
+                background:'linear-gradient(135deg, #e67e22, #c0392b)',
+                borderRadius:14, padding:'10px 0 8px',
+                textAlign:'center',
+                boxShadow:'0 6px 20px rgba(200,80,20,0.38)',
+                marginBottom:10,
+                animation:'scorePop 0.5s 0.2s cubic-bezier(.22,1.2,.36,1) both',
+              }}>
+                <div style={{ color:'rgba(255,255,255,0.85)', fontSize:9, fontWeight:800, letterSpacing:2 }}>S C O R E</div>
+                <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.05, textShadow:'0 2px 8px rgba(0,0,0,0.25)' }}>
+                  {score.toLocaleString()}
+                </div>
+                {comboBonus>0 && (
+                  <div style={{ color:'rgba(255,255,200,0.9)', fontSize:10, marginTop:2, fontWeight:700 }}>
+                    🔥 +{comboBonus} Combo Bonus
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                display:'flex', justifyContent:'center',
+                background:'rgba(200,169,110,0.12)',
+                borderRadius:12, padding:'8px 0',
+                marginBottom:10,
+                border:'1px solid rgba(200,169,110,0.25)',
+              }}>
+                {[
+                  { label:'MOVES', value:moves, color:'#e74c3c' },
+                  { label:'TIME',  value:formatTime(time), color:'#2980b9' },
+                  { label:'RANK',  value:rank?`#${rank}`:'-',
+                    color:rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d' },
+                ].map((s,i) => (
+                  <React.Fragment key={s.label}>
+                    {i>0 && <div style={{ width:1, background:'rgba(200,169,110,0.4)', margin:'0 4px' }}/>}
+                    <div style={{ flex:1, textAlign:'center' }}>
+                      <div style={{ fontSize:9, color:'rgba(100,60,10,0.55)', fontWeight:700, marginBottom:1 }}>{s.label}</div>
+                      <div style={{
+                        fontSize:19, fontWeight:900, color:s.color,
+                        textShadow: s.label==='RANK'&&rank===1 ? '0 0 10px rgba(241,196,15,0.7)' : 'none',
+                      }}>{s.value}</div>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+
+              <div style={{ textAlign:'center', color:'rgba(120,80,20,0.5)', fontSize:10, marginBottom:10, fontWeight:600 }}>
+                ✦ {dateStr} ✦
+              </div>
+
+              <div style={{ display:'flex', gap:7, marginBottom:7 }}>
+                <button onClick={onScores} style={{
+                  flex:1, padding:'9px 0', borderRadius:11, border:'none',
+                  background:'linear-gradient(135deg,#2980b9,#3498db)',
+                  color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+                  boxShadow:'0 3px 10px rgba(52,152,219,0.35)',
+                }}>🏆 High Scores</button>
+                <button onClick={handleShare} disabled={sharing} style={{
+                  flex:1, padding:'9px 0', borderRadius:11, border:'none',
+                  background:sharing?'rgba(230,126,34,0.5)':'linear-gradient(135deg,#f39c12,#e67e22)',
+                  color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+                  boxShadow:'0 3px 10px rgba(230,126,34,0.35)',
+                }}>{sharing?'⏳ Wait...':'📤 Share'}</button>
+              </div>
+              <div style={{ display:'flex', gap:7, marginBottom:8 }}>
+                <button onClick={onMenu} style={{
+                  flex:1, padding:'9px 0', borderRadius:11,
+                  border:'2px solid #c8a96e', background:'transparent',
+                  color:'#7a5c2e', fontWeight:800, fontSize:12, cursor:'pointer',
+                }}>← Menu</button>
+                <button onClick={onReplay} style={{
+                  flex:1, padding:'9px 0', borderRadius:11, border:'none',
+                  background:'linear-gradient(135deg,#27ae60,#2ecc71)',
+                  color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+                  boxShadow:'0 3px 10px rgba(46,204,113,0.35)',
+                }}>▶ Play Again</button>
+              </div>
+
+              <div style={{ textAlign:'center', fontSize:9, color:'rgba(120,80,20,0.45)', fontStyle:'italic' }}>
+                Share your certificate to challenge friends ✨
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-function useSettings() {
-  const load = (key, def) => {
-    try { const v = localStorage.getItem('ms_' + key); return v === null ? def : JSON.parse(v); }
-    catch { return def; }
-  };
-  const [sfx,       setSfxRaw]       = React.useState(() => load('sfx', true));
-  const [music,     setMusicRaw]     = React.useState(() => load('music', false));
-const [vibration, setVibrationRaw] = React.useState(() => load('vibration', false));
-  const save = (key, val) => { try { localStorage.setItem('ms_' + key, JSON.stringify(val)); } catch {} };
+      );
+    }
 
-  const setSfx       = v => { setSfxRaw(v);       save('sfx', v); };
-  const setMusic     = v => { setMusicRaw(v);     save('music', v); };
-  const setVibration = v => { setVibrationRaw(v); save('vibration', v); };
+    function useSettings() {
+      const load = (key, def) => {
+        try { const v = localStorage.getItem('ms_' + key); return v === null ? def : JSON.parse(v); }
+        catch { return def; }
+      };
+      const [sfx,       setSfxRaw]       = React.useState(() => load('sfx', true));
+      const [music,     setMusicRaw]     = React.useState(() => load('music', false));
+      const [vibration, setVibrationRaw] = React.useState(() => load('vibration', false));
+      const save = (key, val) => { try { localStorage.setItem('ms_' + key, JSON.stringify(val)); } catch {} };
 
-  return { sfx, setSfx, music, setMusic, vibration, setVibration };
-}
+      const setSfx       = v => { setSfxRaw(v);       save('sfx', v); };
+      const setMusic     = v => { setMusicRaw(v);     save('music', v); };
+      const setVibration = v => { setVibrationRaw(v); save('vibration', v); };
 
+      return { sfx, setSfx, music, setMusic, vibration, setVibration };
+    }
 
-// ── ADIM 1B: LegalModal ─────────────────────────────────────
-function LegalModal({ type, onClose }) {
-  const content = {
-    privacy: {
-      title: '🔒 Privacy Policy',
-      body: `Last updated: February 2026
+    function LegalModal({ type, onClose }) {
+      const content = {
+        privacy: {
+          title: '🔒 Privacy Policy',
+          // BUG FIX #5: "Very Hard" modu kaldırıldı About'tan, gerçek modlar listelendi
+          body: `Last updated: February 2026
 
 MindSharp ("we", "our", or "us") is operated by Mendebur Studios.
 
@@ -814,10 +818,10 @@ This app does not knowingly collect data from children under 13.
 
 CONTACT
 privacy@mendebur.com`
-    },
-    terms: {
-      title: '📋 Terms of Service',
-      body: `Last updated: February 2026
+        },
+        terms: {
+          title: '📋 Terms of Service',
+          body: `Last updated: February 2026
 
 By using MindSharp, you agree to these terms.
 
@@ -839,10 +843,11 @@ We may update these terms at any time. Continued use means acceptance.
 
 CONTACT
 legal@mendebur.com`
-    },
-    about: {
-      title: '🎮 About MindSharp',
-      body: `MindSharp v1.0
+        },
+        about: {
+          title: '🎮 About MindSharp',
+          // BUG FIX #5: Var olmayan "Very Hard 80 tiles (10x8)" modu kaldırıldı
+          body: `MindSharp v1.0
 © 2026 Mendebur Studios
 
 MindSharp is a memory and focus training game designed to sharpen your short-term memory, pattern recognition, and cognitive speed — in just 1 minute a day.
@@ -853,10 +858,9 @@ HOW TO PLAY
 • Chain consecutive matches for combo bonuses
 
 DIFFICULTY LEVELS
-• Easy     — 32 tiles (8×4)
-• Medium   — 40 tiles (8×5)
-• Hard     — 56 tiles (8×7)
-• Very Hard — 80 tiles (10×8)
+• Easy   — 32 tiles (8×4)
+• Medium — 40 tiles (8×5)
+• Hard   — 56 tiles (8×7)
 
 SCORING
 Base score + combo bonuses − move penalty − time penalty
@@ -865,10 +869,10 @@ DEVELOPED BY
 Mendebur Studios — Istanbul, Turkey
 
 "Train your mind — 1 minute a day." 🧠`
-    },
-    contact: {
-      title: '✉️ Contact Us',
-      body: `We'd love to hear from you!
+        },
+        contact: {
+          title: '✉️ Contact Us',
+          body: `We'd love to hear from you!
 
 📧 General: hello@mendebur.com
 🐛 Bug reports: bugs@mendebur.com
@@ -881,225 +885,212 @@ Response time: 1-3 business days
 
 Mendebur Studios
 Istanbul, Turkey 🇹🇷`
-    },
-  };
+        },
+      };
 
-  const c = content[type];
-  if (!c) return null;
+      const c = content[type];
+      if (!c) return null;
 
-  return (
-    <div style={{
-      position:'fixed', inset:0, zIndex:500,
-      background:'rgba(0,0,0,0.75)',
-      display:'flex', alignItems:'center', justifyContent:'center',
-      padding:'16px',
-    }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        width:'100%', maxWidth:360,
-        background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
-        borderRadius:20,
-        border:'2px solid #c8a96e',
-        boxShadow:'0 20px 60px rgba(0,0,0,0.5)',
-        maxHeight:'80vh',
-        display:'flex', flexDirection:'column',
-        overflow:'hidden',
-      }}>
-        {/* Başlık */}
+      return (
         <div style={{
-          padding:'14px 18px',
-          borderBottom:'1px solid rgba(200,169,110,0.3)',
-          display:'flex', justifyContent:'space-between', alignItems:'center',
-          background:'rgba(200,169,110,0.15)',
-        }}>
-          <span style={{ fontWeight:900, fontSize:15, color:'#3d1a00' }}>{c.title}</span>
-          <button onClick={onClose} style={{
-            background:'none', border:'none', fontSize:20,
-            color:'#7a5c2e', cursor:'pointer', lineHeight:1,
-          }}>✕</button>
-        </div>
-        {/* İçerik */}
-        <div style={{ overflowY:'auto', padding:'16px 18px' }}>
-          <pre style={{
-            margin:0,
-            fontFamily:"'Segoe UI', sans-serif",
-            fontSize:12, lineHeight:1.7,
-            color:'#4a2a00',
-            whiteSpace:'pre-wrap',
-            wordBreak:'break-word',
-          }}>{c.body}</pre>
-        </div>
-        <div style={{ padding:'12px 18px', borderTop:'1px solid rgba(200,169,110,0.3)' }}>
-          <button onClick={onClose} style={{
-            width:'100%', padding:'10px',
-            borderRadius:12, border:'2px solid #c8a96e',
-            background:'transparent', color:'#7a5c2e',
-            fontWeight:800, fontSize:13, cursor:'pointer',
-          }}>Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// ── ADIM 1C: SettingsModal ───────────────────────────────────
-function SettingsModal({ onClose, settings }) {
-  const [legalType, setLegalType] = React.useState(null);
-
-  // App Store / Play Store linkleri — kendi linklerini gir
-  const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
-  const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
-
-  const handleShare = async () => {
-    const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
-    if (navigator.share) {
-      try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
-    }
-    try { await navigator.clipboard.writeText(text); alert('Link copied! Share it with friends 🎉'); } catch {}
-  };
-
-  const Toggle = ({ value, onChange }) => (
-    <div onClick={() => onChange(!value)} style={{
-      width:44, height:24, borderRadius:12,
-      background: value ? 'linear-gradient(135deg,#27ae60,#2ecc71)' : 'rgba(0,0,0,0.2)',
-      position:'relative', cursor:'pointer',
-      transition:'background 0.25s',
-      border: value ? 'none' : '1px solid rgba(255,255,255,0.2)',
-      flexShrink:0,
-    }}>
-      <div style={{
-        position:'absolute',
-        top:2, left: value ? 22 : 2,
-        width:20, height:20, borderRadius:'50%',
-        background:'#fff',
-        boxShadow:'0 2px 4px rgba(0,0,0,0.3)',
-        transition:'left 0.25s',
-      }}/>
-    </div>
-  );
-
-  const Row = ({ icon, label, right }) => (
-    <div style={{
-      display:'flex', alignItems:'center', justifyContent:'space-between',
-      padding:'11px 14px',
-      borderBottom:'1px solid rgba(200,169,110,0.15)',
-    }}>
-      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-        <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
-        <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
-      </div>
-      {right}
-    </div>
-  );
-
-  const LinkRow = ({ icon, label, onClick }) => (
-    <div onClick={onClick} style={{
-      display:'flex', alignItems:'center', justifyContent:'space-between',
-      padding:'11px 14px',
-      borderBottom:'1px solid rgba(200,169,110,0.15)',
-      cursor:'pointer',
-    }}>
-      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-        <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
-        <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
-      </div>
-      <span style={{ color:'#c8a96e', fontSize:14 }}>›</span>
-    </div>
-  );
-
-  const SectionHeader = ({ label }) => (
-    <div style={{
-      padding:'8px 14px 4px',
-      fontSize:10, fontWeight:800,
-      color:'rgba(100,60,10,0.5)',
-      letterSpacing:1.5,
-      textTransform:'uppercase',
-    }}>{label}</div>
-  );
-
-  return (
-    <>
-      <div style={{
-        position:'fixed', inset:0, zIndex:400,
-        background:'rgba(0,0,0,0.72)',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        padding:'16px',
-      }} onClick={onClose}>
-        <div onClick={e => e.stopPropagation()} style={{
-          width:'100%', maxWidth:360,
-          background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
-          borderRadius:22,
-          border:'2px solid #c8a96e',
-          boxShadow:'0 20px 60px rgba(0,0,0,0.55)',
-          overflow:'hidden',
-          animation:'cardSlideUp 0.35s cubic-bezier(.22,1.2,.36,1) both',
-          maxHeight:'88vh',
-          display:'flex', flexDirection:'column',
-        }}>
-
-          {/* Header */}
-          <div style={{
-            padding:'14px 18px',
-            background:'linear-gradient(135deg, rgba(200,169,110,0.25), rgba(200,169,110,0.1))',
-            borderBottom:'1px solid rgba(200,169,110,0.3)',
-            display:'flex', justifyContent:'space-between', alignItems:'center',
+          position:'fixed', inset:0, zIndex:500,
+          background:'rgba(0,0,0,0.75)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          padding:'16px',
+        }} onClick={onClose}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width:'100%', maxWidth:360,
+            background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
+            borderRadius:20,
+            border:'2px solid #c8a96e',
+            boxShadow:'0 20px 60px rgba(0,0,0,0.5)',
+            maxHeight:'80vh',
+            display:'flex', flexDirection:'column',
+            overflow:'hidden',
           }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:20 }}>⚙️</span>
-              <span style={{ fontWeight:900, fontSize:17, color:'#3d1a00', fontFamily:'Georgia,serif' }}>Settings</span>
-            </div>
-            <button onClick={onClose} style={{
-              background:'rgba(0,0,0,0.1)', border:'none',
-              width:28, height:28, borderRadius:'50%',
-              color:'#7a5c2e', fontSize:14, cursor:'pointer',
-              display:'flex', alignItems:'center', justifyContent:'center',
-            }}>✕</button>
-          </div>
-
-          {/* Scrollable content */}
-          <div style={{ overflowY:'auto', flex:1 }}>
-
-            {/* SOUND */}
-            <SectionHeader label="Sound" />
-            <Row icon="🔊" label="Sound Effects"
-              right={<Toggle value={settings.sfx} onChange={settings.setSfx} />} />
-            <Row icon="🎵" label="Music"
-              right={<Toggle value={settings.music} onChange={settings.setMusic} />} />
-            <Row icon="📳" label="Vibration"
-              right={<Toggle value={settings.vibration} onChange={settings.setVibration} />} />
-
-            {/* SOCIAL */}
-            <SectionHeader label="Social" />
-            <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
-            <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />
-            <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />
-
-            {/* INFO */}
-            <SectionHeader label="Info" />
-            <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
-            <LinkRow icon="✉️" label="Contact Us"          onClick={() => setLegalType('contact')} />
-            <LinkRow icon="🔒" label="Privacy Policy"      onClick={() => setLegalType('privacy')} />
-            <LinkRow icon="📋" label="Terms of Service"    onClick={() => setLegalType('terms')} />
-
-            {/* Version */}
             <div style={{
-              textAlign:'center', padding:'14px 0 10px',
-              fontSize:11, color:'rgba(100,60,10,0.4)', fontWeight:600,
+              padding:'14px 18px',
+              borderBottom:'1px solid rgba(200,169,110,0.3)',
+              display:'flex', justifyContent:'space-between', alignItems:'center',
+              background:'rgba(200,169,110,0.15)',
             }}>
-              MindSharp v1.0 · © 2026 Mendebur Studios
+              <span style={{ fontWeight:900, fontSize:15, color:'#3d1a00' }}>{c.title}</span>
+              <button onClick={onClose} style={{
+                background:'none', border:'none', fontSize:20,
+                color:'#7a5c2e', cursor:'pointer', lineHeight:1,
+              }}>✕</button>
+            </div>
+            <div style={{ overflowY:'auto', padding:'16px 18px' }}>
+              <pre style={{
+                margin:0,
+                fontFamily:"'Segoe UI', sans-serif",
+                fontSize:12, lineHeight:1.7,
+                color:'#4a2a00',
+                whiteSpace:'pre-wrap',
+                wordBreak:'break-word',
+              }}>{c.body}</pre>
+            </div>
+            <div style={{ padding:'12px 18px', borderTop:'1px solid rgba(200,169,110,0.3)' }}>
+              <button onClick={onClose} style={{
+                width:'100%', padding:'10px',
+                borderRadius:12, border:'2px solid #c8a96e',
+                background:'transparent', color:'#7a5c2e',
+                fontWeight:800, fontSize:13, cursor:'pointer',
+              }}>Close</button>
             </div>
           </div>
         </div>
-      </div>
+      );
+    }
 
-      {legalType && (
-        <LegalModal type={legalType} onClose={() => setLegalType(null)} />
-      )}
-    </>
-  );
-}
+    function SettingsModal({ onClose, settings }) {
+      const [legalType, setLegalType] = React.useState(null);
+
+      const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
+      const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
+
+      const handleShare = async () => {
+        const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
+        if (navigator.share) {
+          try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
+        }
+        try { await navigator.clipboard.writeText(text); alert('Link copied! Share it with friends 🎉'); } catch {}
+      };
+
+      const Toggle = ({ value, onChange }) => (
+        <div onClick={() => onChange(!value)} style={{
+          width:44, height:24, borderRadius:12,
+          background: value ? 'linear-gradient(135deg,#27ae60,#2ecc71)' : 'rgba(0,0,0,0.2)',
+          position:'relative', cursor:'pointer',
+          transition:'background 0.25s',
+          border: value ? 'none' : '1px solid rgba(255,255,255,0.2)',
+          flexShrink:0,
+        }}>
+          <div style={{
+            position:'absolute',
+            top:2, left: value ? 22 : 2,
+            width:20, height:20, borderRadius:'50%',
+            background:'#fff',
+            boxShadow:'0 2px 4px rgba(0,0,0,0.3)',
+            transition:'left 0.25s',
+          }}/>
+        </div>
+      );
+
+      const Row = ({ icon, label, right }) => (
+        <div style={{
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'11px 14px',
+          borderBottom:'1px solid rgba(200,169,110,0.15)',
+        }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
+            <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
+          </div>
+          {right}
+        </div>
+      );
+
+      const LinkRow = ({ icon, label, onClick }) => (
+        <div onClick={onClick} style={{
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'11px 14px',
+          borderBottom:'1px solid rgba(200,169,110,0.15)',
+          cursor:'pointer',
+        }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
+            <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
+          </div>
+          <span style={{ color:'#c8a96e', fontSize:14 }}>›</span>
+        </div>
+      );
+
+      const SectionHeader = ({ label }) => (
+        <div style={{
+          padding:'8px 14px 4px',
+          fontSize:10, fontWeight:800,
+          color:'rgba(100,60,10,0.5)',
+          letterSpacing:1.5,
+          textTransform:'uppercase',
+        }}>{label}</div>
+      );
+
+      return (
+        <>
+          <div style={{
+            position:'fixed', inset:0, zIndex:400,
+            background:'rgba(0,0,0,0.72)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            padding:'16px',
+          }} onClick={onClose}>
+            <div onClick={e => e.stopPropagation()} style={{
+              width:'100%', maxWidth:360,
+              background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
+              borderRadius:22,
+              border:'2px solid #c8a96e',
+              boxShadow:'0 20px 60px rgba(0,0,0,0.55)',
+              overflow:'hidden',
+              animation:'cardSlideUp 0.35s cubic-bezier(.22,1.2,.36,1) both',
+              maxHeight:'88vh',
+              display:'flex', flexDirection:'column',
+            }}>
+              <div style={{
+                padding:'14px 18px',
+                background:'linear-gradient(135deg, rgba(200,169,110,0.25), rgba(200,169,110,0.1))',
+                borderBottom:'1px solid rgba(200,169,110,0.3)',
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:20 }}>⚙️</span>
+                  <span style={{ fontWeight:900, fontSize:17, color:'#3d1a00', fontFamily:'Georgia,serif' }}>Settings</span>
+                </div>
+                <button onClick={onClose} style={{
+                  background:'rgba(0,0,0,0.1)', border:'none',
+                  width:28, height:28, borderRadius:'50%',
+                  color:'#7a5c2e', fontSize:14, cursor:'pointer',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                }}>✕</button>
+              </div>
+
+              <div style={{ overflowY:'auto', flex:1 }}>
+                <SectionHeader label="Sound" />
+                <Row icon="🔊" label="Sound Effects"
+                  right={<Toggle value={settings.sfx} onChange={settings.setSfx} />} />
+                <Row icon="🎵" label="Music"
+                  right={<Toggle value={settings.music} onChange={settings.setMusic} />} />
+                <Row icon="📳" label="Vibration"
+                  right={<Toggle value={settings.vibration} onChange={settings.setVibration} />} />
+
+                <SectionHeader label="Social" />
+                <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
+                <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />
+                <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />
+
+                <SectionHeader label="Info" />
+                <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
+                <LinkRow icon="✉️" label="Contact Us"          onClick={() => setLegalType('contact')} />
+                <LinkRow icon="🔒" label="Privacy Policy"      onClick={() => setLegalType('privacy')} />
+                <LinkRow icon="📋" label="Terms of Service"    onClick={() => setLegalType('terms')} />
+
+                <div style={{
+                  textAlign:'center', padding:'14px 0 10px',
+                  fontSize:11, color:'rgba(100,60,10,0.4)', fontWeight:600,
+                }}>
+                  MindSharp v1.0 · © 2026 Mendebur Studios
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {legalType && (
+            <LegalModal type={legalType} onClose={() => setLegalType(null)} />
+          )}
+        </>
+      );
+    }
+
     function App() {
-      // ✅ FIX 2: scores state ÖNCE tanımlandı, scoresRef SONRA
       const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
@@ -1107,27 +1098,27 @@ function SettingsModal({ onClose, settings }) {
       const [rank, setRank]         = useState(null);
       const scoresRef               = useRef([]);
 
-      // ✅ FIX 3: scores güncellenince ref'i güncelle
       useEffect(() => { scoresRef.current = scores; }, [scores]);
 
-      const [tiles, setTiles]       = useState([]);
-      const [flipped, setFlipped]   = useState([]);
-      const [moves, setMoves]       = useState(0);
-      const [matched, setMatched]   = useState(0);
-      const [time, setTime]         = useState(0);
-      const [running, setRunning]   = useState(false);
-      const [won, setWon]           = useState(false);
-      const [shake, setShake]       = useState(null);
+      const [tiles, setTiles]         = useState([]);
+      const [flipped, setFlipped]     = useState([]);
+      const [moves, setMoves]         = useState(0);
+      const [matched, setMatched]     = useState(0);
+      const [time, setTime]           = useState(0);
+      const [running, setRunning]     = useState(false);
+      const [won, setWon]             = useState(false);
+      const [shake, setShake]         = useState(null);
       const [matchAnim, setMatchAnim] = useState([]);
-      const [score, setScore]       = useState(0);
+      const [score, setScore]         = useState(0);
       const [comboBonus, setComboBonus] = useState(0);
-      const [combo, setCombo]       = useState(0);
-      const [sortBy, setSortBy]     = useState('score');
+      const [combo, setCombo]         = useState(0);
+      const [sortBy, setSortBy]       = useState('score');
       const [scoreCategory, setScoreCategory] = useState('8x4');
-      const [user, setUser]         = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
-      const [tempUser, setTempUser] = useState('');
-const settings = useSettings();
-  const [showSettings, setShowSettings] = React.useState(false);
+      const [user, setUser]           = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
+      const [tempUser, setTempUser]   = useState('');
+      const settings   = useSettings();
+      const [showSettings, setShowSettings] = React.useState(false);
+
       const comboBonusRef = useRef(0);
       const comboRef      = useRef(0);
       const lockRef       = useRef(false);
@@ -1140,15 +1131,7 @@ const settings = useSettings();
         return () => clearTimeout(t);
       }, [screen]);
 
-      useEffect(() => {
-        if (screen !== "scores") return;
-        (async () => {
-          const cloudScores = await fetchScoresFromCloud(scoreCategory);
-          if (cloudScores.length) setScores(cloudScores);
-        })();
-      }, [screen, scoreCategory]);
-
-      // Firestore realtime listener
+      // BUG FIX #9: Tek bir realtime listener yeterli, ayrıca fetchScoresFromCloud kaldırıldı
       useEffect(() => {
         if (!db) return;
         const unsub = db
@@ -1203,10 +1186,13 @@ const settings = useSettings();
         comboBonusRef.current = 0; comboRef.current = 0;
       }, []);
 
-const handleTile = useCallback((id) => {
-  if (lockRef.current) return;
-  if (!running) setRunning(true);
-  if (settings.sfx) play('flip');
+      const handleTile = useCallback((id) => {
+        if (lockRef.current) return;
+        if (!running) setRunning(true);
+
+        // BUG FIX #1: SFX kontrolü tek yerde, doğru şekilde
+        if (settings.sfx) play('flip');
+
         setTiles(prev => prev.map(t => t.id === id ? { ...t, flipped: true } : t));
         setFlipped(prev => {
           const next = [...prev, id];
@@ -1220,42 +1206,51 @@ const handleTile = useCallback((id) => {
                   const newCombo = comboRef.current + 1;
                   comboRef.current = newCombo;
                   setCombo(newCombo);
-                  let bonusPts = newCombo >= 3 ? 60 : (newCombo === 2 ? 25 : 0);
-                  if (newCombo >= 3) play('combo3');
+
+                  let bonusPts = 0;
+                  // BUG FIX #1 & #2: if/else zinciri düzeltildi, ses tek çağrılıyor
+                  if (newCombo >= 3) {
+                    bonusPts = 60;
                     if (settings.sfx) play('combo3');
-                  else if (newCombo === 2) play('combo');
+                  } else if (newCombo === 2) {
+                    bonusPts = 25;
                     if (settings.sfx) play('combo');
-                  else play('match');
-                  if (settings.sfx) play('match');
+                  } else {
+                    if (settings.sfx) play('match');
+                  }
+
                   if (settings.vibration && navigator.vibrate) navigator.vibrate(40);
                   comboBonusRef.current += bonusPts;
                   setComboBonus(b => b + bonusPts);
                   setMatchAnim([a.id, b.id]);
                   setTimeout(() => setMatchAnim([]), 600);
+
                   const newTiles = cur.map(t => next.includes(t.id) ? { ...t, matched: true, flipped: false } : t);
                   const newMatchedCount = newTiles.filter(t => t.matched).length / 2;
                   setMatched(newMatchedCount);
+
                   const cfg = GRID_CONFIGS[mode];
                   if (newMatchedCount === cfg.pairs) {
                     setRunning(false);
                     setWon(true);
-                    play('win');
                     if (settings.sfx) play('win');
+
                     setMoves((mv) => {
                       setTime((tm) => {
+                        // BUG FIX #3: moves zaten mv (setMoves'dan gelen güncel değer),
+                        // +1 eklemiyoruz çünkü setMoves(m => m+1) zaten çağrıldı
                         const finalScore = calcScore({
                           pairs: cfg.pairs,
-                          moves: mv + 1,
+                          moves: mv,
                           time: tm,
                           comboBonus: comboBonusRef.current,
                         });
                         setScore(finalScore);
 
-                        // Rank hesapla
                         const myEntry = {
                           user: user || 'Guest',
                           mode,
-                          moves: mv + 1,
+                          moves: mv,
                           time: tm,
                           score: finalScore,
                         };
@@ -1272,22 +1267,27 @@ const handleTile = useCallback((id) => {
                         submitScoreToCloud({
                           user: user || "Guest",
                           mode,
-                          moves: mv + 1,
+                          moves: mv,
                           time: tm,
                           score: finalScore,
                         });
 
+                        // BUG FIX #6: Firebase'den kesin rank al (race condition azaltıldı)
                         setTimeout(async () => {
                           if (!db) return;
-                          const snap = await db
-                            .collection("scores")
-                            .where("mode", "==", mode)
-                            .orderBy("score", "desc")
-                            .get();
-                          const scoresList = snap.docs.map(d => d.data());
-                          const position = scoresList.findIndex(s => s.score === finalScore);
-                          if (position >= 0) setRank(position + 1);
-                        }, 600);
+                          try {
+                            const snap = await db
+                              .collection("scores")
+                              .where("mode", "==", mode)
+                              .orderBy("score", "desc")
+                              .get();
+                            const scoresList = snap.docs.map(d => d.data());
+                            const position = scoresList.findIndex(s =>
+                              s.score === finalScore && s.user === (user || 'Guest')
+                            );
+                            if (position >= 0) setRank(position + 1);
+                          } catch(e) { console.warn(e); }
+                        }, 1200);
 
                         return tm;
                       });
@@ -1297,10 +1297,13 @@ const handleTile = useCallback((id) => {
                   lockRef.current = false;
                   return newTiles;
                 } else {
-                  comboRef.current = 0; setCombo(0); play('fail');
+                  comboRef.current = 0;
+                  setCombo(0);
+                  // BUG FIX #1: SFX kontrolü doğru
                   if (settings.sfx) play('fail');
                   if (settings.vibration && navigator.vibrate) navigator.vibrate([30, 20, 30]);
-                  setShake(next); setTimeout(() => setShake(null), 400);
+                  setShake(next);
+                  setTimeout(() => setShake(null), 400);
                   const reset = cur.map(t => next.includes(t.id) ? { ...t, flipped: false } : t);
                   lockRef.current = false;
                   return reset;
@@ -1311,14 +1314,14 @@ const handleTile = useCallback((id) => {
           }
           return next;
         });
-      }, [running, mode, play, user, settings.sfx]);
+      }, [running, mode, play, user, settings.sfx, settings.vibration]);
 
-      const cfg    = GRID_CONFIGS[mode];
+      const cfg        = GRID_CONFIGS[mode];
       const totalPairs = cfg ? cfg.pairs : 0;
-      const GAP = (typeof window !== 'undefined' && window.innerWidth < 380) ? 6 : 5;
-      const BOARD_PAD = 8;
-      const innerW = Math.max(0, boardWidth - BOARD_PAD * 2);
-      const tileW = Math.max(22, Math.floor((innerW - GAP * (cfg.cols - 1)) / cfg.cols));
+      const GAP        = (typeof window !== 'undefined' && window.innerWidth < 380) ? 6 : 5;
+      const BOARD_PAD  = 8;
+      const innerW     = Math.max(0, boardWidth - BOARD_PAD * 2);
+      const tileW      = Math.max(22, Math.floor((innerW - GAP * (cfg.cols - 1)) / cfg.cols));
 
       const woodBg = {
         backgroundImage: "url('/wood_bg.png')",
@@ -1327,7 +1330,6 @@ const handleTile = useCallback((id) => {
         backgroundRepeat: 'no-repeat',
         backgroundColor: '#2b1a10',
       };
-      const boardBg = { backgroundColor: 'transparent' };
 
       return (
         <div style={{ minHeight: '100vh', width: '100%', maxWidth: 430, margin: '0 auto', ...woodBg,
@@ -1338,20 +1340,25 @@ const handleTile = useCallback((id) => {
             @media (max-width: 420px) {
               .contentWrap { padding: 44px 18px 32px; }
             }
-            @keyframes popIn { f
-            rom { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            /* BUG FIX #4 CSS: "f\nrom" → "from" düzeltildi */
+            @keyframes popIn {
+              from { transform: scale(0.5); opacity: 0; }
+              to   { transform: scale(1);   opacity: 1; }
+            }
             @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
             @keyframes matchPop { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
             @keyframes comboBanner { 0%{transform:scaleX(0);opacity:0} 20%{transform:scaleX(1);opacity:1} 80%{opacity:1} 100%{opacity:0} }
+            @keyframes cardSlideUp {
+              from { transform: translateY(40px) scale(0.94); opacity:0; }
+              to   { transform: translateY(0) scale(1); opacity:1; }
+            }
             .shake-tile { animation: shake 0.35s ease; }
             .match-tile { animation: matchPop 0.5s ease; }
           `}</style>
 
-          {/* Readability Overlay */}
           <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
             background: 'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.15), rgba(0,0,0,0.55))' }} />
 
-          {/* Content */}
           <div className="contentWrap" style={{ position: 'relative', zIndex: 5, width: '100%', minHeight: '100vh',
             boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
@@ -1359,23 +1366,25 @@ const handleTile = useCallback((id) => {
             {screen === 'menu' && (
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <div style={{ width:'100%', position:'relative', display:'flex', justifyContent:'center', alignItems:'center', marginBottom:6 }}>
-  <h1 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 44, fontWeight: 900,
-    background: 'linear-gradient(160deg, #fff9c4 0%, #ffe066 40%, #ffb300 70%, #ff8f00 100%)',
-    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))', textAlign: 'center' }}>MindSharp</h1>
-  <button onClick={() => setShowSettings(true)} style={{
-    position:'absolute', right:0,
-    background:'rgba(0,0,0,0.35)',
-    border:'1px solid rgba(255,255,255,0.2)',
-    borderRadius:10, width:36, height:36,
-    display:'flex', alignItems:'center', justifyContent:'center',
-    cursor:'pointer', fontSize:18,
-  }}>⚙️</button>
-</div>                <p style={{ color: '#fff', fontSize: 12, margin: '0 0 20px',
+                  <h1 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 44, fontWeight: 900,
+                    background: 'linear-gradient(160deg, #fff9c4 0%, #ffe066 40%, #ffb300 70%, #ff8f00 100%)',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))', textAlign: 'center' }}>MindSharp</h1>
+                  <button onClick={() => setShowSettings(true)} style={{
+                    position:'absolute', right:0,
+                    background:'rgba(0,0,0,0.35)',
+                    border:'1px solid rgba(255,255,255,0.2)',
+                    borderRadius:10, width:36, height:36,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    cursor:'pointer', fontSize:18,
+                  }}>⚙️</button>
+                </div>
+                <p style={{ color: '#fff', fontSize: 12, margin: '0 0 20px',
                   textShadow: '0 1px 6px rgba(0,0,0,0.9)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
                   background: 'rgba(0,0,0,0.35)', padding: '3px 14px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)' }}>
                   Memory and Focus Workout
                 </p>
+
                 {/* Preview Tiles */}
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 10, marginBottom: 22, height: 76 }}>
                   {PREVIEW_TILES.map((pt, idx) => {
@@ -1468,10 +1477,10 @@ const handleTile = useCallback((id) => {
                     onSortChange={setSortBy}
                     activeCategory={scoreCategory}
                     onCategoryChange={setScoreCategory}
-                    onClearCategory={(cat) => {
-                      const ns = scores.filter(s => s.mode !== cat);
-                      setScores(ns);
-                      try { localStorage.setItem('memotiles_scores', JSON.stringify(ns)); } catch {}
+                    // BUG FIX #4: Firebase'den de siliniyor artık
+                    onClearCategory={async (cat) => {
+                      await clearScoresFromCloud(cat);
+                      setScores(prev => prev.filter(s => s.mode !== cat));
                     }}
                   />
                 </div>
@@ -1481,8 +1490,6 @@ const handleTile = useCallback((id) => {
             {/* GAME */}
             {screen === 'game' && (
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                
-                {/* Header */}
                 <div style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center',
                   justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', borderRadius: 10 }}>
                   <button onClick={() => { setRunning(false); setScreen('menu'); }}
@@ -1528,11 +1535,13 @@ const handleTile = useCallback((id) => {
                   </div>
                 )}
 
-                {/* Board */}
+                {/* Hint */}
                 <div className={"ms-hint" + (showHint ? "" : " hide")}>
                   Match all pairs with minimum moves and maximum speed.
                 </div>
-                <div ref={boardRef} style={{ padding: '8px', ...boardBg, width: '100%', maxWidth: '100%',
+
+                {/* Board */}
+                <div ref={boardRef} style={{ padding: '8px', width: '100%', maxWidth: '100%',
                   boxSizing: 'border-box', overflow: 'hidden',
                   boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)', borderRadius: 12, border: '2px solid rgba(90,54,32,0.6)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cfg.cols}, ${tileW}px)`, gap: `${GAP}px`, justifyContent: 'center' }}>
@@ -1543,35 +1552,33 @@ const handleTile = useCallback((id) => {
                     ))}
                   </div>
                 </div>
-
               </div>
             )}
           </div>
 
-          {/* ✅ FIX 4: user prop artık WinModal'a geçiliyor */}
           {won && (
-        <WinModal
-          moves={moves}
-          time={time}
-          mode={mode}
-          score={score}
-          comboBonus={comboBonus}
-          rank={rank}
-          user={user}
-          onReplay={() => startGame(mode)}
-          onMenu={() => { setWon(false); setScreen('menu'); }}
-          onScores={() => { setWon(false); setScreen('scores'); }}
-        />
-      )}
-      {showSettings && (
-        <SettingsModal
-          onClose={() => setShowSettings(false)}
-          settings={settings}
-        />
-      )}
-    </div>
-  );
-}
+            <WinModal
+              moves={moves}
+              time={time}
+              mode={mode}
+              score={score}
+              comboBonus={comboBonus}
+              rank={rank}
+              user={user}
+              onReplay={() => startGame(mode)}
+              onMenu={() => { setWon(false); setScreen('menu'); }}
+              onScores={() => { setWon(false); setScreen('scores'); }}
+            />
+          )}
+          {showSettings && (
+            <SettingsModal
+              onClose={() => setShowSettings(false)}
+              settings={settings}
+            />
+          )}
+        </div>
+      );
+    }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
