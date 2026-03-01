@@ -219,50 +219,55 @@
       );
     }
 
-    function OnboardingModal({ onDone }) {
-      // Demo animasyon state'i
+    function OnboardingModal({ onDone, playSound, sfxEnabled }) {
       const [demoStep, setDemoStep] = React.useState(0);
-      // 0: hepsi kapalı
-      // 1: 1. kart açık
-      // 2: 1+2 açık (farklı → shake)
-      // 3: hepsi kapalı tekrar
-      // 4: 1. kart açık
-      // 5: 3. kart açık (eşi) → matched
-      // 6: 2. kart açık
-      // 7: 4. kart açık → matched → tamamlandı
-      // sonra restart
+      const prevStepRef = React.useRef(0);
+
+      // step → tile states: [t0_flip, t0_match, t1_flip, t1_match, t2_flip, t2_match, t3_flip, t3_match]
+      const tileStates = [
+        [false,false, false,false, false,false, false,false], // 0 all closed
+        [true, false, false,false, false,false, false,false], // 1 flip #1
+        [true, false, true, false, false,false, false,false], // 2 flip #2 — wrong pair
+        [false,false, false,false, false,false, false,false], // 3 close all
+        [true, false, false,false, false,false, false,false], // 4 flip #1 again
+        [true, true,  false,false, true, true,  false,false], // 5 match! pair A
+        [true, true,  true, false, true, true,  false,false], // 6 flip #3
+        [true, true,  true, true,  true, true,  true, true ], // 7 match! pair B — all done
+        [true, true,  true, true,  true, true,  true, true ], // 8 hold → restart
+      ];
+
+      const delays = [900, 850, 950, 650, 850, 950, 850, 950, 1800];
+      const shakeSteps = new Set([2]);
+
+      // Ses çalma — hangi adımda ne çalacak
+      const soundMap = {
+        1: 'flip',
+        2: 'flip',
+        3: 'fail',
+        4: 'flip',
+        5: 'match',
+        6: 'flip',
+        7: 'match',
+      };
 
       React.useEffect(() => {
-        const delays = [900, 900, 1000, 700, 900, 1000, 900, 1000, 1800];
         let t;
         const next = (step) => {
           t = setTimeout(() => {
             const nextStep = (step + 1) % delays.length;
+            // Ses çal
+            if (sfxEnabled && soundMap[nextStep]) {
+              playSound(soundMap[nextStep]);
+            }
             setDemoStep(nextStep);
             next(nextStep);
           }, delays[step]);
         };
         next(demoStep);
         return () => clearTimeout(t);
-      }, []);
+      }, [sfxEnabled]);
 
-      // Taşların flipped/matched durumları her adım için
-      const tileStates = [
-        // [t0_flip, t0_match, t1_flip, t1_match, t2_flip, t2_match, t3_flip, t3_match]
-        [false,false, false,false, false,false, false,false], // 0 kapalı
-        [true, false, false,false, false,false, false,false], // 1 ilk açıldı
-        [true, false, true, false, false,false, false,false], // 2 ikincisi açıldı (yanlış)
-        [false,false, false,false, false,false, false,false], // 3 kapandı
-        [true, false, false,false, false,false, false,false], // 4 ilk açıldı
-        [true, true,  false,false, true, true,  false,false], // 5 eşi bulundu ✓
-        [true, true,  true, false, true, true,  false,false], // 6 2. çift 1. kart
-        [true, true,  true, true,  true, true,  true, true ], // 7 eşi bulundu ✓
-        [true, true,  true, true,  true, true,  true, true ], // 8 bekle → restart
-      ];
-
-      const shakeSteps = new Set([2]);
-      const ts = tileStates[demoStep] || tileStates[0];
-
+      const ts    = tileStates[demoStep] || tileStates[0];
       const tiles = [
         { number: OB_PAIRS[0].number, color: OB_PAIRS[0].color, flipped: ts[0], matched: ts[1] },
         { number: OB_PAIRS[1].number, color: OB_PAIRS[1].color, flipped: ts[2], matched: ts[3] },
@@ -270,8 +275,9 @@
         { number: OB_PAIRS[3].number, color: OB_PAIRS[3].color, flipped: ts[6], matched: ts[7] },
       ];
 
-      const allMatched = demoStep >= 7;
       const wrongPair  = shakeSteps.has(demoStep);
+      const allMatched = demoStep >= 7;
+      const firstMatch = demoStep === 5 || demoStep === 6;
 
       const handleDone = () => {
         try { localStorage.setItem('ms_onboarded', '1'); } catch {}
@@ -292,14 +298,10 @@
             }
             @keyframes obShake {
               0%,100%{transform:translateX(0)}
-              20%{transform:translateX(-5px)}
-              40%{transform:translateX(5px)}
+              20%{transform:translateX(-6px)}
+              40%{transform:translateX(6px)}
               60%{transform:translateX(-4px)}
               80%{transform:translateX(4px)}
-            }
-            @keyframes obPulse {
-              0%,100%{transform:scale(1);}
-              50%{transform:scale(1.06);}
             }
           `}</style>
 
@@ -312,74 +314,68 @@
             overflow:'hidden',
             animation:'obIn 0.45s cubic-bezier(.22,1.2,.36,1)',
           }}>
-            {/* Altın şerit üst */}
-            <div style={{
-              height:5,
-              background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)',
-            }}/>
+            {/* Gold top bar */}
+            <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
 
-            <div style={{ padding:'24px 24px 20px', textAlign:'center' }}>
+            <div style={{ padding:'22px 24px 20px', textAlign:'center' }}>
 
-              {/* Logo */}
+              {/* Title */}
               <div style={{
-                fontFamily:'Georgia,serif', fontSize:26, fontWeight:900,
-                background:'linear-gradient(135deg,#7a3e00,#c8860a,#7a3e00)',
-                WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+                fontFamily:'Georgia,serif', fontSize:22, fontWeight:900,
+                color:'#3d1a00',
                 marginBottom:4,
-              }}>MindSharp</div>
+                letterSpacing:-0.3,
+              }}>How to Play</div>
 
-              {/* Tek cümle açıklama */}
+              {/* Subtitle */}
               <div style={{
-                fontSize:13, fontWeight:600, lineHeight:1.55,
-                color:'rgba(70,35,5,0.72)',
-                marginBottom:22,
+                fontSize:12, fontWeight:600, lineHeight:1.55,
+                color:'rgba(70,35,5,0.60)',
+                marginBottom:18,
               }}>
-                Taşları çevir — aynı sayı ve renkteki eşini bul!
+                Flip tiles — find the matching pair!
               </div>
 
-              {/* ── CANLI DEMO ── */}
+              {/* ── LIVE DEMO ── */}
               <div style={{
                 background:'rgba(43,26,16,0.55)',
                 borderRadius:16,
                 border:'2px solid rgba(200,169,110,0.3)',
-                padding:'16px 12px 12px',
-                marginBottom:18,
+                padding:'18px 12px 14px',
+                marginBottom:16,
                 position:'relative',
               }}>
 
-                {/* "Aynı sayı + aynı renk" etiketi */}
-                {demoStep >= 5 && demoStep <= 6 && (
-                  <div style={{
-                    position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)',
-                    background:'linear-gradient(135deg,#27ae60,#2ecc71)',
-                    color:'#fff', fontWeight:800, fontSize:11,
-                    padding:'3px 12px', borderRadius:20,
-                    whiteSpace:'nowrap',
-                    boxShadow:'0 2px 8px rgba(46,204,113,0.5)',
-                  }}>✓ Eşleşti!</div>
-                )}
-                {demoStep >= 7 && (
-                  <div style={{
-                    position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)',
-                    background:'linear-gradient(135deg,#f39c12,#e67e22)',
-                    color:'#fff', fontWeight:800, fontSize:11,
-                    padding:'3px 12px', borderRadius:20,
-                    whiteSpace:'nowrap',
-                    boxShadow:'0 2px 8px rgba(243,156,18,0.5)',
-                  }}>🎉 Tamamlandı!</div>
-                )}
+                {/* Status badge */}
                 {wrongPair && (
                   <div style={{
-                    position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)',
+                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
                     background:'linear-gradient(135deg,#e74c3c,#c0392b)',
                     color:'#fff', fontWeight:800, fontSize:11,
-                    padding:'3px 12px', borderRadius:20,
-                    whiteSpace:'nowrap',
+                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
                     boxShadow:'0 2px 8px rgba(231,76,60,0.5)',
-                  }}>✗ Farklı renk!</div>
+                  }}>✗ Different color!</div>
+                )}
+                {firstMatch && (
+                  <div style={{
+                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
+                    background:'linear-gradient(135deg,#27ae60,#2ecc71)',
+                    color:'#fff', fontWeight:800, fontSize:11,
+                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
+                    boxShadow:'0 2px 8px rgba(46,204,113,0.5)',
+                  }}>✓ Match!</div>
+                )}
+                {allMatched && (
+                  <div style={{
+                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
+                    background:'linear-gradient(135deg,#f39c12,#e67e22)',
+                    color:'#fff', fontWeight:800, fontSize:11,
+                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
+                    boxShadow:'0 2px 8px rgba(243,156,18,0.5)',
+                  }}>🎉 All matched!</div>
                 )}
 
-                {/* Taş grid'i: 2x2 */}
+                {/* Tile grid */}
                 <div style={{
                   display:'grid', gridTemplateColumns:'repeat(4,52px)',
                   gap:8, justifyContent:'center',
@@ -396,60 +392,63 @@
                   ))}
                 </div>
 
-                {/* Alt legend */}
+                {/* Legend */}
                 <div style={{
-                  marginTop:12, display:'flex', justifyContent:'center',
-                  gap:14, flexWrap:'wrap',
+                  marginTop:12, display:'flex', justifyContent:'center', gap:16,
                 }}>
                   {[
-                    { color:'#E8000A', label:'3' },
-                    { color:'#29B6F6', label:'7' },
+                    { color:'#E8000A', label:'3  ×  2' },
+                    { color:'#29B6F6', label:'7  ×  2' },
                   ].map(({ color, label }) => (
-                    <div key={color} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <div key={color} style={{ display:'flex', alignItems:'center', gap:6 }}>
                       <div style={{
-                        width:14, height:14, borderRadius:3,
+                        width:13, height:13, borderRadius:3,
                         background:color, flexShrink:0,
                         boxShadow:`0 0 6px ${color}88`,
                       }}/>
-                      <span style={{ color:'rgba(255,224,130,0.7)', fontSize:11, fontWeight:700 }}>
-                        {label} — 2 taş
+                      <span style={{ color:'rgba(255,224,130,0.65)', fontSize:11, fontWeight:700 }}>
+                        {label}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Kural özeti — ikonlu */}
+              {/* Rule summary */}
               <div style={{
-                display:'flex', justifyContent:'center', gap:10,
+                display:'flex', justifyContent:'center', alignItems:'center', gap:8,
                 marginBottom:20,
+                padding:'10px 14px',
+                background:'rgba(200,169,110,0.12)',
+                borderRadius:12,
+                border:'1px solid rgba(200,169,110,0.2)',
               }}>
                 {[
-                  { icon:'🔢', text:'Aynı sayı' },
-                  { icon:'➕', text:null },
-                  { icon:'🎨', text:'Aynı renk' },
+                  { icon:'🔢', text:'Same number' },
+                  { icon:'+', text:null },
+                  { icon:'🎨', text:'Same color' },
                   { icon:'=', text:null },
-                  { icon:'✅', text:'Eşleşme' },
+                  { icon:'✅', text:'Match' },
                 ].map((item, i) =>
                   item.text === null ? (
-                    <div key={i} style={{ color:'rgba(200,169,110,0.5)', fontSize:16, alignSelf:'center' }}>{item.icon}</div>
+                    <div key={i} style={{ color:'rgba(200,169,110,0.6)', fontSize:14, fontWeight:900 }}>{item.icon}</div>
                   ) : (
                     <div key={i} style={{ textAlign:'center' }}>
-                      <div style={{ fontSize:22 }}>{item.icon}</div>
-                      <div style={{ fontSize:10, color:'rgba(80,40,10,0.65)', fontWeight:700, marginTop:2 }}>{item.text}</div>
+                      <div style={{ fontSize:20 }}>{item.icon}</div>
+                      <div style={{ fontSize:9, color:'rgba(80,40,10,0.6)', fontWeight:800, marginTop:2, whiteSpace:'nowrap' }}>{item.text}</div>
                     </div>
                   )
                 )}
               </div>
 
-              {/* Başla butonu */}
+              {/* CTA button */}
               <button onClick={handleDone} style={{
                 width:'100%', padding:'14px 0', borderRadius:16, border:'none',
                 background:'linear-gradient(135deg,#27ae60,#2ecc71)',
                 color:'#fff', fontWeight:900, fontSize:16, cursor:'pointer',
                 boxShadow:'0 6px 20px rgba(46,204,113,0.45)',
                 letterSpacing:0.5,
-              }}>▶ Oynamaya Başla</button>
+              }}>▶ Let's Play!</button>
 
             </div>
           </div>
@@ -2122,7 +2121,11 @@ Istanbul, Turkey 🇹🇷`
           )}
 
           {showOnboarding && (
-            <OnboardingModal onDone={() => setShowOnboarding(false)} />
+            <OnboardingModal
+              onDone={() => setShowOnboarding(false)}
+              playSound={play}
+              sfxEnabled={settings.sfx}
+            />
           )}
         </div>
       );
