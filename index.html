@@ -880,9 +880,20 @@
       );
     }
 
-    function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, onMenu, onScores }) {
+    function WinModal({ moves, time, mode, score, comboBonus, rank, user, onReplay, onMenu, onScores, onSaveName }) {
       const [sharing, setSharing] = React.useState(false);
       const [confetti, setConfetti] = React.useState([]);
+      const [nameInput, setNameInput] = React.useState('');
+      const [nameSaved, setNameSaved] = React.useState(false);
+      const needsName = !user || user.trim() === '';
+      const displayName = needsName ? (nameSaved ? nameInput : 'You') : user;
+
+      const handleSaveName = () => {
+        const n = nameInput.trim();
+        if (!n) return;
+        onSaveName(n);
+        setNameSaved(true);
+      };
 
       React.useEffect(() => {
         const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f','#1abc9c','#e67e22'];
@@ -1198,9 +1209,50 @@
 
               <div style={{ textAlign:'center', marginBottom:10 }}>
                 <div style={{ color:'rgba(100,60,10,0.65)', fontSize:11, fontWeight:700 }}>Congratulations!</div>
-                <div style={{ color:'#3d1a00', fontWeight:900, fontSize:19, fontFamily:'Georgia, serif' }}>
-                  {(user||'Guest').trim()}
-                </div>
+
+                {/* İsim yoksa küçük input göster */}
+                {needsName && !nameSaved ? (
+                  <div style={{ marginTop:6, marginBottom:2 }}>
+                    <div style={{ color:'rgba(100,60,10,0.55)', fontSize:11, marginBottom:6 }}>
+                      Save your score — enter a name:
+                    </div>
+                    <div style={{ display:'flex', gap:6 }}>
+                      <input
+                        type="text"
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                        placeholder="Your name…"
+                        maxLength={20}
+                        autoFocus
+                        style={{
+                          flex:1, padding:'8px 10px', borderRadius:9,
+                          border:'1.5px solid #c8a96e',
+                          background:'rgba(255,255,255,0.9)',
+                          fontSize:14, fontWeight:700, color:'#3d1a00',
+                          outline:'none', textAlign:'center',
+                        }}
+                      />
+                      <button onClick={handleSaveName} style={{
+                        padding:'8px 12px', borderRadius:9, border:'none',
+                        background:'linear-gradient(135deg,#f39c12,#e67e22)',
+                        color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer',
+                        flexShrink:0,
+                      }}>Save</button>
+                    </div>
+                    <div
+                      onClick={() => { setNameSaved(true); }}
+                      style={{ color:'rgba(120,80,20,0.4)', fontSize:10, marginTop:6, cursor:'pointer', textDecoration:'underline' }}
+                    >
+                      Skip for now
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ color:'#3d1a00', fontWeight:900, fontSize:19, fontFamily:'Georgia, serif' }}>
+                    {displayName}
+                  </div>
+                )}
+
                 <div style={{ color:'rgba(120,80,20,0.55)', fontSize:10, marginTop:1 }}>{diffLabel} Board</div>
               </div>
 
@@ -1940,57 +1992,47 @@ Istanbul, Turkey 🇹🇷`
                   })}
                 </div>
 
-                {/* Username gate */}
-                {!user ? (
-                  <div style={{ width: '100%', background: 'rgba(0,0,0,0.55)', borderRadius: 16, padding: 20,
-                    border: '1px solid rgba(255,255,255,0.2)', textAlign: 'center', marginBottom: 12 }}>
-                    <p style={{ color: '#ffe082', fontWeight: 800, marginBottom: 10, margin: '0 0 10px' }}>Enter Username</p>
-                    <input type="text" value={tempUser} onChange={e => setTempUser(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && tempUser.trim()) { setUser(tempUser.trim()); try { localStorage.setItem('memotiles_user', tempUser.trim()); } catch {} } }}
-                      placeholder="Your name…"
-                      style={{ width: '100%', padding: '11px', borderRadius: 10, border: 'none', marginBottom: 10, fontSize: 15, textAlign: 'center', boxSizing: 'border-box' }} />
-                    <button onClick={() => { if (tempUser.trim()) { setUser(tempUser.trim()); try { localStorage.setItem('memotiles_user', tempUser.trim()); } catch {} } }}
-                      style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none',
-                        background: 'linear-gradient(135deg,#f39c12,#e67e22)', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>Save</button>
+                {/* Username chip — varsa göster, yoksa gösterme */}
+                {user ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '6px 12px',
+                    border: '1px solid rgba(255,255,255,0.1)', marginBottom: 10 }}>
+                    <span style={{ color: '#ffe082', fontSize: 13, fontWeight: 700 }}>👤 {user}</span>
+                    <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); } catch {} }}
+                      style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 11, cursor: 'pointer' }}>Change</button>
                   </div>
-                ) : (
-                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '6px 12px',
-                      border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <span style={{ color: '#ffe082', fontSize: 13, fontWeight: 700 }}>👤 {user}</span>
-                      <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); } catch {} }}
-                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 11, cursor: 'pointer' }}>Change</button>
-                    </div>
-                    <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 16, padding: 15, border: '1px solid rgba(255,255,255,0.15)' }}>
-                      <p style={{ color: '#ffe082', fontWeight: 800, margin: '0 0 10px', textAlign: 'center', fontSize: 14 }}>Select Board</p>
-                      {Object.entries(GRID_CONFIGS).map(([key, val]) => (
-                        <button key={key} onClick={() => setMode(key)} style={{
-                          width: '100%', padding: '12px 14px', marginBottom: 7, borderRadius: 10,
-                          border: `2px solid ${mode === key ? '#ffb300' : 'rgba(255,255,255,0.2)'}`,
-                          background: mode === key ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
-                          color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          boxShadow: mode === key ? '0 4px 14px rgba(243,156,18,0.4)' : 'none',
-                        }}>
-                          <span>{val.label}</span>
-                          <span style={{ fontSize: 11, background: 'rgba(0,0,0,0.25)', borderRadius: 6, padding: '2px 8px' }}>{val.difficulty}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <button onClick={() => startGame(mode)} style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none',
-                      background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
-                      boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
-                    <div style={{ display:'flex', gap:8 }}>
-                      <button onClick={() => setScreen('scores')} style={{ flex:1, padding: '12px', borderRadius: 14,
-                        border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
-                        color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>🏆 Scores</button>
-                      <button onClick={() => setScreen('profile')} style={{ flex:1, padding: '12px', borderRadius: 14,
-                        border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
-                        color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>👤 Profile</button>
-                    </div>
+                ) : null}
+
+                {/* Board seçimi — her zaman görünür */}
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 16, padding: 15, border: '1px solid rgba(255,255,255,0.15)' }}>
+                    <p style={{ color: '#ffe082', fontWeight: 800, margin: '0 0 10px', textAlign: 'center', fontSize: 14 }}>Select Board</p>
+                    {Object.entries(GRID_CONFIGS).map(([key, val]) => (
+                      <button key={key} onClick={() => setMode(key)} style={{
+                        width: '100%', padding: '12px 14px', marginBottom: 7, borderRadius: 10,
+                        border: `2px solid ${mode === key ? '#ffb300' : 'rgba(255,255,255,0.2)'}`,
+                        background: mode === key ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
+                        color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        boxShadow: mode === key ? '0 4px 14px rgba(243,156,18,0.4)' : 'none',
+                      }}>
+                        <span>{val.label}</span>
+                        <span style={{ fontSize: 11, background: 'rgba(0,0,0,0.25)', borderRadius: 6, padding: '2px 8px' }}>{val.difficulty}</span>
+                      </button>
+                    ))}
                   </div>
-                )}
+                  <button onClick={() => startGame(mode)} style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none',
+                    background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
+                    boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={() => setScreen('scores')} style={{ flex:1, padding: '12px', borderRadius: 14,
+                      border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
+                      color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>🏆 Scores</button>
+                    <button onClick={() => setScreen('profile')} style={{ flex:1, padding: '12px', borderRadius: 14,
+                      border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
+                      color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>👤 Profile</button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2111,6 +2153,10 @@ Istanbul, Turkey 🇹🇷`
               onReplay={() => startGame(mode)}
               onMenu={() => { setWon(false); setScreen('menu'); }}
               onScores={() => { setWon(false); setScreen('scores'); }}
+              onSaveName={(name) => {
+                setUser(name);
+                try { localStorage.setItem('memotiles_user', name); } catch {}
+              }}
             />
           )}
           {showSettings && (
