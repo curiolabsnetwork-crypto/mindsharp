@@ -1,21 +1,42 @@
 {
-  "name": "MindSharp",
+  "name": "MindSharp — Memory Game",
   "short_name": "MindSharp",
+  "description": "Train your memory and focus with MindSharp tile-matching game!",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#3e2723",
-  "theme_color": "#3e2723",
+  "background_color": "#2b1a10",
+  "theme_color": "#2b1a10",
   "orientation": "portrait",
+  "scope": "./",
+  "lang": "en",
+  "categories": ["games", "education"],
   "icons": [
     {
-      "src": "./icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "./icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Play Easy",
+      "short_name": "Easy",
+      "description": "Start an Easy game (32 tiles)",
+      "url": "./index.html?mode=8x4"
+    },
+    {
+      "name": "High Scores",
+      "short_name": "Scores",
+      "description": "View the leaderboard",
+      "url": "./index.html?screen=scores"
     }
   ]
 }
