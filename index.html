@@ -2191,15 +2191,23 @@ Istanbul, Turkey 🇹🇷`
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '8px 12px',
                     border: '1px solid rgba(200,169,110,0.3)', marginBottom: 10 }}>
-                    <div>
-                      <span style={{ color: '#ffe082', fontSize: 13, fontWeight: 700 }}>👤 {user}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap', minWidth: 0 }}>
+                      <span style={{ color: '#ffe082', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>👤 {user}</span>
                       {(() => {
                         const s = loadStats(); const streak = getStreakCount(s.streak || []);
-                        return streak > 0 ? <span style={{ color: 'rgba(255,224,130,0.55)', fontSize: 11, marginLeft: 8 }}>🔥 {streak} day streak</span> : null;
+                        return streak > 0 ? (
+                          <span style={{
+                            color: 'rgba(255,224,130,0.6)', fontSize: 11, fontWeight: 700,
+                            background: 'rgba(255,150,0,0.15)', borderRadius: 6,
+                            padding: '2px 7px', whiteSpace: 'nowrap',
+                          }}>🔥 {streak} day streak</span>
+                        ) : null;
                       })()}
                     </div>
                     <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); } catch {} }}
-                      style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 11, cursor: 'pointer' }}>Change</button>
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6,
+                        color: 'rgba(255,255,255,0.45)', fontSize: 11, cursor: 'pointer',
+                        padding: '3px 8px', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 8 }}>Change</button>
                   </div>
                 ) : (
                   <div style={{ marginBottom: 10 }}>
