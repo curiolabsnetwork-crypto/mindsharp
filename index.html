@@ -107,6 +107,367 @@
 
     const { useState, useEffect, useCallback, useRef } = React;
 
+    // ── STATS HELPERS ─────────────────────────────────────────
+    function loadStats() {
+      try {
+        const s = localStorage.getItem('ms_stats');
+        return s ? JSON.parse(s) : {
+          totalGames: 0,
+          totalWins: 0,
+          bestScores: {},      // { '8x4': n, '8x5': n, '8x7': n }
+          bestMoves: {},       // { mode: n }
+          bestTime: {},        // { mode: n }
+          totalMoves: 0,
+          totalTime: 0,
+          maxCombo: 0,
+          streak: [],          // ['2025-03-01', ...] günlük oynama günleri
+        };
+      } catch { return { totalGames:0, totalWins:0, bestScores:{}, bestMoves:{}, bestTime:{}, totalMoves:0, totalTime:0, maxCombo:0, streak:[] }; }
+    }
+
+    function saveStats(stats) {
+      try { localStorage.setItem('ms_stats', JSON.stringify(stats)); } catch {}
+    }
+
+    function recordGameStats({ mode, moves, time, score, comboBonus }) {
+      const stats = loadStats();
+      stats.totalGames = (stats.totalGames || 0) + 1;
+      stats.totalWins  = (stats.totalWins  || 0) + 1;
+      if (!stats.bestScores[mode] || score > stats.bestScores[mode]) stats.bestScores[mode] = score;
+      if (!stats.bestMoves[mode]  || moves < stats.bestMoves[mode])  stats.bestMoves[mode]  = moves;
+      if (!stats.bestTime[mode]   || time  < stats.bestTime[mode])   stats.bestTime[mode]   = time;
+      stats.totalMoves = (stats.totalMoves || 0) + moves;
+      stats.totalTime  = (stats.totalTime  || 0) + time;
+      if (comboBonus > (stats.maxCombo || 0)) stats.maxCombo = comboBonus;
+      // streak — bugünün tarihini ekle
+      const today = new Date().toISOString().slice(0, 10);
+      if (!stats.streak) stats.streak = [];
+      if (!stats.streak.includes(today)) stats.streak.push(today);
+      saveStats(stats);
+      return stats;
+    }
+
+    function getStreakCount(streak) {
+      if (!streak || streak.length === 0) return 0;
+      const sorted = [...streak].sort().reverse();
+      let count = 0;
+      let cur = new Date();
+      cur.setHours(0,0,0,0);
+      for (const d of sorted) {
+        const dd = new Date(d);
+        dd.setHours(0,0,0,0);
+        const diff = Math.round((cur - dd) / 86400000);
+        if (diff === 0 || diff === count) { count++; cur = dd; }
+        else break;
+      }
+      return count;
+    }
+
+    // ── ONBOARDING ────────────────────────────────────────────
+    function OnboardingModal({ onDone }) {
+      const [step, setStep] = React.useState(0);
+      const slides = [
+        {
+          emoji: '🧠',
+          title: 'Train Your Mind',
+          desc: 'MindSharp sharpens your short-term memory, pattern recognition and focus — in just 1 minute a day.',
+          color: '#f39c12',
+        },
+        {
+          emoji: '🃏',
+          title: 'How to Play',
+          desc: 'Flip tiles to find matching pairs — same number AND same color. Chain matches for combo bonuses!',
+          color: '#27ae60',
+        },
+        {
+          emoji: '🏆',
+          title: 'Climb the Ranks',
+          desc: 'Finish fast with fewer moves to maximize your score. Share your achievement certificate with friends!',
+          color: '#e74c3c',
+        },
+      ];
+      const s = slides[step];
+
+      const handleDone = () => {
+        try { localStorage.setItem('ms_onboarded', '1'); } catch {}
+        onDone();
+      };
+
+      return (
+        <div style={{
+          position:'fixed', inset:0, zIndex:600,
+          background:'rgba(0,0,0,0.88)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          padding:20,
+        }}>
+          <style>{`
+            @keyframes obSlide {
+              from { opacity:0; transform: translateY(24px); }
+              to   { opacity:1; transform: translateY(0); }
+            }
+          `}</style>
+          <div style={{
+            width:'100%', maxWidth:340,
+            background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
+            borderRadius:28,
+            border:'3px solid #c8a96e',
+            boxShadow:'0 0 0 6px rgba(200,169,110,0.15), 0 32px 80px rgba(0,0,0,0.6)',
+            overflow:'hidden',
+          }}>
+            {/* Progress bar */}
+            <div style={{ height:4, background:'rgba(200,169,110,0.2)', width:'100%' }}>
+              <div style={{
+                height:'100%',
+                width:`${((step+1)/slides.length)*100}%`,
+                background:`linear-gradient(90deg, ${s.color}, ${s.color}cc)`,
+                transition:'width 0.4s ease',
+                borderRadius:2,
+              }}/>
+            </div>
+
+            <div key={step} style={{
+              padding:'36px 28px 28px',
+              animation:'obSlide 0.35s cubic-bezier(.22,1.2,.36,1)',
+              textAlign:'center',
+            }}>
+              {/* Emoji */}
+              <div style={{
+                fontSize:64, lineHeight:1, marginBottom:20,
+                filter:`drop-shadow(0 4px 12px ${s.color}66)`,
+              }}>{s.emoji}</div>
+
+              {/* Title */}
+              <div style={{
+                fontFamily:'Georgia, serif',
+                fontSize:24, fontWeight:900,
+                color:'#3d1a00',
+                marginBottom:14,
+                letterSpacing:-0.5,
+              }}>{s.title}</div>
+
+              {/* Desc */}
+              <div style={{
+                fontSize:14, lineHeight:1.65,
+                color:'rgba(80,40,10,0.75)',
+                fontWeight:500,
+                marginBottom:32,
+                minHeight:64,
+              }}>{s.desc}</div>
+
+              {/* Dots */}
+              <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:28 }}>
+                {slides.map((_,i) => (
+                  <div key={i} style={{
+                    width: i===step ? 22 : 8, height:8, borderRadius:4,
+                    background: i===step ? s.color : 'rgba(200,169,110,0.35)',
+                    transition:'all 0.3s ease',
+                  }}/>
+                ))}
+              </div>
+
+              {/* Buttons */}
+              <div style={{ display:'flex', gap:10 }}>
+                {step > 0 && (
+                  <button onClick={() => setStep(step-1)} style={{
+                    flex:1, padding:'12px 0', borderRadius:14,
+                    border:'2px solid #c8a96e', background:'transparent',
+                    color:'#7a5c2e', fontWeight:800, fontSize:14, cursor:'pointer',
+                  }}>← Back</button>
+                )}
+                {step < slides.length - 1 ? (
+                  <button onClick={() => setStep(step+1)} style={{
+                    flex:1, padding:'12px 0', borderRadius:14, border:'none',
+                    background:`linear-gradient(135deg, ${s.color}, ${s.color}bb)`,
+                    color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer',
+                    boxShadow:`0 4px 16px ${s.color}55`,
+                  }}>Next →</button>
+                ) : (
+                  <button onClick={handleDone} style={{
+                    flex:1, padding:'12px 0', borderRadius:14, border:'none',
+                    background:'linear-gradient(135deg,#27ae60,#2ecc71)',
+                    color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer',
+                    boxShadow:'0 4px 16px rgba(46,204,113,0.45)',
+                  }}>▶ Let's Play!</button>
+                )}
+              </div>
+
+              <div style={{ marginTop:16, fontSize:11, color:'rgba(120,80,20,0.4)', fontWeight:600 }}>
+                {step < slides.length-1 && (
+                  <span onClick={handleDone} style={{ cursor:'pointer', textDecoration:'underline' }}>Skip</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── PROFILE SCREEN ────────────────────────────────────────
+    function ProfileScreen({ user, onBack, scores }) {
+      const stats = loadStats();
+      const streak = getStreakCount(stats.streak || []);
+      const avgMoves = stats.totalGames > 0 ? Math.round(stats.totalMoves / stats.totalGames) : 0;
+      const avgTime  = stats.totalGames > 0 ? Math.round(stats.totalTime  / stats.totalGames) : 0;
+
+      // Son 35 günlük streak takvimi
+      const calDays = [];
+      for (let i = 34; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        calDays.push(d.toISOString().slice(0,10));
+      }
+      const playedSet = new Set(stats.streak || []);
+
+      const Card = ({ children, style }) => (
+        <div style={{
+          background:'rgba(0,0,0,0.42)',
+          borderRadius:16,
+          border:'1px solid rgba(255,255,255,0.12)',
+          padding:'14px 16px',
+          ...style,
+        }}>{children}</div>
+      );
+
+      const Label = ({ children }) => (
+        <div style={{ color:'rgba(255,224,130,0.55)', fontSize:9, fontWeight:800, letterSpacing:1.5, textTransform:'uppercase', marginBottom:4 }}>
+          {children}
+        </div>
+      );
+
+      const BigNum = ({ children, color }) => (
+        <div style={{ color: color || '#fff', fontWeight:900, fontSize:28, lineHeight:1, fontFamily:'Georgia,serif' }}>
+          {children}
+        </div>
+      );
+
+      return (
+        <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:2 }}>
+            <button onClick={onBack} style={{
+              background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.2)',
+              color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16,
+            }}>←</button>
+            <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:20,
+              textShadow:'0 2px 6px rgba(0,0,0,0.8)' }}>👤 Profile</h2>
+          </div>
+
+          {/* User card */}
+          <Card>
+            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{
+                width:52, height:52, borderRadius:'50%',
+                background:'linear-gradient(135deg,#f39c12,#e67e22)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:22, fontWeight:900, color:'#fff',
+                boxShadow:'0 4px 14px rgba(243,156,18,0.4)',
+                flexShrink:0,
+              }}>
+                {(user||'G')[0].toUpperCase()}
+              </div>
+              <div>
+                <div style={{ color:'#fff', fontWeight:900, fontSize:18, fontFamily:'Georgia,serif' }}>{user || 'Guest'}</div>
+                <div style={{ color:'rgba(255,224,130,0.6)', fontSize:11, marginTop:2 }}>
+                  🔥 {streak} day streak
+                </div>
+              </div>
+              <div style={{ marginLeft:'auto', textAlign:'center' }}>
+                <div style={{ color:'#ffe082', fontWeight:900, fontSize:22, fontFamily:'Georgia,serif' }}>{stats.totalWins || 0}</div>
+                <div style={{ color:'rgba(255,224,130,0.5)', fontSize:9, letterSpacing:1 }}>WINS</div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Overview row */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            <Card>
+              <Label>Total Games</Label>
+              <BigNum color='#29B6F6'>{stats.totalGames || 0}</BigNum>
+            </Card>
+            <Card>
+              <Label>Max Combo Bonus</Label>
+              <BigNum color='#f39c12'>{stats.maxCombo || 0}</BigNum>
+              <div style={{ color:'rgba(255,200,80,0.5)', fontSize:10 }}>pts</div>
+            </Card>
+            <Card>
+              <Label>Avg Moves</Label>
+              <BigNum color='#e74c3c'>{avgMoves || '-'}</BigNum>
+            </Card>
+            <Card>
+              <Label>Avg Time</Label>
+              <BigNum color='#2ecc71'>{avgTime ? formatTime(avgTime) : '-'}</BigNum>
+            </Card>
+          </div>
+
+          {/* Best scores per difficulty */}
+          <Card>
+            <Label>Best Scores by Difficulty</Label>
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:6 }}>
+              {Object.entries(GRID_CONFIGS).map(([key, val]) => {
+                const best = stats.bestScores?.[key];
+                const bestM = stats.bestMoves?.[key];
+                const bestT = stats.bestTime?.[key];
+                return (
+                  <div key={key} style={{
+                    display:'flex', alignItems:'center', justifyContent:'space-between',
+                    padding:'8px 12px',
+                    background:'rgba(255,255,255,0.06)',
+                    borderRadius:10,
+                    border:'1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <div>
+                      <div style={{ color:'#fff', fontWeight:700, fontSize:13 }}>{val.difficulty}</div>
+                      <div style={{ color:'rgba(255,224,130,0.45)', fontSize:10 }}>{val.label}</div>
+                    </div>
+                    {best ? (
+                      <div style={{ textAlign:'right' }}>
+                        <div style={{ color:'#ffe082', fontWeight:900, fontSize:16 }}>{best.toLocaleString()}</div>
+                        <div style={{ color:'rgba(255,224,130,0.5)', fontSize:10 }}>
+                          {bestM}mv · {formatTime(bestT)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ color:'rgba(255,255,255,0.2)', fontSize:12 }}>No games yet</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Streak calendar — son 35 gün */}
+          <Card>
+            <Label>Activity — Last 35 Days</Label>
+            <div style={{ marginTop:8, display:'flex', flexWrap:'wrap', gap:4 }}>
+              {calDays.map(day => {
+                const played = playedSet.has(day);
+                const isToday = day === new Date().toISOString().slice(0,10);
+                return (
+                  <div key={day} title={day} style={{
+                    width:16, height:16, borderRadius:4,
+                    background: played
+                      ? 'linear-gradient(135deg,#27ae60,#2ecc71)'
+                      : 'rgba(255,255,255,0.07)',
+                    border: isToday ? '1.5px solid #ffe082' : '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: played ? '0 0 6px rgba(46,204,113,0.4)' : 'none',
+                    transition:'background 0.2s',
+                  }}/>
+                );
+              })}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8 }}>
+              <div style={{ width:12, height:12, borderRadius:3, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)' }}/>
+              <span style={{ color:'rgba(255,224,130,0.4)', fontSize:10 }}>No play</span>
+              <div style={{ width:12, height:12, borderRadius:3, background:'linear-gradient(135deg,#27ae60,#2ecc71)', marginLeft:10 }}/>
+              <span style={{ color:'rgba(255,224,130,0.4)', fontSize:10 }}>Played</span>
+            </div>
+          </Card>
+
+          <div style={{ height:20 }}/>
+        </div>
+      );
+    }
+
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
       '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'   },
@@ -1094,6 +1455,11 @@ Istanbul, Turkey 🇹🇷`
       const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
+
+      // Onboarding — tek seferlik
+      const [showOnboarding, setShowOnboarding] = useState(() => {
+        try { return !localStorage.getItem('ms_onboarded'); } catch { return false; }
+      });
       const [scores, setScores]     = useState([]);
       const [rank, setRank]         = useState(null);
       const scoresRef               = useRef([]);
@@ -1270,6 +1636,15 @@ Istanbul, Turkey 🇹🇷`
                           moves: mv,
                           time: tm,
                           score: finalScore,
+                        });
+
+                        // İstatistikleri kaydet
+                        recordGameStats({
+                          mode,
+                          moves: mv,
+                          time: tm,
+                          score: finalScore,
+                          comboBonus: comboBonusRef.current,
                         });
 
                         // BUG FIX #6: Firebase'den kesin rank al (race condition azaltıldı)
@@ -1452,12 +1827,26 @@ Istanbul, Turkey 🇹🇷`
                     <button onClick={() => startGame(mode)} style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none',
                       background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
                       boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
-                    <button onClick={() => setScreen('scores')} style={{ width: '100%', padding: '12px', borderRadius: 14,
-                      border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
-                      color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>🏆 High Scores</button>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={() => setScreen('scores')} style={{ flex:1, padding: '12px', borderRadius: 14,
+                        border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
+                        color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>🏆 Scores</button>
+                      <button onClick={() => setScreen('profile')} style={{ flex:1, padding: '12px', borderRadius: 14,
+                        border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
+                        color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>👤 Profile</button>
+                    </div>
                   </div>
                 )}
               </div>
+            )}
+
+            {/* PROFILE */}
+            {screen === 'profile' && (
+              <ProfileScreen
+                user={user}
+                scores={scores}
+                onBack={() => setScreen('menu')}
+              />
             )}
 
             {/* SCORES */}
@@ -1575,6 +1964,10 @@ Istanbul, Turkey 🇹🇷`
               onClose={() => setShowSettings(false)}
               settings={settings}
             />
+          )}
+
+          {showOnboarding && (
+            <OnboardingModal onDone={() => setShowOnboarding(false)} />
           )}
         </div>
       );
