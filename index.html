@@ -1848,7 +1848,6 @@ Istanbul, Turkey 🇹🇷`
       const [toast, setToast]         = useState(null);
       const [showExitConfirm, setShowExitConfirm] = useState(false);
       const settings   = useSettings();
-      const settings   = useSettings();
       const [showSettings, setShowSettings] = React.useState(false);
 
       const comboBonusRef = useRef(0);
@@ -2414,9 +2413,13 @@ Istanbul, Turkey 🇹🇷`
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    // Hide loader once React has mounted
-    const loader = document.getElementById('ms-loader');
-    if (loader) loader.style.display = 'none';
+    // Hide loader after React paints first frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const loader = document.getElementById('ms-loader');
+        if (loader) loader.style.display = 'none';
+      });
+    });
   </script>
   <script>
     if ('serviceWorker' in navigator) {
