@@ -316,7 +316,16 @@
 
     function OnboardingModal({ onDone, playSound, sfxEnabled }) {
       const [demoStep, setDemoStep] = React.useState(0);
+      const [audioUnlocked, setAudioUnlocked] = React.useState(false);
       const prevStepRef = React.useRef(0);
+
+      // Unlock AudioContext on first tap anywhere on the modal
+      const handleUnlockAudio = React.useCallback(() => {
+        if (!audioUnlocked && sfxEnabled) {
+          playSound('flip'); // silent unlock tap — very short, just opens the context
+          setAudioUnlocked(true);
+        }
+      }, [audioUnlocked, sfxEnabled, playSound]);
 
       // step → tile states: [t0_flip, t0_match, t1_flip, t1_match, t2_flip, t2_match, t3_flip, t3_match]
       const tileStates = [
@@ -350,8 +359,7 @@
         const next = (step) => {
           t = setTimeout(() => {
             const nextStep = (step + 1) % delays.length;
-            // Ses çal
-            if (sfxEnabled && soundMap[nextStep]) {
+            if (sfxEnabled && audioUnlocked && soundMap[nextStep]) {
               playSound(soundMap[nextStep]);
             }
             setDemoStep(nextStep);
@@ -360,7 +368,7 @@
         };
         next(demoStep);
         return () => clearTimeout(t);
-      }, [sfxEnabled]);
+      }, [sfxEnabled, audioUnlocked]);
 
       const ts    = tileStates[demoStep] || tileStates[0];
       const tiles = [
@@ -380,7 +388,7 @@
       };
 
       return (
-        <div style={{
+        <div onClick={handleUnlockAudio} style={{
           position:'fixed', inset:0, zIndex:600,
           background:'rgba(0,0,0,0.90)',
           display:'flex', alignItems:'center', justifyContent:'center',
@@ -416,15 +424,15 @@
 
               {/* Title */}
               <div style={{
-                fontFamily:'Georgia,serif', fontSize:22, fontWeight:900,
+                fontFamily:'Georgia,serif', fontSize:28, fontWeight:900,
                 color:'#3d1a00',
-                marginBottom:4,
+                marginBottom:6,
                 letterSpacing:-0.3,
               }}>How to Play</div>
 
               {/* Subtitle */}
               <div style={{
-                fontSize:12, fontWeight:600, lineHeight:1.55,
+                fontSize:13, fontWeight:600, lineHeight:1.55,
                 color:'rgba(70,35,5,0.60)',
                 marginBottom:18,
               }}>
@@ -440,6 +448,16 @@
                 marginBottom:16,
                 position:'relative',
               }}>
+                {/* DEMO watermark label */}
+                <div style={{
+                  position:'absolute', top:8, right:10,
+                  background:'rgba(200,169,110,0.2)',
+                  border:'1px solid rgba(200,169,110,0.35)',
+                  color:'rgba(255,224,130,0.6)',
+                  fontSize:9, fontWeight:800, letterSpacing:2,
+                  padding:'2px 8px', borderRadius:6,
+                  textTransform:'uppercase', pointerEvents:'none',
+                }}>DEMO</div>
 
                 {/* Status badge */}
                 {wrongPair && (
@@ -512,7 +530,7 @@
               {/* Rule summary */}
               <div style={{
                 display:'flex', justifyContent:'center', alignItems:'center', gap:8,
-                marginBottom:20,
+                marginBottom: audioUnlocked ? 20 : 8,
                 padding:'10px 14px',
                 background:'rgba(200,169,110,0.12)',
                 borderRadius:12,
@@ -536,11 +554,20 @@
                 )}
               </div>
 
+              {/* Tap for sound nudge — only shown before audio unlocked */}
+              {!audioUnlocked && sfxEnabled && (
+                <div style={{
+                  textAlign:'center', marginBottom:14,
+                  color:'rgba(70,35,5,0.45)', fontSize:10, fontWeight:700,
+                  letterSpacing:0.5,
+                }}>🔊 Tap anywhere to enable sound</div>
+              )}
+
               {/* CTA button */}
               <button onClick={handleDone} style={{
-                width:'100%', padding:'14px 0', borderRadius:16, border:'none',
+                width:'100%', padding:'16px 0', borderRadius:16, border:'none',
                 background:'linear-gradient(135deg,#27ae60,#2ecc71)',
-                color:'#fff', fontWeight:900, fontSize:16, cursor:'pointer',
+                color:'#fff', fontWeight:900, fontSize:18, cursor:'pointer',
                 boxShadow:'0 6px 20px rgba(46,204,113,0.45)',
                 letterSpacing:0.5,
               }}>▶ Let's Play!</button>
@@ -2316,13 +2343,6 @@ Istanbul, Turkey 🇹🇷`
                   </div>
                   <button onClick={() => startGame(mode)}
                     style={{ background: 'none', border: 'none', color: '#ffe082', fontSize: 20, cursor: 'pointer', padding: '0 4px' }}>↺</button>
-                </div>
-                {/* Difficulty badge */}
-                <div style={{ alignSelf: 'flex-start', background: 'rgba(0,0,0,0.35)', borderRadius: 8,
-                  padding: '3px 10px', border: '1px solid rgba(200,169,110,0.25)' }}>
-                  <span style={{ color: 'rgba(255,224,130,0.7)', fontSize: 10, fontWeight: 700 }}>
-                    {cfg.difficulty} · {cfg.label}
-                  </span>
                 </div>
 
                 {/* Progress bar */}
