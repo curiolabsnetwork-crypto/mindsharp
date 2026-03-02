@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "co.mindsharp.twa",
+        "sha256_cert_fingerprints": ["D5:4D:4C:37:D5:70:7B:CD:8A:15:B4:58:E6:79:90:B3:25:9C:6F:B3:CE:49:25:5C:C2:B4:1B:33:FA:D5:EB:D6"]
+      }
+    }]
