@@ -1696,8 +1696,12 @@ Istanbul, Turkey 🇹🇷`
     function SettingsModal({ onClose, settings }) {
       const [legalType, setLegalType] = React.useState(null);
 
-      const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
-      const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
+      const APP_STORE_URL = 'https://apps.apple.com/app/mindsharp/id0000000000'; // sonra güncellenecek
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.mindsharp.twa';
+// Platform tespiti
+const isAndroid = /android/i.test(navigator.userAgent);
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
 const handleShare = () => {
   const url = 'https://mindsharp.co';
@@ -1831,8 +1835,7 @@ const handleShare = () => {
 
                 <SectionHeader label="Social" />
                 <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
-                <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />
-                <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />
+              {(() => { const ua = navigator.userAgent.toLowerCase(); const isAndroid = /android/.test(ua); const isIOS = /iphone|ipad|ipod/.test(ua); const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone; if (isAndroid && isStandalone) return <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />; if (isIOS && isStandalone) return <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />; return null; })()}
 
                 <SectionHeader label="Info" />
                 <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
