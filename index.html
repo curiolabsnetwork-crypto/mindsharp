@@ -1699,13 +1699,30 @@ Istanbul, Turkey 🇹🇷`
       const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
       const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
 
-      const handleShare = async () => {
-        const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
-        if (navigator.share) {
-          try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
-        }
-        try { await navigator.clipboard.writeText(text); alert('Link copied! Share it with friends 🎉'); } catch {}
-      };
+const handleShare = () => {
+  const url = 'https://mindsharp.co';
+  const text = 'Train your memory with MindSharp! 🧠 ';
+  const fullText = text + url;
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:#f5e6c8;border-radius:16px;padding:24px;width:300px;max-width:90vw;font-family:serif;text-align:center">
+      <h3 style="margin:0 0 16px;color:#3d1f00;font-size:18px">Share MindSharp 🧠</h3>
+      <button id="copyBtn" style="width:100%;padding:12px;margin-bottom:8px;background:#8B4513;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer">📋 Copy Link</button>
+      <a href="https://wa.me/?text=${encodeURIComponent(fullText)}" target="_blank" style="display:block;padding:12px;margin-bottom:8px;background:#25D366;color:white;border-radius:8px;font-size:15px;text-decoration:none">💬 WhatsApp</a>
+      <a href="mailto:?subject=Try MindSharp!&body=${encodeURIComponent(fullText)}" style="display:block;padding:12px;margin-bottom:16px;background:#4a90d9;color:white;border-radius:8px;font-size:15px;text-decoration:none">✉️ Email</a>
+      <button id="cancelBtn" style="width:100%;padding:10px;background:transparent;color:#8B4513;border:2px solid #8B4513;border-radius:8px;font-size:14px;cursor:pointer">Cancel</button>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('copyBtn').onclick = async () => {
+    await navigator.clipboard.writeText(url);
+    document.getElementById('copyBtn').textContent = '✅ Copied!';
+    setTimeout(() => document.getElementById('copyBtn').textContent = '📋 Copy Link', 2000);
+  };
+  document.getElementById('cancelBtn').onclick = () => modal.remove();
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+};
 
       const Toggle = ({ value, onChange }) => (
         <div onClick={() => onChange(!value)} style={{
