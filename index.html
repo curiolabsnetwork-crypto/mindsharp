@@ -746,9 +746,9 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Standard'   },
-      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Hard' },
-      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Very Hard'   },
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'   },
+      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium' },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'   },
     };
     const PREVIEW_TILES = [
       { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -763,7 +763,7 @@
       for (let n = 1; n <= maxNum; n++) {
         for (let c = 0; c < colorCount; c++) {
           uniquePairs.push({ number: n, color: TILE_COLORS[c] });
-        }S
+        }
       }
       for (let i = uniquePairs.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1567,7 +1567,7 @@ CHILDREN
 This app does not knowingly collect data from children under 13.
 
 CONTACT
-info@mindsharp.co`
+privacy@mendebur.com`
         },
         terms: {
           title: '📋 Terms of Service',
@@ -1592,7 +1592,7 @@ CHANGES
 We may update these terms at any time. Continued use means acceptance.
 
 CONTACT
-info@mindsharp.co`
+legal@mendebur.com`
         },
         about: {
           title: '🎮 About MindSharp',
@@ -1608,9 +1608,9 @@ HOW TO PLAY
 • Chain consecutive matches for combo bonuses
 
 DIFFICULTY LEVELS
-• Standard   — 32 tiles (8×4)
-• Hard — 40 tiles (8×5)
-• Very Hard   — 56 tiles (8×7)
+• Easy   — 32 tiles (8×4)
+• Medium — 40 tiles (8×5)
+• Hard   — 56 tiles (8×7)
 
 SCORING
 Base score + combo bonuses − move penalty − time penalty
@@ -1624,11 +1624,11 @@ Mendebur Studios — Istanbul, Turkey
           title: '✉️ Contact Us',
           body: `We'd love to hear from you!
 
-📧 General: info@mindsharp.co
-🐛 Bug reports: info@mindsharp.co
-💡 Suggestions: info@mindsharp.co
+📧 General: hello@mendebur.com
+🐛 Bug reports: bugs@mendebur.com
+💡 Suggestions: feedback@mendebur.com
 
-🌐 Website: https://mendeburstudios.com/
+🌐 Website: mendebur.com
 📱 Instagram: @mindsharpmobile
 
 Response time: 1-3 business days
@@ -1696,37 +1696,16 @@ Istanbul, Turkey 🇹🇷`
     function SettingsModal({ onClose, settings }) {
       const [legalType, setLegalType] = React.useState(null);
 
-      const APP_STORE_URL = 'https://apps.apple.com/app/mindsharp/id0000000000'; // sonra güncellenecek
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.mindsharp.twa';
-// Platform tespiti
-const isAndroid = /android/i.test(navigator.userAgent);
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
+      const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
 
-const handleShare = () => {
-  const url = 'https://mindsharp.co';
-  const text = 'Train your memory with MindSharp! 🧠 ';
-  const fullText = text + url;
-  
-  const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
-  modal.innerHTML = `
-    <div style="background:#f5e6c8;border-radius:16px;padding:24px;width:300px;max-width:90vw;font-family:serif;text-align:center">
-      <h3 style="margin:0 0 16px;color:#3d1f00;font-size:18px">Share MindSharp 🧠</h3>
-      <button id="copyBtn" style="width:100%;padding:12px;margin-bottom:8px;background:#8B4513;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer">📋 Copy Link</button>
-      <a href="https://wa.me/?text=${encodeURIComponent(fullText)}" target="_blank" style="display:block;padding:12px;margin-bottom:8px;background:#25D366;color:white;border-radius:8px;font-size:15px;text-decoration:none">💬 WhatsApp</a>
-      <a href="mailto:?subject=Try MindSharp!&body=${encodeURIComponent(fullText)}" style="display:block;padding:12px;margin-bottom:16px;background:#4a90d9;color:white;border-radius:8px;font-size:15px;text-decoration:none">✉️ Email</a>
-      <button id="cancelBtn" style="width:100%;padding:10px;background:transparent;color:#8B4513;border:2px solid #8B4513;border-radius:8px;font-size:14px;cursor:pointer">Cancel</button>
-    </div>`;
-  document.body.appendChild(modal);
-  document.getElementById('copyBtn').onclick = async () => {
-    await navigator.clipboard.writeText(url);
-    document.getElementById('copyBtn').textContent = '✅ Copied!';
-    setTimeout(() => document.getElementById('copyBtn').textContent = '📋 Copy Link', 2000);
-  };
-  document.getElementById('cancelBtn').onclick = () => modal.remove();
-  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
-};
+      const handleShare = async () => {
+        const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
+        if (navigator.share) {
+          try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
+        }
+        try { await navigator.clipboard.writeText(text); alert('Link copied! Share it with friends 🎉'); } catch {}
+      };
 
       const Toggle = ({ value, onChange }) => (
         <div onClick={() => onChange(!value)} style={{
@@ -1835,7 +1814,8 @@ const handleShare = () => {
 
                 <SectionHeader label="Social" />
                 <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
-              {(() => { const ua = navigator.userAgent.toLowerCase(); const isAndroid = /android/.test(ua); const isIOS = /iphone|ipad|ipod/.test(ua); const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone; if (isAndroid && isStandalone) return <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />; if (isIOS && isStandalone) return <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />; return null; })()}
+                <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />
+                <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />
 
                 <SectionHeader label="Info" />
                 <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
