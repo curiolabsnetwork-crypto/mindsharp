@@ -746,9 +746,9 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'   },
-      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium' },
-      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'   },
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Standard'   },
+      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Hard' },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Very Hard'   },
     };
     const PREVIEW_TILES = [
       { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -763,7 +763,7 @@
       for (let n = 1; n <= maxNum; n++) {
         for (let c = 0; c < colorCount; c++) {
           uniquePairs.push({ number: n, color: TILE_COLORS[c] });
-        }
+        }S
       }
       for (let i = uniquePairs.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1608,9 +1608,9 @@ HOW TO PLAY
 • Chain consecutive matches for combo bonuses
 
 DIFFICULTY LEVELS
-• Easy   — 32 tiles (8×4)
-• Medium — 40 tiles (8×5)
-• Hard   — 56 tiles (8×7)
+• Standard   — 32 tiles (8×4)
+• Hard — 40 tiles (8×5)
+• Very Hard   — 56 tiles (8×7)
 
 SCORING
 Base score + combo bonuses − move penalty − time penalty
