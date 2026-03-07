@@ -1926,36 +1926,77 @@ Istanbul, Turkey 🇹🇷`
       const lockRef       = useRef(false);
       const play          = useSound();
 
-      // Background music
-      const bgMusicRef = useRef(null);
+      // Background music — Web Audio API (ayrı thread, mobil performansını etkilemez)
+      const bgAudioCtxRef = useRef(null);
+      const bgSourceRef   = useRef(null);
+      const bgBufferRef   = useRef(null);
+      const bgLoadedRef   = useRef(false);
+      const bgPlayingRef  = useRef(false);
+      const musicEnabledRef = useRef(settings.music);
+      useEffect(() => { musicEnabledRef.current = settings.music; }, [settings.music]);
 
-      const getBgMusic = () => {
-        if (!bgMusicRef.current) {
-          const audio = new Audio('./music.mp3');
-          audio.loop = true;
-          audio.volume = 0.35;
-          bgMusicRef.current = audio;
+      const getAudioCtx = () => {
+        if (!bgAudioCtxRef.current) {
+          bgAudioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
         }
-        return bgMusicRef.current;
+        return bgAudioCtxRef.current;
       };
 
-      // Play/pause when toggle changes
+      const startBgMusic = () => {
+        if (bgPlayingRef.current) return;
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+        if (!bgBufferRef.current) return;
+        const source = ctx.createBufferSource();
+        source.buffer = bgBufferRef.current;
+        source.loop = true;
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 0.35;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+        bgSourceRef.current = source;
+        bgPlayingRef.current = true;
+      };
+
+      const stopBgMusic = () => {
+        if (!bgPlayingRef.current) return;
+        try { bgSourceRef.current && bgSourceRef.current.stop(); } catch(e) {}
+        bgSourceRef.current = null;
+        bgPlayingRef.current = false;
+      };
+
+      // Load buffer once
       useEffect(() => {
-        const audio = getBgMusic();
-        if (settings.music) {
-          const p = audio.play();
-          if (p && p.catch) p.catch(() => {});
-        } else {
-          audio.pause();
-        }
+        if (bgLoadedRef.current) return;
+        bgLoadedRef.current = true;
+        fetch('./music.mp3')
+          .then(r => r.arrayBuffer())
+          .then(ab => {
+            const ctx = getAudioCtx();
+            return ctx.decodeAudioData(ab);
+          })
+          .then(buffer => {
+            bgBufferRef.current = buffer;
+            if (musicEnabledRef.current) startBgMusic();
+          })
+          .catch(() => {});
+      }, []);
+
+      // Play/pause on toggle
+      useEffect(() => {
+        if (!bgBufferRef.current) return;
+        if (settings.music) startBgMusic();
+        else stopBgMusic();
       }, [settings.music]);
 
-      // On first user interaction, start music if default-on and not yet playing
+      // On first interaction: resume AudioContext (iOS requires it) and start if enabled
       useEffect(() => {
         const tryStart = () => {
-          const audio = bgMusicRef.current;
-          if (audio && audio.paused && settings.music) {
-            audio.play().catch(() => {});
+          const ctx = bgAudioCtxRef.current;
+          if (ctx && ctx.state === 'suspended') ctx.resume();
+          if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) {
+            startBgMusic();
           }
           document.removeEventListener('pointerdown', tryStart);
         };
