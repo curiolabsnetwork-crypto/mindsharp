@@ -1531,7 +1531,7 @@
         catch { return def; }
       };
       const [sfx,       setSfxRaw]       = React.useState(() => load('sfx', true));
-      const [music,     setMusicRaw]     = React.useState(() => load('music', false));
+      const [music,     setMusicRaw]     = React.useState(() => load('music', true));
       const [vibration, setVibrationRaw] = React.useState(() => load('vibration', false));
       const save = (key, val) => { try { localStorage.setItem('ms_' + key, JSON.stringify(val)); } catch {} };
 
@@ -2204,6 +2204,25 @@ Istanbul, Turkey 🇹🇷`
 
           <div className="contentWrap" style={{ position: 'relative', zIndex: 5, width: '100%', minHeight: '100vh',
             boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+            {/* Floating Music Button */}
+            <button
+              onClick={() => settings.setMusic(!settings.music)}
+              title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}
+              style={{
+                position: 'fixed', top: 12, right: 12, zIndex: 9999,
+                width: 38, height: 38, borderRadius: '50%',
+                background: settings.music ? 'rgba(255,180,0,0.25)' : 'rgba(0,0,0,0.35)',
+                border: settings.music ? '1.5px solid rgba(255,200,0,0.6)' : '1.5px solid rgba(255,255,255,0.15)',
+                color: settings.music ? '#ffe066' : 'rgba(255,255,255,0.35)',
+                fontSize: 18, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(4px)',
+                transition: 'all 0.2s ease',
+                boxShadow: settings.music ? '0 0 12px rgba(255,180,0,0.3)' : 'none',
+              }}>
+              {settings.music ? '🎵' : '🔇'}
+            </button>
 
             {/* MENU */}
             {screen === 'menu' && (
