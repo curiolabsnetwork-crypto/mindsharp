@@ -1265,7 +1265,7 @@
 
         ctx.save();
         ctx.textAlign='center'; ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.5)';
-        ctx.fillText('mindsharpgame.netlify.app', W/2, H-100);
+        ctx.fillText('mindsharp.co', W/2, H-100);
         ctx.restore();
 
         const confColors=['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
@@ -1546,19 +1546,22 @@
       const content = {
         privacy: {
           title: '🔒 Privacy Policy',
-          // BUG FIX #5: "Very Hard" modu kaldırıldı About'tan, gerçek modlar listelendi
-          body: `Last updated: February 2026
+          body: `Last updated: March 1, 2026 · Mendebur Studios
 
-MindSharp ("we", "our", or "us") is operated by Mendebur Studios.
+SUMMARY
+We collect only your chosen username and game scores to power leaderboards. We do not collect your name, email, or location. We do not sell your data.
 
 DATA WE COLLECT
-• Username you enter (stored locally on your device)
-• Game scores and statistics (stored in Firebase Firestore)
+• Username — a nickname you choose voluntarily for the leaderboard
+• Game scores and statistics (moves, time, difficulty level)
+• Device type and OS (via Firebase)
 • No email, phone, or personal identity data is collected
 
 HOW WE USE DATA
-• To display leaderboards and track your progress
-• We do not sell or share your data with third parties
+• To display your scores on global leaderboards
+• To calculate your ranking among other players
+• To improve gameplay and user experience
+• We do not sell or share your data with third parties for marketing
 
 THIRD-PARTY SERVICES
 • Firebase (Google) — score storage. Subject to Google's Privacy Policy.
@@ -1566,12 +1569,16 @@ THIRD-PARTY SERVICES
 CHILDREN
 This app does not knowingly collect data from children under 13.
 
+DATA DELETION
+You can delete your scores directly in the app (Scores → Clear Scores) or email us to delete all your data.
+
 CONTACT
-privacy@mendebur.com`
+📧 info@mindsharp.co
+🌐 mindsharp.co`
         },
         terms: {
           title: '📋 Terms of Service',
-          body: `Last updated: February 2026
+          body: `Last updated: March 1, 2026 · Mendebur Studios
 
 By using MindSharp, you agree to these terms.
 
@@ -1579,20 +1586,28 @@ USE OF THE APP
 • MindSharp is provided for personal, non-commercial use
 • You must not attempt to cheat, hack, or manipulate game scores
 • We reserve the right to remove scores that appear fraudulent
+• You must be at least 13 years of age to use this Service
 
 INTELLECTUAL PROPERTY
 • All game content, design, and code © 2026 Mendebur Studios
 • You may not copy, modify, or redistribute without permission
 
+USER CONTENT
+• By submitting a username, you grant Mendebur Studios a license to display it within the Service
+
 DISCLAIMER
 • The app is provided "as is" without warranty of any kind
 • We are not liable for any data loss or damages
+
+GOVERNING LAW
+These Terms are governed by the laws of Turkey.
 
 CHANGES
 We may update these terms at any time. Continued use means acceptance.
 
 CONTACT
-legal@mendebur.com`
+📧 info@mindsharp.co
+🌐 mindsharp.co`
         },
         about: {
           title: '🎮 About MindSharp',
@@ -1624,14 +1639,12 @@ Mendebur Studios — Istanbul, Turkey
           title: '✉️ Contact Us',
           body: `We'd love to hear from you!
 
-📧 General: hello@mendebur.com
-🐛 Bug reports: bugs@mendebur.com
-💡 Suggestions: feedback@mendebur.com
+📧 info@mindsharp.co
 
-🌐 Website: mendebur.com
 📱 Instagram: @mindsharpgame
 🎵 TikTok: @mindsharpgame
 📘 Facebook: MindSharp
+🌐 mindsharp.co
 
 Response time: 1-3 business days
 
@@ -1709,7 +1722,7 @@ Istanbul, Turkey 🇹🇷`
       const showLinkPlayStore = false;
 
       const handleShare = async () => {
-        const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
+        const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharp.co';
         if (navigator.share) {
           try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
         }
