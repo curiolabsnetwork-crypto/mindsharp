@@ -579,7 +579,7 @@
     }
 
     // ── PROFILE SCREEN ────────────────────────────────────────
-    function ProfileScreen({ user, onBack, scores }) {
+    function ProfileScreen({ user, onBack, scores, onMusicToggle, musicOn }) {
       const stats = loadStats();
       const streak = getStreakCount(stats.streak || []);
       const avgMoves = stats.totalGames > 0 ? Math.round(stats.totalMoves / stats.totalGames) : 0;
@@ -620,6 +620,11 @@
         <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
           {/* Header */}
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:2 }}>
+            <button onClick={onMusicToggle}
+              style={{ background:'none', border:'none', color: musicOn ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)', fontSize:20, cursor:'pointer', padding:'0 2px', lineHeight:1 }}
+              title={musicOn ? 'Müziği Kapat' : 'Müziği Aç'}>
+              {musicOn ? '♪' : '♩'}
+            </button>
             <button onClick={onBack} style={{
               background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.2)',
               color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16,
@@ -2243,6 +2248,14 @@ Istanbul, Turkey 🇹🇷`
             {screen === 'menu' && (
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <div style={{ width:'100%', position:'relative', display:'flex', justifyContent:'center', alignItems:'center', marginBottom:6 }}>
+                  <button onClick={() => settings.setMusic(!settings.music)}
+                    style={{ position:'absolute', left:0, background:'none', border:'none',
+                      color: settings.music ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)',
+                      fontSize:22, cursor:'pointer', padding:'0 4px', lineHeight:1, width:36, height:36,
+                      display:'flex', alignItems:'center', justifyContent:'center' }}
+                    title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}>
+                    {settings.music ? '♪' : '♩'}
+                  </button>
                   <h1 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 44, fontWeight: 900,
                     background: 'linear-gradient(160deg, #fff9c4 0%, #ffe066 40%, #ffb300 70%, #ff8f00 100%)',
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -2393,6 +2406,8 @@ Istanbul, Turkey 🇹🇷`
                 user={user}
                 scores={scores}
                 onBack={() => setScreen('menu')}
+                onMusicToggle={() => settings.setMusic(!settings.music)}
+                musicOn={settings.music}
               />
             )}
 
@@ -2400,6 +2415,11 @@ Istanbul, Turkey 🇹🇷`
             {screen === 'scores' && (
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <button onClick={() => settings.setMusic(!settings.music)}
+                    style={{ background:'none', border:'none', color: settings.music ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)', fontSize:20, cursor:'pointer', padding:'0 2px', lineHeight:1 }}
+                    title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}>
+                    {settings.music ? '♪' : '♩'}
+                  </button>
                   <button onClick={() => setScreen('menu')} style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.2)',
                     color: '#ffe082', borderRadius: 10, padding: '7px 13px', cursor: 'pointer', fontSize: 16 }}>←</button>
                   <h2 style={{ color: '#ffe082', fontFamily: 'Georgia,serif', margin: 0, fontSize: 20,
@@ -2428,8 +2448,15 @@ Istanbul, Turkey 🇹🇷`
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center',
                   justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', borderRadius: 10 }}>
-                  <button onClick={() => { if (running || moves > 0) setShowExitConfirm(true); else { setRunning(false); setScreen('menu'); } }}
-                    style={{ background: 'none', border: 'none', color: '#ffe082', fontSize: 20, cursor: 'pointer', padding: '0 4px' }}>←</button>
+                  <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                    <button onClick={() => settings.setMusic(!settings.music)}
+                      style={{ background:'none', border:'none', color: settings.music ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.3)', fontSize:16, cursor:'pointer', padding:'0 2px', lineHeight:1 }}
+                      title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}>
+                      {settings.music ? '♪' : '♩'}
+                    </button>
+                    <button onClick={() => { if (running || moves > 0) setShowExitConfirm(true); else { setRunning(false); setScreen('menu'); } }}
+                      style={{ background: 'none', border: 'none', color: '#ffe082', fontSize: 20, cursor: 'pointer', padding: '0 4px' }}>←</button>
+                  </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ color: '#ffe082', fontWeight: 900, fontSize: 16 }}>{score.toLocaleString()}</div>
