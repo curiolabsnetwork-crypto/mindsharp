@@ -1700,6 +1700,13 @@ Istanbul, Turkey 🇹🇷`
 
       const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
       const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const showRateAppStore  = isStandalone && isIOS;
+      const showRatePlayStore = isStandalone && isAndroid;
+      const showLinkAppStore  = !isStandalone;
+      const showLinkPlayStore = !isStandalone;
 
       const handleShare = async () => {
         const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
@@ -1836,8 +1843,10 @@ Istanbul, Turkey 🇹🇷`
                     <span style={{ fontSize:10, color:'rgba(255,224,130,0.8)', fontWeight:600 }}>Facebook</span>
                   </a>
                 </div>
-                <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />
-                <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />
+                {showRateAppStore  && <LinkRow icon="⭐" label="Rate on App Store"   onClick={() => window.open(APP_STORE_URL,  '_blank')} />}
+                {showRatePlayStore && <LinkRow icon="⭐" label="Rate on Play Store"  onClick={() => window.open(PLAY_STORE_URL, '_blank')} />}
+                {showLinkAppStore  && <LinkRow icon="🍎" label="App Store"  onClick={() => window.open(APP_STORE_URL,  '_blank')} />}
+                {showLinkPlayStore && <LinkRow icon="🤖" label="Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />}
 
                 <SectionHeader label="Info" />
                 <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
