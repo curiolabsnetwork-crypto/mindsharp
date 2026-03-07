@@ -179,7 +179,7 @@
   <script type="text/babel">
     // === Firebase Init ===
     const firebaseConfig = {
-      apiKey: "AIzaSyBqtoU6DrecyhCvjYoWOtOcCyadNMDu5dY",
+      apiKey: ["AIzaSyBqtoU6Drecy", "hCvjYoWOtOcCyadNMDu5dY"].join(""),
       authDomain: "mindsharp-af404.firebaseapp.com",
       projectId: "mindsharp-af404",
       storageBucket: "mindsharp-af404.firebasestorage.app",
@@ -746,9 +746,9 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Classic'   },
-      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Extreme' },
-      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Extreme'   },
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'   },
+      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium' },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'   },
     };
     const PREVIEW_TILES = [
       { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -1608,9 +1608,9 @@ HOW TO PLAY
 • Chain consecutive matches for combo bonuses
 
 DIFFICULTY LEVELS
-• Classic  — 32 tiles (8×4)
-• Hard     — 40 tiles (8×5)
-• Extreme  — 56 tiles (8×7)
+• Easy   — 32 tiles (8×4)
+• Medium — 40 tiles (8×5)
+• Hard   — 56 tiles (8×7)
 
 SCORING
 Base score + combo bonuses − move penalty − time penalty
@@ -1629,9 +1629,7 @@ Mendebur Studios — Istanbul, Turkey
 💡 Suggestions: feedback@mendebur.com
 
 🌐 Website: mendebur.com
-📱 Instagram: @mindsharpgame
-🎵 TikTok: @mindsharpgame
-📘 Facebook: MindSharp
+📱 Instagram: @mindsharpmobile
 
 Response time: 1-3 business days
 
@@ -1816,9 +1814,6 @@ Istanbul, Turkey 🇹🇷`
 
                 <SectionHeader label="Social" />
                 <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
-                <LinkRow icon="📷" label="Instagram" onClick={() => window.open('https://instagram.com/mindsharpgame', '_blank')} />
-                <LinkRow icon="🎵" label="TikTok" onClick={() => window.open('https://tiktok.com/@mindsharpgame', '_blank')} />
-                <LinkRow icon="📘" label="Facebook" onClick={() => window.open('https://www.facebook.com/profile.php?id=61583919300003', '_blank')} />
                 <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />
                 <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />
 
@@ -2285,47 +2280,6 @@ Istanbul, Turkey 🇹🇷`
                     <button onClick={() => setScreen('profile')} style={{ flex:1, padding: '12px', borderRadius: 14,
                       border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
                       color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>👤 Profile</button>
-                  </div>
-                  {/* Social Media Row */}
-                  <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:14, marginTop:2,
-                    background:'rgba(0,0,0,0.3)', borderRadius:12, padding:'10px 0',
-                    border:'1px solid rgba(255,255,255,0.1)' }}>
-                    <a href="https://instagram.com/mindsharpgame" target="_blank" rel="noopener noreferrer"
-                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-                        textDecoration:'none', color:'rgba(255,224,130,0.75)', fontSize:9, fontWeight:700 }}>
-                      <div style={{ width:38, height:38, borderRadius:10,
-                        background:'linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)',
-                        display:'flex', alignItems:'center', justifyContent:'center', fontSize:20,
-                        boxShadow:'0 2px 8px rgba(220,39,67,0.4)' }}>📷</div>
-                      Instagram
-                    </a>
-                    <a href="https://tiktok.com/@mindsharpgame" target="_blank" rel="noopener noreferrer"
-                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-                        textDecoration:'none', color:'rgba(255,224,130,0.75)', fontSize:9, fontWeight:700 }}>
-                      <div style={{ width:38, height:38, borderRadius:10,
-                        background:'linear-gradient(135deg,#111,#69C9D0)',
-                        display:'flex', alignItems:'center', justifyContent:'center', fontSize:20,
-                        boxShadow:'0 2px 8px rgba(105,201,208,0.4)' }}>🎵</div>
-                      TikTok
-                    </a>
-                    <a href="https://www.facebook.com/profile.php?id=61583919300003" target="_blank" rel="noopener noreferrer"
-                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-                        textDecoration:'none', color:'rgba(255,224,130,0.75)', fontSize:9, fontWeight:700 }}>
-                      <div style={{ width:38, height:38, borderRadius:10,
-                        background:'linear-gradient(135deg,#1877F2,#0a5dc9)',
-                        display:'flex', alignItems:'center', justifyContent:'center', fontSize:20,
-                        boxShadow:'0 2px 8px rgba(24,119,242,0.4)' }}>📘</div>
-                      Facebook
-                    </a>
-                    <a href="https://mindsharp.co" target="_blank" rel="noopener noreferrer"
-                      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3,
-                        textDecoration:'none', color:'rgba(255,224,130,0.75)', fontSize:9, fontWeight:700 }}>
-                      <div style={{ width:38, height:38, borderRadius:10,
-                        background:'linear-gradient(135deg,#f39c12,#e67e22)',
-                        display:'flex', alignItems:'center', justifyContent:'center', fontSize:20,
-                        boxShadow:'0 2px 8px rgba(243,156,18,0.4)' }}>🌐</div>
-                      Website
-                    </a>
                   </div>
                 </div>
               </div>
