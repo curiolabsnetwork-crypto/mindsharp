@@ -1939,16 +1939,29 @@ Istanbul, Turkey 🇹🇷`
         return bgMusicRef.current;
       };
 
-      // Play/pause when toggle changes — toggle click IS a user gesture so play() works
+      // Play/pause when toggle changes
       useEffect(() => {
         const audio = getBgMusic();
         if (settings.music) {
           const p = audio.play();
-          if (p && p.catch) p.catch(e => console.warn('music play failed:', e));
+          if (p && p.catch) p.catch(() => {});
         } else {
           audio.pause();
         }
       }, [settings.music]);
+
+      // On first user interaction, start music if default-on and not yet playing
+      useEffect(() => {
+        const tryStart = () => {
+          const audio = bgMusicRef.current;
+          if (audio && audio.paused && settings.music) {
+            audio.play().catch(() => {});
+          }
+          document.removeEventListener('pointerdown', tryStart);
+        };
+        document.addEventListener('pointerdown', tryStart);
+        return () => document.removeEventListener('pointerdown', tryStart);
+      }, []);
 
       useEffect(() => {
         if (screen !== 'game') return;
@@ -2178,6 +2191,25 @@ Istanbul, Turkey 🇹🇷`
         <div style={{ minHeight: '100vh', width: '100%', maxWidth: 430, margin: '0 auto', ...woodBg,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           fontFamily: "'Segoe UI', sans-serif", userSelect: 'none', position: 'relative', overflow: 'hidden' }}>
+
+          {/* Floating Music Button — inside game container */}
+          <button
+            onClick={() => settings.setMusic(!settings.music)}
+            title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}
+            style={{
+              position: 'absolute', top: 12, right: 12, zIndex: 9999,
+              width: 38, height: 38, borderRadius: '50%',
+              background: settings.music ? 'rgba(255,180,0,0.25)' : 'rgba(0,0,0,0.35)',
+              border: settings.music ? '1.5px solid rgba(255,200,0,0.6)' : '1.5px solid rgba(255,255,255,0.15)',
+              color: settings.music ? '#ffe066' : 'rgba(255,255,255,0.4)',
+              fontSize: 18, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(4px)',
+              transition: 'all 0.2s ease',
+              boxShadow: settings.music ? '0 0 12px rgba(255,180,0,0.3)' : 'none',
+            }}>
+            {settings.music ? '🎵' : '🔇'}
+          </button>
           <style>{`
             .contentWrap { padding: 50px 46px 40px; }
             @media (max-width: 420px) {
@@ -2205,24 +2237,7 @@ Istanbul, Turkey 🇹🇷`
           <div className="contentWrap" style={{ position: 'relative', zIndex: 5, width: '100%', minHeight: '100vh',
             boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-            {/* Floating Music Button */}
-            <button
-              onClick={() => settings.setMusic(!settings.music)}
-              title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}
-              style={{
-                position: 'fixed', top: 12, right: 12, zIndex: 9999,
-                width: 38, height: 38, borderRadius: '50%',
-                background: settings.music ? 'rgba(255,180,0,0.25)' : 'rgba(0,0,0,0.35)',
-                border: settings.music ? '1.5px solid rgba(255,200,0,0.6)' : '1.5px solid rgba(255,255,255,0.15)',
-                color: settings.music ? '#ffe066' : 'rgba(255,255,255,0.35)',
-                fontSize: 18, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backdropFilter: 'blur(4px)',
-                transition: 'all 0.2s ease',
-                boxShadow: settings.music ? '0 0 12px rgba(255,180,0,0.3)' : 'none',
-              }}>
-              {settings.music ? '🎵' : '🔇'}
-            </button>
+
 
             {/* MENU */}
             {screen === 'menu' && (
