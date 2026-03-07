@@ -1703,10 +1703,10 @@ Istanbul, Turkey 🇹🇷`
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       const isAndroid = /android/i.test(navigator.userAgent);
       const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      const showRateAppStore  = isStandalone && isIOS;
-      const showRatePlayStore = isStandalone && isAndroid;
-      const showLinkAppStore  = !isStandalone;
-      const showLinkPlayStore = !isStandalone;
+      const showRateAppStore  = false;
+      const showRatePlayStore = false;
+      const showLinkAppStore  = false;
+      const showLinkPlayStore = false;
 
       const handleShare = async () => {
         const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharpgame.netlify.app';
