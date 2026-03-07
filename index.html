@@ -1926,6 +1926,30 @@ Istanbul, Turkey 🇹🇷`
       const lockRef       = useRef(false);
       const play          = useSound();
 
+      // Background music
+      const bgMusicRef = useRef(null);
+
+      const getBgMusic = () => {
+        if (!bgMusicRef.current) {
+          const audio = new Audio('./music.mp3');
+          audio.loop = true;
+          audio.volume = 0.35;
+          bgMusicRef.current = audio;
+        }
+        return bgMusicRef.current;
+      };
+
+      // Play/pause when toggle changes — toggle click IS a user gesture so play() works
+      useEffect(() => {
+        const audio = getBgMusic();
+        if (settings.music) {
+          const p = audio.play();
+          if (p && p.catch) p.catch(e => console.warn('music play failed:', e));
+        } else {
+          audio.pause();
+        }
+      }, [settings.music]);
+
       useEffect(() => {
         if (screen !== 'game') return;
         setShowHint(true);
