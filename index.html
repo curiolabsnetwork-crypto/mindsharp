@@ -1951,7 +1951,7 @@ Istanbul, Turkey 🇹🇷`
         source.buffer = bgBufferRef.current;
         source.loop = true;
         const gainNode = ctx.createGain();
-        gainNode.gain.value = 0.35;
+        gainNode.gain.value = 0.18;
         source.connect(gainNode);
         gainNode.connect(ctx.destination);
         source.start(0);
