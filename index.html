@@ -314,269 +314,133 @@
       );
     }
 
-    function OnboardingModal({ onDone, playSound, sfxEnabled }) {
-      const [demoStep, setDemoStep] = React.useState(0);
-      const [audioUnlocked, setAudioUnlocked] = React.useState(false);
-      const prevStepRef = React.useRef(0);
-
-      // Unlock AudioContext on first tap anywhere on the modal
-      const handleUnlockAudio = React.useCallback(() => {
-        if (!audioUnlocked && sfxEnabled) {
-          playSound('flip'); // silent unlock tap — very short, just opens the context
-          setAudioUnlocked(true);
-        }
-      }, [audioUnlocked, sfxEnabled, playSound]);
-
-      // step → tile states: [t0_flip, t0_match, t1_flip, t1_match, t2_flip, t2_match, t3_flip, t3_match]
-      const tileStates = [
-        [false,false, false,false, false,false, false,false], // 0 all closed
-        [true, false, false,false, false,false, false,false], // 1 flip #1
-        [true, false, true, false, false,false, false,false], // 2 flip #2 — wrong pair
-        [false,false, false,false, false,false, false,false], // 3 close all
-        [true, false, false,false, false,false, false,false], // 4 flip #1 again
-        [true, true,  false,false, true, true,  false,false], // 5 match! pair A
-        [true, true,  true, false, true, true,  false,false], // 6 flip #3
-        [true, true,  true, true,  true, true,  true, true ], // 7 match! pair B — all done
-        [true, true,  true, true,  true, true,  true, true ], // 8 hold → restart
-      ];
-
-      const delays = [900, 850, 950, 650, 850, 950, 850, 950, 1800];
-      const shakeSteps = new Set([2]);
-
-      // Ses çalma — hangi adımda ne çalacak
-      const soundMap = {
-        1: 'flip',
-        2: 'flip',
-        3: 'fail',
-        4: 'flip',
-        5: 'match',
-        6: 'flip',
-        7: 'match',
-      };
-
-      React.useEffect(() => {
-        let t;
-        const next = (step) => {
-          t = setTimeout(() => {
-            const nextStep = (step + 1) % delays.length;
-            if (sfxEnabled && audioUnlocked && soundMap[nextStep]) {
-              playSound(soundMap[nextStep]);
-            }
-            setDemoStep(nextStep);
-            next(nextStep);
-          }, delays[step]);
-        };
-        next(demoStep);
-        return () => clearTimeout(t);
-      }, [sfxEnabled, audioUnlocked]);
-
-      const ts    = tileStates[demoStep] || tileStates[0];
-      const tiles = [
-        { number: OB_PAIRS[0].number, color: OB_PAIRS[0].color, flipped: ts[0], matched: ts[1] },
-        { number: OB_PAIRS[1].number, color: OB_PAIRS[1].color, flipped: ts[2], matched: ts[3] },
-        { number: OB_PAIRS[2].number, color: OB_PAIRS[2].color, flipped: ts[4], matched: ts[5] },
-        { number: OB_PAIRS[3].number, color: OB_PAIRS[3].color, flipped: ts[6], matched: ts[7] },
-      ];
-
-      const wrongPair  = shakeSteps.has(demoStep);
-      const allMatched = demoStep >= 7;
-      const firstMatch = demoStep === 5 || demoStep === 6;
+    function OnboardingModal({ onDone }) {
+      const [step, setStep] = React.useState(0);
+      // steps: 0=name, 1=start game, 2=daily challenge
 
       const handleDone = () => {
         try { localStorage.setItem('ms_onboarded', '1'); } catch {}
         onDone();
       };
 
+      const steps = [
+        {
+          title: 'Welcome to MindSharp!',
+          emoji: '🧠',
+          highlight: 'name',
+          body: 'Enter your name above so you appear on the global leaderboard. You can always change it later.',
+          btn: 'Next',
+        },
+        {
+          title: 'Start Game',
+          emoji: '▶',
+          highlight: 'startgame',
+          body: 'Play as many times as you want. Choose your board size, beat your personal best, and climb the global leaderboard. Every session counts!',
+          btn: 'Next',
+        },
+        {
+          title: 'Daily Challenge',
+          emoji: '🎯',
+          highlight: 'daily',
+          body: 'One unique puzzle per day — the same for every player worldwide. Solve it, earn your rank, and come back tomorrow to keep your streak alive!',
+          btn: "Let's Play!",
+        },
+      ];
+
+      const s = steps[step];
+      const isLast = step === steps.length - 1;
+
+      // Highlight positions (rough, overlay will use fixed boxes)
+      const highlights = {
+        name:      { top: '28%', height: 52 },
+        startgame: { top: '66%', height: 56 },
+        daily:     { top: '74%', height: 56 },
+      };
+      const hl = highlights[s.highlight];
+
       return (
-        <div onClick={handleUnlockAudio} style={{
-          position:'fixed', inset:0, zIndex:600,
-          background:'rgba(0,0,0,0.90)',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          padding:20,
+        <div style={{
+          position:'fixed', inset:0, zIndex:9000,
+          background:'rgba(0,0,0,0.88)',
+          display:'flex', flexDirection:'column',
+          alignItems:'center', justifyContent:'center',
+          padding:'0 20px',
         }}>
-          <style>{`
-            @keyframes obIn {
-              from { opacity:0; transform:scale(0.92) translateY(20px); }
-              to   { opacity:1; transform:scale(1) translateY(0); }
-            }
-            @keyframes obShake {
-              0%,100%{transform:translateX(0)}
-              20%{transform:translateX(-6px)}
-              40%{transform:translateX(6px)}
-              60%{transform:translateX(-4px)}
-              80%{transform:translateX(4px)}
-            }
-          `}</style>
+          {/* Highlight cutout — glowing box around the feature */}
+          {hl && (
+            <div style={{
+              position:'fixed',
+              top: hl.top,
+              left:'50%',
+              transform:'translateX(-50%)',
+              width:'min(400px, calc(100vw - 32px))',
+              height: hl.height,
+              borderRadius:14,
+              boxShadow:'0 0 0 9999px rgba(0,0,0,0.85), 0 0 0 3px rgba(255,200,0,0.8)',
+              border:'2px solid rgba(255,200,0,0.9)',
+              pointerEvents:'none',
+              zIndex:9001,
+            }} />
+          )}
 
+          {/* Info card */}
           <div style={{
-            width:'100%', maxWidth:340,
-            background:'linear-gradient(160deg,#fdf8ec 0%,#fef5da 50%,#f5e6c3 100%)',
-            borderRadius:28,
-            border:'3px solid #c8a96e',
-            boxShadow:'0 0 0 6px rgba(200,169,110,0.15), 0 32px 80px rgba(0,0,0,0.7)',
-            overflow:'hidden',
-            animation:'obIn 0.45s cubic-bezier(.22,1.2,.36,1)',
+            position:'relative', zIndex:9002,
+            background:'linear-gradient(160deg,#3a2a08,#1e1204)',
+            borderRadius:22,
+            border:'1.5px solid rgba(255,210,80,0.4)',
+            boxShadow:'0 12px 50px rgba(0,0,0,0.8)',
+            padding:'28px 24px 22px',
+            width:'100%', maxWidth:360, boxSizing:'border-box',
+            textAlign:'center',
+            marginTop: step === 0 ? '-120px' : step === 1 ? '60px' : '80px',
           }}>
-            {/* Gold top bar */}
-            <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
-
-            <div style={{ padding:'22px 24px 20px', textAlign:'center' }}>
-
-              {/* Title */}
-              <div style={{
-                fontFamily:'Georgia,serif', fontSize:28, fontWeight:900,
-                color:'#3d1a00',
-                marginBottom:6,
-                letterSpacing:-0.3,
-              }}>How to Play</div>
-
-              {/* Subtitle */}
-              <div style={{
-                fontSize:13, fontWeight:600, lineHeight:1.55,
-                color:'rgba(70,35,5,0.60)',
-                marginBottom:18,
-              }}>
-                Flip tiles — find the matching pair!
-              </div>
-
-              {/* ── LIVE DEMO ── */}
-              <div style={{
-                background:'rgba(43,26,16,0.55)',
-                borderRadius:16,
-                border:'2px solid rgba(200,169,110,0.3)',
-                padding:'18px 12px 14px',
-                marginBottom:16,
-                position:'relative',
-              }}>
-                {/* DEMO watermark label */}
-                <div style={{
-                  position:'absolute', bottom:8, right:10,
-                  background:'rgba(200,169,110,0.2)',
-                  border:'1px solid rgba(200,169,110,0.35)',
-                  color:'rgba(255,224,130,0.6)',
-                  fontSize:9, fontWeight:800, letterSpacing:2,
-                  padding:'2px 8px', borderRadius:6,
-                  textTransform:'uppercase', pointerEvents:'none',
-                }}>DEMO</div>
-
-                {/* Status badge */}
-                {wrongPair && (
-                  <div style={{
-                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
-                    background:'linear-gradient(135deg,#e74c3c,#c0392b)',
-                    color:'#fff', fontWeight:800, fontSize:11,
-                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
-                    boxShadow:'0 2px 8px rgba(231,76,60,0.5)',
-                  }}>✗ Different color!</div>
-                )}
-                {firstMatch && (
-                  <div style={{
-                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
-                    background:'linear-gradient(135deg,#27ae60,#2ecc71)',
-                    color:'#fff', fontWeight:800, fontSize:11,
-                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
-                    boxShadow:'0 2px 8px rgba(46,204,113,0.5)',
-                  }}>✓ Match!</div>
-                )}
-                {allMatched && (
-                  <div style={{
-                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
-                    background:'linear-gradient(135deg,#f39c12,#e67e22)',
-                    color:'#fff', fontWeight:800, fontSize:11,
-                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
-                    boxShadow:'0 2px 8px rgba(243,156,18,0.5)',
-                  }}>🎉 All matched!</div>
-                )}
-
-                {/* Tile grid */}
-                <div style={{
-                  display:'grid', gridTemplateColumns:'repeat(4,52px)',
-                  gap:8, justifyContent:'center',
-                  animation: wrongPair ? 'obShake 0.4s ease' : 'none',
-                }}>
-                  {tiles.map((t, i) => (
-                    <ObTile
-                      key={i}
-                      number={t.number}
-                      color={t.color}
-                      flipped={t.flipped}
-                      matched={t.matched}
-                    />
-                  ))}
-                </div>
-
-                {/* Legend */}
-                <div style={{
-                  marginTop:12, display:'flex', justifyContent:'center', gap:16,
-                }}>
-                  {[
-                    { color:'#E8000A', label:'3  ×  2' },
-                    { color:'#29B6F6', label:'7  ×  2' },
-                  ].map(({ color, label }) => (
-                    <div key={color} style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      <div style={{
-                        width:13, height:13, borderRadius:3,
-                        background:color, flexShrink:0,
-                        boxShadow:`0 0 6px ${color}88`,
-                      }}/>
-                      <span style={{ color:'rgba(255,224,130,0.65)', fontSize:11, fontWeight:700 }}>
-                        {label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rule summary */}
-              <div style={{
-                display:'flex', justifyContent:'center', alignItems:'center', gap:8,
-                marginBottom: audioUnlocked ? 20 : 8,
-                padding:'10px 14px',
-                background:'rgba(200,169,110,0.12)',
-                borderRadius:12,
-                border:'1px solid rgba(200,169,110,0.2)',
-              }}>
-                {[
-                  { icon:'🔢', text:'Same number' },
-                  { icon:'+', text:null },
-                  { icon:'🎨', text:'Same color' },
-                  { icon:'=', text:null },
-                  { icon:'✅', text:'Match' },
-                ].map((item, i) =>
-                  item.text === null ? (
-                    <div key={i} style={{ color:'rgba(200,169,110,0.6)', fontSize:14, fontWeight:900 }}>{item.icon}</div>
-                  ) : (
-                    <div key={i} style={{ textAlign:'center' }}>
-                      <div style={{ fontSize:20 }}>{item.icon}</div>
-                      <div style={{ fontSize:9, color:'rgba(80,40,10,0.6)', fontWeight:800, marginTop:2, whiteSpace:'nowrap' }}>{item.text}</div>
-                    </div>
-                  )
-                )}
-              </div>
-
-              {/* Tap for sound nudge — only shown before audio unlocked */}
-              {!audioUnlocked && sfxEnabled && (
-                <div style={{
-                  textAlign:'center', marginBottom:14,
-                  color:'rgba(70,35,5,0.45)', fontSize:10, fontWeight:700,
-                  letterSpacing:0.5,
-                }}>🔊 Tap anywhere to enable sound</div>
-              )}
-
-              {/* CTA button */}
-              <button onClick={handleDone} style={{
-                width:'100%', padding:'16px 0', borderRadius:16, border:'none',
-                background:'linear-gradient(135deg,#27ae60,#2ecc71)',
-                color:'#fff', fontWeight:900, fontSize:18, cursor:'pointer',
-                boxShadow:'0 6px 20px rgba(46,204,113,0.45)',
-                letterSpacing:0.5,
-              }}>▶ Let's Play!</button>
-
+            {/* Step dots */}
+            <div style={{ display:'flex', justifyContent:'center', gap:7, marginBottom:18 }}>
+              {steps.map((_, i) => (
+                <div key={i} style={{
+                  width: i === step ? 22 : 8, height:8, borderRadius:4,
+                  background: i === step ? '#f39c12' : 'rgba(255,255,255,0.2)',
+                  transition:'width 0.3s ease',
+                }} />
+              ))}
             </div>
+
+            <div style={{ fontSize:36, marginBottom:10 }}>{s.emoji}</div>
+            <h2 style={{ color:'#ffe066', fontFamily:'Georgia,serif', margin:'0 0 10px', fontSize:20 }}>
+              {s.title}
+            </h2>
+            <p style={{
+              color:'rgba(255,255,255,0.75)', fontSize:14, lineHeight:1.6,
+              margin:'0 0 22px', fontWeight:400,
+            }}>
+              {s.body}
+            </p>
+
+            <button
+              onClick={() => isLast ? handleDone() : setStep(step + 1)}
+              style={{
+                width:'100%', padding:'14px', borderRadius:14, border:'none',
+                background:'linear-gradient(135deg,#f39c12,#e67e22)',
+                color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer',
+                boxShadow:'0 4px 16px rgba(243,156,18,0.5)',
+              }}>
+              {s.btn}
+            </button>
+
+            {!isLast && (
+              <button onClick={handleDone} style={{
+                background:'none', border:'none', color:'rgba(255,255,255,0.3)',
+                fontSize:12, marginTop:12, cursor:'pointer',
+              }}>
+                Skip tutorial
+              </button>
+            )}
           </div>
         </div>
       );
     }
+
 
     // ── PROFILE SCREEN ────────────────────────────────────────
     function ProfileScreen({ user, onBack, scores }) {
@@ -814,10 +678,13 @@
       return Math.abs(hash);
     }
 
-    function generateDailyTiles() {
-      // Daily challenge always uses Classic (8x4) board
-      const cfg = GRID_CONFIGS['8x4'];
-      const rng = mulberry32(getDailySeed());
+    function generateDailyTiles(gridMode) {
+      const m = gridMode || '8x4';
+      const cfg = GRID_CONFIGS[m];
+      const key = getDailyDateKey() + m;
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) { hash = Math.imul(31, hash) + key.charCodeAt(i) | 0; }
+      const rng = mulberry32(Math.abs(hash));
       const colorCount = TILE_COLORS.length;
       const uniquePairs = [];
       for (let n = 1; n <= cfg.maxNum; n++) {
@@ -873,26 +740,34 @@
       return streak.lastDate === today;
     }
 
-    function getDailyResult() {
+    function getDailyResult(gridMode) {
       try {
-        const raw = localStorage.getItem('ms_daily_result_' + getDailyDateKey());
+        const m = gridMode || '8x4';
+        const raw = localStorage.getItem('ms_daily_result_' + getDailyDateKey() + '_' + m);
         return raw ? JSON.parse(raw) : null;
       } catch { return null; }
     }
 
-    function saveDailyResult(result) {
+    function saveDailyResult(result, gridMode) {
       try {
-        localStorage.setItem('ms_daily_result_' + getDailyDateKey(), JSON.stringify(result));
+        const m = gridMode || '8x4';
+        localStorage.setItem('ms_daily_result_' + getDailyDateKey() + '_' + m, JSON.stringify(result));
       } catch {}
     }
 
-    async function submitDailyScore({ user, moves, time, score }) {
+    function getDailyDoneForMode(gridMode) {
+      return getDailyResult(gridMode) !== null;
+    }
+
+    async function submitDailyScore({ user, moves, time, score, gridMode }) {
       if (!db) return null;
       try {
         const dateKey = getDailyDateKey();
+        const m = gridMode || '8x4';
         const ref = await db.collection('daily_scores').add({
           user: user || 'Guest',
           dateKey,
+          gridMode: m,
           moves, time, score,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -1297,6 +1172,86 @@
               Back to Menu
             </button>
           </div>
+        </div>
+      );
+    }
+
+    function DailyScoresScreen({ onBack, dateKey, gridMode, myScore }) {
+      const [entries, setEntries] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const fmtT = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+      const modeLabel = { '8x4': 'Classic', '8x5': 'Hard', '8x7': 'Extreme' }[gridMode] || gridMode;
+      const today = new Date();
+      const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+      React.useEffect(() => {
+        if (!db) { setLoading(false); return; }
+        db.collection('daily_scores')
+          .where('dateKey', '==', dateKey)
+          .where('gridMode', '==', gridMode)
+          .get()
+          .then(snap => {
+            const rows = snap.docs.map(d => d.data());
+            rows.sort((a, b) => (b.score || 0) - (a.score || 0));
+            setEntries(rows);
+            setLoading(false);
+          })
+          .catch(() => setLoading(false));
+      }, [dateKey, gridMode]);
+
+      return (
+        <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+            <button onClick={onBack} style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.15)',
+              color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16 }}>
+              {'←'}
+            </button>
+            <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:18, fontWeight:900 }}>
+              {'Daily — ' + modeLabel}
+            </h2>
+          </div>
+          <div style={{ background:'rgba(0,0,0,0.3)', borderRadius:14, padding:'10px 14px',
+            border:'1px solid rgba(255,255,255,0.1)', marginBottom:4 }}>
+            <div style={{ color:'rgba(255,224,130,0.6)', fontSize:11, fontWeight:700, letterSpacing:1 }}>
+              {dateLabel + ' · ' + entries.length + (entries.length === 1 ? ' player' : ' players') + ' today'}
+            </div>
+          </div>
+          {loading ? (
+            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>Loading...</div>
+          ) : entries.length === 0 ? (
+            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>
+              No scores yet today. Be the first!
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {entries.map((e, i) => {
+                const isMe = myScore > 0 && e.score === myScore;
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+                return (
+                  <div key={i} style={{
+                    display:'flex', alignItems:'center', gap:8,
+                    background: isMe ? 'rgba(243,156,18,0.25)' : i === 0 ? 'rgba(241,196,15,0.15)' : 'rgba(255,255,255,0.07)',
+                    border: isMe ? '1.5px solid rgba(243,156,18,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius:10, padding:'10px 12px',
+                  }}>
+                    <span style={{ color:'#ffe082', fontWeight:900, fontSize:13, minWidth:28 }}>
+                      {medal || ('#' + (i+1))}
+                    </span>
+                    <span style={{ color: isMe ? '#ffe066' : '#fff', fontWeight: isMe ? 800 : 600,
+                      flex:1, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {(e.user || 'Guest') + (isMe ? ' (you)' : '')}
+                    </span>
+                    <span style={{ color:'#ffe082', fontWeight:800, fontSize:13 }}>
+                      {(e.score||0).toLocaleString()}
+                    </span>
+                    <span style={{ color:'rgba(255,224,130,0.55)', fontSize:11, minWidth:44, textAlign:'right' }}>
+                      {fmtT(e.time||0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       );
     }
@@ -2159,10 +2114,11 @@ Istanbul, Turkey 🇹🇷`
       const [toast, setToast]         = useState(null);
       const [showExitConfirm, setShowExitConfirm] = useState(false);
       const [isDailyMode, setIsDailyMode]         = useState(false);
+      const [dailyModeKey, setDailyModeKey]       = useState('8x4');
       const [showDailyModal, setShowDailyModal]   = useState(false);
       const [dailyResult, setDailyResult]         = useState(null);
       const [dailyStreak, setDailyStreak]         = useState(() => loadDailyStreak());
-      const todayDone = dailyStreak.lastDate === getDailyDateKey();
+      const todayDoneForMode = (m) => getDailyDoneForMode(m);
       const [dailyRank, setDailyRank]             = useState(null);
       const [dailyTotal, setDailyTotal]           = useState(0);
       const [dailyPersonalBest, setDailyPersonalBest] = useState(null);
@@ -2309,16 +2265,18 @@ Istanbul, Turkey 🇹🇷`
         setTimeout(() => setToast(null), 2400);
       }, []);
 
-      const startDailyChallenge = useCallback(() => {
-        setTiles(generateDailyTiles());
+      const startDailyChallenge = useCallback((m) => {
+        const gm = m || mode;
+        setTiles(generateDailyTiles(gm));
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
-        setMode('8x4'); setScreen('game');
+        setMode(gm); setScreen('game');
         setScore(0); setComboBonus(0); setCombo(0);
         setScoreDocId(null);
         comboBonusRef.current = 0; comboRef.current = 0;
         setIsDailyMode(true);
-      }, []);
+        setDailyModeKey(gm);
+      }, [mode]);
 
       const startGame = useCallback((m) => {
         const cfg = GRID_CONFIGS[m];
@@ -2411,29 +2369,28 @@ Istanbul, Turkey 🇹🇷`
                         setRank(myRank);
 
                         if (isDailyMode) {
-                          const result = { moves: mv, time: tm, score: finalScore };
-                          saveDailyResult(result);
+                          const result = { moves: mv, time: tm, score: finalScore, gridMode: dailyModeKey };
+                          saveDailyResult(result, dailyModeKey);
                           const newStreak = updateStreak();
                           setDailyStreak(newStreak);
                           setDailyResult(result);
-                          submitDailyScore({ user: user || 'Guest', moves: mv, time: tm, score: finalScore });
-                          // Fetch today's leaderboard to compute rank
+                          submitDailyScore({ user: user || 'Guest', moves: mv, time: tm, score: finalScore, gridMode: dailyModeKey });
                           (async () => {
                             try {
                               if (db) {
                                 const dateKey = getDailyDateKey();
                                 const snap = await db.collection('daily_scores')
                                   .where('dateKey', '==', dateKey)
+                                  .where('gridMode', '==', dailyModeKey)
                                   .get();
                                 const allScores = snap.docs.map(d => d.data().score || 0).sort((a,b) => b - a);
                                 const total = allScores.length;
                                 const rank = allScores.findIndex(s => s <= finalScore) + 1 || total;
                                 setDailyRank(rank);
                                 setDailyTotal(total);
-                                // Personal best from local stats
                                 try {
                                   const stats = JSON.parse(localStorage.getItem('ms_stats') || '{}');
-                                  const pb = stats.bestScores && stats.bestScores['8x4'];
+                                  const pb = stats.bestScores && stats.bestScores[dailyModeKey];
                                   setDailyPersonalBest(pb || 0);
                                 } catch {}
                               }
@@ -2705,57 +2662,61 @@ Istanbul, Turkey 🇹🇷`
                       </button>
                     ))}
                   </div>
+                  {/* Daily Challenge Button — reacts to selected board mode */}
+                  {(() => {
+                    const doneForMode = todayDoneForMode(mode);
+                    return (
+                      <button onClick={() => {
+                        if (doneForMode) {
+                          const r = getDailyResult(mode);
+                          if (r) {
+                            setDailyResult(r);
+                            setDailyModeKey(mode);
+                            (async () => {
+                              try {
+                                if (db) {
+                                  const snap = await db.collection('daily_scores')
+                                    .where('dateKey','==',getDailyDateKey())
+                                    .where('gridMode','==',mode)
+                                    .get();
+                                  const all = snap.docs.map(d => d.data().score || 0).sort((a,b)=>b-a);
+                                  setDailyTotal(all.length);
+                                  setDailyRank(all.findIndex(s => s <= r.score) + 1 || all.length);
+                                }
+                              } catch {}
+                              setShowDailyModal(true);
+                            })();
+                          }
+                        } else {
+                          startDailyChallenge(mode);
+                        }
+                      }} style={{
+                        width:'100%', padding:'15px', borderRadius:14,
+                        background: doneForMode
+                          ? 'linear-gradient(135deg,#b35a00,#e67e22)'
+                          : 'linear-gradient(135deg,#f39c12,#e67e22)',
+                        border:'none', cursor:'pointer',
+                        boxShadow: doneForMode
+                          ? '0 4px 16px rgba(230,126,34,0.4)'
+                          : '0 4px 16px rgba(243,156,18,0.4)',
+                        display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                      }}>
+                        <span style={{ fontSize:18 }}>{doneForMode ? '✅' : '🎯'}</span>
+                        <span style={{ color:'#fff', fontWeight:800, fontSize:17 }}>Daily Challenge</span>
+                        {dailyStreak.count > 0 && (
+                          <span style={{ fontSize:12, background:'rgba(0,0,0,0.2)',
+                            padding:'2px 8px', borderRadius:20,
+                            color:'#fff', fontWeight:700, marginLeft:'auto', flexShrink:0 }}>
+                            {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()}
+
                   <button onClick={() => startGame(mode)} style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none',
                     background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
                     boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
-
-                  {/* Daily Challenge Button */}
-                  <button onClick={() => {
-                    if (todayDone) {
-                      const r = getDailyResult();
-                      if (r) {
-                        setDailyResult(r);
-                        (async () => {
-                          try {
-                            if (db) {
-                              const snap = await db.collection('daily_scores').where('dateKey','==',getDailyDateKey()).get();
-                              const all = snap.docs.map(d => d.data().score || 0).sort((a,b)=>b-a);
-                              setDailyTotal(all.length);
-                              setDailyRank(all.findIndex(s => s <= r.score) + 1 || all.length);
-                            }
-                          } catch {}
-                          setShowDailyModal(true);
-                        })();
-                      }
-                    } else {
-                      startDailyChallenge();
-                    }
-                  }} style={{
-                    width:'100%', marginBottom:8, padding:'15px', borderRadius:14,
-                    background: todayDone
-                      ? 'linear-gradient(135deg,#b35a00,#e67e22)'
-                      : 'linear-gradient(135deg,#f39c12,#e67e22)',
-                    border:'none', cursor:'pointer',
-                    boxShadow: todayDone
-                      ? '0 4px 16px rgba(230,126,34,0.4)'
-                      : '0 4px 16px rgba(243,156,18,0.4)',
-                    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                  }}>
-                    <span style={{ fontSize:20 }}>{todayDone ? '✅' : '🎯'}</span>
-                    <span style={{ color:'#fff', fontWeight:800, fontSize:17 }}>
-                      Daily Challenge
-                    </span>
-                    <span style={{ color:'rgba(255,255,255,0.7)', fontSize:12, fontStyle:'italic', fontWeight:400 }}>
-                      {todayDone ? '(done — tap to view)' : '(new puzzle every day)'}
-                    </span>
-                    {dailyStreak.count > 0 && (
-                      <span style={{ fontSize:12, background:'rgba(0,0,0,0.2)',
-                        padding:'2px 8px', borderRadius:20,
-                        color:'#fff', fontWeight:700, marginLeft:'auto', flexShrink:0 }}>
-                        {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
-                      </span>
-                    )}
-                  </button>
 
                   <div style={{ display:'flex', gap:8 }}>
                     <button onClick={() => setScreen('scores')} style={{ flex:1, padding: '12px', borderRadius: 14,
@@ -2775,6 +2736,16 @@ Istanbul, Turkey 🇹🇷`
                 user={user}
                 scores={scores}
                 onBack={() => setScreen('menu')}
+              />
+            )}
+
+            {/* DAILY SCORES */}
+            {screen === 'daily_scores' && (
+              <DailyScoresScreen
+                onBack={() => setScreen('menu')}
+                dateKey={getDailyDateKey()}
+                gridMode={dailyModeKey}
+                myScore={dailyResult ? dailyResult.score : 0}
               />
             )}
 
@@ -2910,7 +2881,7 @@ Istanbul, Turkey 🇹🇷`
               dailyRank={dailyRank}
               dailyTotal={dailyTotal}
               personalBest={dailyPersonalBest}
-              onLeaderboard={() => { setShowDailyModal(false); setScreen('scores'); }}
+              onLeaderboard={() => { setShowDailyModal(false); setScreen('daily_scores'); }}
               onMenu={() => { setShowDailyModal(false); setScreen('menu'); }}
               onShare={() => {
                 const fmtT = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
@@ -2946,8 +2917,6 @@ Istanbul, Turkey 🇹🇷`
           {showOnboarding && (
             <OnboardingModal
               onDone={() => setShowOnboarding(false)}
-              playSound={play}
-              sfxEnabled={settings.sfx}
             />
           )}
         </div>
