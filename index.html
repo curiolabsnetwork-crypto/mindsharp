@@ -2255,7 +2255,12 @@ Istanbul, Turkey 🇹🇷`
       const [showDailyModal, setShowDailyModal]   = useState(false);
       const [dailyResult, setDailyResult]         = useState(null);
       const [dailyStreak, setDailyStreak]         = useState(() => loadDailyStreak());
-      const todayDoneForMode = (m) => getDailyDoneForMode(m);
+      const [dailyDoneMap, setDailyDoneMap] = useState(() => {
+        const map = {};
+        ['8x4','8x5','8x7'].forEach(m => { map[m] = getDailyDoneForMode(m); });
+        return map;
+      });
+      const todayDoneForMode = (m) => !!dailyDoneMap[m];
       const [dailyRank, setDailyRank]             = useState(null);
       const [dailyTotal, setDailyTotal]           = useState(0);
       const [dailyPersonalBest, setDailyPersonalBest] = useState(null);
@@ -2265,6 +2270,7 @@ Istanbul, Turkey 🇹🇷`
       const comboBonusRef = useRef(0);
       const comboRef      = useRef(0);
       const lockRef       = useRef(false);
+      const isDailyRef    = useRef(false);
       const play          = useSound();
 
       // Background music — Web Audio API (ayrı thread, mobil performansını etkilemez)
@@ -2412,6 +2418,7 @@ Istanbul, Turkey 🇹🇷`
         setScoreDocId(null);
         comboBonusRef.current = 0; comboRef.current = 0;
         setIsDailyMode(true);
+        isDailyRef.current = true;
         setDailyModeKey(gm);
       }, [mode]);
 
@@ -2425,6 +2432,7 @@ Istanbul, Turkey 🇹🇷`
         setScoreDocId(null);
         comboBonusRef.current = 0; comboRef.current = 0;
         setIsDailyMode(false);
+        isDailyRef.current = false;
       }, []);
 
       const handleTile = useCallback((id) => {
@@ -2473,7 +2481,7 @@ Istanbul, Turkey 🇹🇷`
                   const cfg = GRID_CONFIGS[mode];
                   if (newMatchedCount === cfg.pairs) {
                     setRunning(false);
-                    if (!isDailyMode) setWon(true);
+                    if (!isDailyRef.current) setWon(true);
                     if (settings.sfx) play('win');
 
                     setMoves((mv) => {
@@ -2505,9 +2513,10 @@ Istanbul, Turkey 🇹🇷`
                         ) + 1;
                         setRank(myRank);
 
-                        if (isDailyMode) {
+                        if (isDailyRef.current) {
                           const result = { moves: mv, time: tm, score: finalScore, gridMode: dailyModeKey };
                           saveDailyResult(result, dailyModeKey);
+                          setDailyDoneMap(prev => ({ ...prev, [dailyModeKey]: true }));
                           const newStreak = updateStreak();
                           setDailyStreak(newStreak);
                           setDailyResult(result);
