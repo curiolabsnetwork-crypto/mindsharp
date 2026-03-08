@@ -1176,86 +1176,124 @@
 
 
     // ── DAILY CHALLENGE COMPLETE MODAL ───────────────────────────────────
-    function DailyCompleteModal({ result, streak, onMenu, onShare, user, alreadyDone }) {
+    function DailyCompleteModal({ result, streak, onMenu, onShare, onLeaderboard, user, alreadyDone, dailyRank, dailyTotal, personalBest }) {
       const [confetti, setConfetti] = React.useState([]);
+
       React.useEffect(() => {
-        if (alreadyDone) return;
         const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
         const shapes = ['■','●','▲','★','◆'];
-        setConfetti(Array.from({ length: 30 }, (_, i) => ({
-          id: i, color: colors[i % colors.length],
-          shape: shapes[i % shapes.length],
-          left: Math.random() * 100, delay: Math.random() * 1.5,
-          duration: 2 + Math.random() * 2, size: 7 + Math.random() * 8,
-          rotate: Math.random() * 720,
+        setConfetti(Array.from({ length: 36 }, (_, i) => ({
+          id: i, color: colors[i % colors.length], shape: shapes[i % shapes.length],
+          left: Math.random() * 100, delay: Math.random() * 1.8,
+          duration: 2.2 + Math.random() * 2, size: 8 + Math.random() * 9,
         })));
       }, []);
 
-      const formatTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      const fmtT = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
       const today = new Date();
       const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
       const streakFire = streak.count >= 7 ? '🔥' : streak.count >= 3 ? '⚡' : '✨';
 
+      const isPersonalBest = personalBest && result.score >= personalBest;
+      const rankLabel = dailyRank
+        ? (dailyRank === 1 ? '🥇 #1 Today!' : dailyRank === 2 ? '🥈 #2 Today' : dailyRank === 3 ? '🥉 #3 Today' : `#${dailyRank} Today`)
+        : null;
+      const rankColor = dailyRank === 1 ? '#f1c40f' : dailyRank <= 3 ? '#e67e22' : '#aaa';
+
+      const tomorrowMsg = streak.count === 0 ? "Start your streak — come back tomorrow!" :
+        streak.count < 3 ? `${3 - streak.count} more days to unlock ⚡` :
+        streak.count < 7 ? `${7 - streak.count} more days to unlock 🔥` :
+        "You're on fire — don't break the chain!";
+
       return (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:10000,
-          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 16px' }}>
-          {/* Confetti */}
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', zIndex:10000,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }}>
           {confetti.map(p => (
-            <div key={p.id} style={{
-              position:'fixed', top:'-20px', left:`${p.left}%`,
+            <div key={p.id} style={{ position:'fixed', top:'-20px', left:`${p.left}%`,
               fontSize: p.size, color: p.color, animation: `fall ${p.duration}s ${p.delay}s ease-in forwards`,
-              pointerEvents:'none', zIndex:10001,
-            }}>{p.shape}</div>
+              pointerEvents:'none', zIndex:10001 }}>{p.shape}</div>
           ))}
-          <div style={{ background:'linear-gradient(160deg,#3a2a12,#1e1206)', borderRadius:22,
-            padding:'28px 22px 24px', width:'100%', maxWidth:360, boxSizing:'border-box',
-            border:'1.5px solid rgba(255,210,80,0.35)', boxShadow:'0 8px 40px rgba(0,0,0,0.7)',
-            textAlign:'center', position:'relative', zIndex:10002 }}>
+
+          <div style={{ background:'linear-gradient(160deg,#2a1e08,#1a1004)', borderRadius:24,
+            padding:'24px 20px 20px', width:'100%', maxWidth:360, boxSizing:'border-box',
+            border:'1.5px solid rgba(255,210,80,0.3)', boxShadow:'0 12px 50px rgba(0,0,0,0.8)',
+            textAlign:'center', position:'relative', zIndex:10002, maxHeight:'90vh', overflowY:'auto' }}>
 
             {/* Header */}
-            <div style={{ fontSize:36, marginBottom:4 }}>{alreadyDone ? '📅' : '🎯'}</div>
-            <h2 style={{ color:'#ffe066', fontFamily:'Georgia,serif', margin:'0 0 2px',
-              fontSize:22, textShadow:'0 2px 8px rgba(0,0,0,0.8)' }}>
-              {alreadyDone ? "Already Done Today!" : "Daily Challenge Complete!"}
+            <div style={{ fontSize:40, marginBottom:4 }}>🎯</div>
+            <h2 style={{ color:'#ffe066', fontFamily:'Georgia,serif', margin:'0 0 1px', fontSize:22 }}>
+              {alreadyDone ? "Today's Challenge" : "Challenge Complete!"}
             </h2>
-            <p style={{ color:'rgba(255,255,255,0.5)', fontSize:12, margin:'0 0 18px' }}>{dateLabel}</p>
+            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:11, margin:'0 0 16px', letterSpacing:0.5 }}>{dateLabel}</p>
 
-            {/* Stats */}
-            <div style={{ display:'flex', gap:10, justifyContent:'center', marginBottom:18 }}>
+            {/* Personal best badge */}
+            {isPersonalBest && !alreadyDone && (
+              <div style={{ background:'linear-gradient(135deg,rgba(241,196,15,0.25),rgba(243,156,18,0.15))',
+                border:'1px solid rgba(241,196,15,0.5)', borderRadius:10, padding:'6px 14px',
+                color:'#f1c40f', fontWeight:800, fontSize:13, marginBottom:12, display:'inline-block' }}>
+                👑 Personal Best!
+              </div>
+            )}
+
+            {/* Stats row */}
+            <div style={{ display:'flex', gap:8, marginBottom:12 }}>
               {[
-                { label:'TIME',  value: formatTime(result.time) },
-                { label:'MOVES', value: result.moves },
-                { label:'SCORE', value: result.score.toLocaleString() },
+                { label:'TIME',  value: fmtT(result.time), icon:'⏱' },
+                { label:'MOVES', value: result.moves,      icon:'🃏' },
+                { label:'SCORE', value: result.score.toLocaleString(), icon:'🏆' },
               ].map(s => (
-                <div key={s.label} style={{ flex:1, background:'rgba(0,0,0,0.35)', borderRadius:12,
-                  padding:'10px 6px', border:'1px solid rgba(255,255,255,0.1)' }}>
-                  <div style={{ color:'#ffe066', fontWeight:900, fontSize:18 }}>{s.value}</div>
-                  <div style={{ color:'rgba(255,255,255,0.4)', fontSize:9, letterSpacing:1 }}>{s.label}</div>
+                <div key={s.label} style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:12,
+                  padding:'10px 4px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize:14, marginBottom:2 }}>{s.icon}</div>
+                  <div style={{ color:'#ffe066', fontWeight:900, fontSize:17 }}>{s.value}</div>
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:9, letterSpacing:1 }}>{s.label}</div>
                 </div>
               ))}
             </div>
 
+            {/* Today's ranking */}
+            <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)',
+              borderRadius:14, padding:'12px 14px', marginBottom:10, display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ flex:1, textAlign:'left' }}>
+                <div style={{ color:'rgba(255,255,255,0.45)', fontSize:10, letterSpacing:1, marginBottom:2 }}>TODAY'S RANKING</div>
+                {rankLabel ? (
+                  <div style={{ color: rankColor, fontWeight:900, fontSize:20 }}>{rankLabel}</div>
+                ) : (
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:13 }}>Calculating...</div>
+                )}
+                {dailyTotal > 0 && (
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11 }}>out of {dailyTotal} players today</div>
+                )}
+              </div>
+              <button onClick={onLeaderboard} style={{ background:'rgba(255,180,0,0.15)',
+                border:'1px solid rgba(255,180,0,0.35)', borderRadius:10, padding:'8px 12px',
+                color:'#ffb300', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                View All →
+              </button>
+            </div>
+
             {/* Streak */}
-            <div style={{ background:'rgba(255,150,0,0.12)', border:'1px solid rgba(255,150,0,0.3)',
-              borderRadius:14, padding:'12px 16px', marginBottom:20 }}>
-              <div style={{ fontSize:28 }}>{streakFire}</div>
-              <div style={{ color:'#ffb300', fontWeight:900, fontSize:20 }}>{streak.count} Day Streak!</div>
-              <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11, marginTop:2 }}>
-                {streak.count === 1 ? 'Come back tomorrow to build your streak'
-                  : streak.count < 7 ? `${7 - streak.count} more days for a 7-day streak!`
-                  : "You're on fire! Keep it going 🔥"}
+            <div style={{ background:'rgba(255,140,0,0.1)', border:'1px solid rgba(255,140,0,0.25)',
+              borderRadius:14, padding:'10px 14px', marginBottom:14,
+              display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ fontSize:26 }}>{streakFire}</div>
+              <div style={{ textAlign:'left', flex:1 }}>
+                <div style={{ color:'#ffb300', fontWeight:900, fontSize:16 }}>
+                  {streak.count} Day Streak
+                </div>
+                <div style={{ color:'rgba(255,255,255,0.4)', fontSize:11, marginTop:1 }}>{tomorrowMsg}</div>
               </div>
             </div>
 
             {/* Buttons */}
-            <button onClick={onShare} style={{ width:'100%', padding:'13px', borderRadius:14, marginBottom:10,
+            <button onClick={onShare} style={{ width:'100%', padding:'13px', borderRadius:14, marginBottom:8,
               background:'linear-gradient(135deg,#f39c12,#e67e22)', border:'none',
-              color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer', letterSpacing:0.5 }}>
-              📤 Share Result
+              color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer' }}>
+              📤 Share My Result
             </button>
             <button onClick={onMenu} style={{ width:'100%', padding:'11px', borderRadius:14,
-              background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)',
-              color:'rgba(255,255,255,0.7)', fontWeight:600, fontSize:14, cursor:'pointer' }}>
+              background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
+              color:'rgba(255,255,255,0.55)', fontWeight:600, fontSize:13, cursor:'pointer' }}>
               Back to Menu
             </button>
           </div>
@@ -2125,6 +2163,9 @@ Istanbul, Turkey 🇹🇷`
       const [dailyResult, setDailyResult]         = useState(null);
       const [dailyStreak, setDailyStreak]         = useState(() => loadDailyStreak());
       const todayDone = dailyStreak.lastDate === getDailyDateKey();
+      const [dailyRank, setDailyRank]             = useState(null);
+      const [dailyTotal, setDailyTotal]           = useState(0);
+      const [dailyPersonalBest, setDailyPersonalBest] = useState(null);
       const settings   = useSettings();
       const [showSettings, setShowSettings] = React.useState(false);
 
@@ -2376,7 +2417,29 @@ Istanbul, Turkey 🇹🇷`
                           setDailyStreak(newStreak);
                           setDailyResult(result);
                           submitDailyScore({ user: user || 'Guest', moves: mv, time: tm, score: finalScore });
-                          setTimeout(() => { setScreen('menu'); setShowDailyModal(true); }, 600);
+                          // Fetch today's leaderboard to compute rank
+                          (async () => {
+                            try {
+                              if (db) {
+                                const dateKey = getDailyDateKey();
+                                const snap = await db.collection('daily_scores')
+                                  .where('dateKey', '==', dateKey)
+                                  .get();
+                                const allScores = snap.docs.map(d => d.data().score || 0).sort((a,b) => b - a);
+                                const total = allScores.length;
+                                const rank = allScores.findIndex(s => s <= finalScore) + 1 || total;
+                                setDailyRank(rank);
+                                setDailyTotal(total);
+                                // Personal best from local stats
+                                try {
+                                  const stats = JSON.parse(localStorage.getItem('ms_stats') || '{}');
+                                  const pb = stats.bestScores && stats.bestScores['8x4'];
+                                  setDailyPersonalBest(pb || 0);
+                                } catch {}
+                              }
+                            } catch(e) {}
+                            setTimeout(() => { setScreen('menu'); setShowDailyModal(true); }, 800);
+                          })();
                         } else {
                           submitScoreToCloud({
                             user: user || "Guest",
@@ -2647,51 +2710,51 @@ Istanbul, Turkey 🇹🇷`
                     boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
 
                   {/* Daily Challenge Button */}
-                  {/* Daily Challenge Button */}
                   <button onClick={() => {
                     if (todayDone) {
                       const r = getDailyResult();
-                      if (r) { setDailyResult(r); setShowDailyModal(true); }
+                      if (r) {
+                        setDailyResult(r);
+                        // Fetch rank for viewing
+                        (async () => {
+                          try {
+                            if (db) {
+                              const snap = await db.collection('daily_scores').where('dateKey','==',getDailyDateKey()).get();
+                              const all = snap.docs.map(d => d.data().score || 0).sort((a,b)=>b-a);
+                              setDailyTotal(all.length);
+                              setDailyRank(all.findIndex(s => s <= r.score) + 1 || all.length);
+                            }
+                          } catch {}
+                          setShowDailyModal(true);
+                        })();
+                      }
                     } else {
                       startDailyChallenge();
                     }
                   }} style={{
-                    width:'100%', marginBottom:8, padding:'0', borderRadius:14,
+                    width:'100%', marginBottom:8, padding:'15px 18px', borderRadius:14,
                     background: todayDone
-                      ? 'rgba(0,0,0,0.3)'
-                      : 'linear-gradient(135deg,#f39c12,#e67e22)',
-                    border: todayDone ? '1.5px solid rgba(255,200,0,0.3)' : 'none',
-                    cursor:'pointer', overflow:'hidden',
-                    boxShadow: todayDone ? 'none' : '0 4px 16px rgba(243,156,18,0.4)',
+                      ? 'rgba(0,0,0,0.35)'
+                      : 'linear-gradient(135deg,#27ae60,#2ecc71)',
+                    border: todayDone ? '1.5px solid rgba(255,220,0,0.25)' : 'none',
+                    cursor:'pointer',
+                    boxShadow: todayDone ? 'none' : '0 4px 18px rgba(46,204,113,0.45)',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:10,
                   }}>
-                    {todayDone ? (
-                      <div style={{ display:'flex', alignItems:'center', padding:'11px 16px', gap:10 }}>
-                        <span style={{ fontSize:20 }}>✅</span>
-                        <div style={{ textAlign:'left', flex:1 }}>
-                          <div style={{ color:'#ffe066', fontWeight:700, fontSize:13 }}>Daily Challenge — Done!</div>
-                          <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11 }}>Tap to see your result</div>
-                        </div>
-                        {dailyStreak.count > 0 && (
-                          <span style={{ fontSize:13, background:'rgba(255,180,0,0.2)', border:'1px solid rgba(255,180,0,0.3)',
-                            padding:'3px 9px', borderRadius:20, color:'#ffb300', fontWeight:700 }}>
-                            {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ display:'flex', alignItems:'center', padding:'13px 16px', gap:10 }}>
-                        <span style={{ fontSize:22 }}>🎯</span>
-                        <div style={{ textAlign:'left', flex:1 }}>
-                          <div style={{ color:'#fff', fontWeight:800, fontSize:15 }}>Daily Challenge</div>
-                          <div style={{ color:'rgba(255,255,255,0.7)', fontSize:11 }}>New puzzle every day</div>
-                        </div>
-                        {dailyStreak.count > 0 && (
-                          <span style={{ fontSize:13, background:'rgba(0,0,0,0.2)',
-                            padding:'3px 9px', borderRadius:20, color:'#fff', fontWeight:700 }}>
-                            {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
-                          </span>
-                        )}
-                      </div>
+                    <span style={{ fontSize:20 }}>{todayDone ? '✅' : '🎯'}</span>
+                    <span style={{ color: todayDone ? '#ffe066' : '#fff', fontWeight:800, fontSize:17 }}>
+                      Daily Challenge
+                    </span>
+                    <span style={{ color: todayDone ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.65)',
+                      fontSize:12, fontStyle:'italic', fontWeight:400 }}>
+                      {todayDone ? '— Done! Tap to see result' : '(new puzzle every day)'}
+                    </span>
+                    {dailyStreak.count > 0 && (
+                      <span style={{ fontSize:12, background:'rgba(0,0,0,0.2)',
+                        padding:'2px 8px', borderRadius:20,
+                        color: todayDone ? '#ffb300' : '#fff', fontWeight:700, marginLeft:'auto' }}>
+                        {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
+                      </span>
                     )}
                   </button>
 
@@ -2836,6 +2899,34 @@ Istanbul, Turkey 🇹🇷`
             <SettingsModal
               onClose={() => setShowSettings(false)}
               settings={settings}
+            />
+          )}
+
+          {showDailyModal && dailyResult && (
+            <DailyCompleteModal
+              result={dailyResult}
+              streak={dailyStreak}
+              alreadyDone={todayDone && screen === 'menu'}
+              user={user}
+              dailyRank={dailyRank}
+              dailyTotal={dailyTotal}
+              personalBest={dailyPersonalBest}
+              onLeaderboard={() => { setShowDailyModal(false); setScreen('scores'); }}
+              onMenu={() => { setShowDailyModal(false); setScreen('menu'); }}
+              onShare={() => {
+                const fmtT = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+                const today = new Date();
+                const dateLabel = today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+                const fire = dailyStreak.count >= 7 ? '🔥' : dailyStreak.count >= 3 ? '⚡' : '✨';
+                const rankTxt = dailyRank ? ' | #' + dailyRank + ' today' : '';
+                const text = '🎯 MindSharp Daily Challenge
+' + dateLabel + '
+⏱ ' + fmtT(dailyResult.time) + '  🃏 ' + dailyResult.moves + ' moves  🏆 ' + dailyResult.score.toLocaleString() + ' pts' + rankTxt + '
+' + fire + ' ' + dailyStreak.count + ' day streak!
+mindsharp.co';
+                if (navigator.share) navigator.share({ text: text }).catch(function(){});
+                else navigator.clipboard.writeText(text).catch(function(){});
+              }}
             />
           )}
 
