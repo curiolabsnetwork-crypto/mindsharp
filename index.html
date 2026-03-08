@@ -1299,8 +1299,8 @@
               </div>
             </div>
 
-            {/* Name input — only show if not yet saved */}
-            {!alreadyDone && (
+            {/* Name input — show whenever no name saved yet */}
+            {(!nameSaved || !nameInput.trim()) && (
               <div style={{ marginBottom:12 }}>
                 {nameSaved ? (
                   <div style={{ color:'rgba(255,255,255,0.4)', fontSize:12, textAlign:'center', padding:'6px 0' }}>
