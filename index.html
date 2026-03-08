@@ -1188,8 +1188,10 @@
 
 
     // ── DAILY CHALLENGE COMPLETE MODAL ───────────────────────────────────
-    function DailyCompleteModal({ result, streak, onMenu, onShare, onLeaderboard, user, alreadyDone, dailyRank, dailyTotal, personalBest }) {
+    function DailyCompleteModal({ result, streak, onMenu, onShare, onLeaderboard, user, alreadyDone, dailyRank, dailyTotal, personalBest, onSaveName }) {
       const [confetti, setConfetti] = React.useState([]);
+      const [nameInput, setNameInput] = React.useState(user || '');
+      const [nameSaved, setNameSaved] = React.useState(!!user);
 
       React.useEffect(() => {
         const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
@@ -1296,6 +1298,53 @@
                 <div style={{ color:'rgba(255,255,255,0.4)', fontSize:11, marginTop:1 }}>{tomorrowMsg}</div>
               </div>
             </div>
+
+            {/* Name input — only show if not yet saved */}
+            {!alreadyDone && (
+              <div style={{ marginBottom:12 }}>
+                {nameSaved ? (
+                  <div style={{ color:'rgba(255,255,255,0.4)', fontSize:12, textAlign:'center', padding:'6px 0' }}>
+                    ✓ Leaderboard name: <span style={{ color:'#ffe066', fontWeight:700 }}>{nameInput}</span>
+                    <button onClick={() => setNameSaved(false)} style={{
+                      background:'none', border:'none', color:'rgba(255,180,0,0.5)',
+                      fontSize:11, cursor:'pointer', marginLeft:6,
+                    }}>edit</button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11, marginBottom:6, textAlign:'center', letterSpacing:0.3 }}>
+                      Enter your name to appear on the leaderboard
+                    </div>
+                    <div style={{ display:'flex', gap:7 }}>
+                      <input
+                        type="text"
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        placeholder="Your name..."
+                        maxLength={20}
+                        style={{
+                          flex:1, padding:'10px 12px', borderRadius:11,
+                          background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,210,80,0.35)',
+                          color:'#fff', fontSize:14, outline:'none', boxSizing:'border-box',
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          const n = nameInput.trim();
+                          if (n) { onSaveName(n); setNameSaved(true); }
+                        }}
+                        style={{
+                          padding:'10px 16px', borderRadius:11, border:'none',
+                          background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
+                          color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer', flexShrink:0,
+                        }}>
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Buttons */}
             <button onClick={onShare} style={{ width:'100%', padding:'13px', borderRadius:14, marginBottom:8,
@@ -3027,6 +3076,10 @@ Istanbul, Turkey 🇹🇷`
               dailyRank={dailyRank}
               dailyTotal={dailyTotal}
               personalBest={dailyPersonalBest}
+              onSaveName={(name) => {
+                setUser(name);
+                try { localStorage.setItem('memotiles_user', name); } catch {}
+              }}
               onLeaderboard={() => { setShowDailyModal(false); setScreen('daily_scores'); }}
               onMenu={() => { setShowDailyModal(false); setScreen('menu'); }}
               onShare={() => {
