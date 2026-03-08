@@ -2124,6 +2124,7 @@ Istanbul, Turkey 🇹🇷`
       const [showDailyModal, setShowDailyModal]   = useState(false);
       const [dailyResult, setDailyResult]         = useState(null);
       const [dailyStreak, setDailyStreak]         = useState(() => loadDailyStreak());
+      const todayDone = dailyStreak.lastDate === getDailyDateKey();
       const settings   = useSettings();
       const [showSettings, setShowSettings] = React.useState(false);
 
@@ -2336,7 +2337,7 @@ Istanbul, Turkey 🇹🇷`
                   const cfg = GRID_CONFIGS[mode];
                   if (newMatchedCount === cfg.pairs) {
                     setRunning(false);
-                    setWon(true);
+                    if (!isDailyMode) setWon(true);
                     if (settings.sfx) play('win');
 
                     setMoves((mv) => {
@@ -2375,7 +2376,7 @@ Istanbul, Turkey 🇹🇷`
                           setDailyStreak(newStreak);
                           setDailyResult(result);
                           submitDailyScore({ user: user || 'Guest', moves: mv, time: tm, score: finalScore });
-                          setTimeout(() => { setWon(false); setShowDailyModal(true); }, 400);
+                          setTimeout(() => { setScreen('menu'); setShowDailyModal(true); }, 600);
                         } else {
                           submitScoreToCloud({
                             user: user || "Guest",
@@ -2646,33 +2647,51 @@ Istanbul, Turkey 🇹🇷`
                     boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
 
                   {/* Daily Challenge Button */}
+                  {/* Daily Challenge Button */}
                   <button onClick={() => {
-                    const done = hasDoneToday();
-                    if (done) {
+                    if (todayDone) {
                       const r = getDailyResult();
-                      setDailyResult(r);
-                      setShowDailyModal(true);
+                      if (r) { setDailyResult(r); setShowDailyModal(true); }
                     } else {
                       startDailyChallenge();
                     }
                   }} style={{
-                    width:'100%', marginBottom: 8, padding:'13px 16px', borderRadius:14,
-                    background: hasDoneToday()
-                      ? 'rgba(255,255,255,0.07)'
+                    width:'100%', marginBottom:8, padding:'0', borderRadius:14,
+                    background: todayDone
+                      ? 'rgba(0,0,0,0.3)'
                       : 'linear-gradient(135deg,#f39c12,#e67e22)',
-                    border: hasDoneToday() ? '1.5px solid rgba(255,200,0,0.25)' : 'none',
-                    color: hasDoneToday() ? 'rgba(255,255,255,0.55)' : '#fff',
-                    fontWeight:700, fontSize:15, cursor:'pointer',
-                    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                    boxShadow: hasDoneToday() ? 'none' : '0 4px 16px rgba(243,156,18,0.4)',
+                    border: todayDone ? '1.5px solid rgba(255,200,0,0.3)' : 'none',
+                    cursor:'pointer', overflow:'hidden',
+                    boxShadow: todayDone ? 'none' : '0 4px 16px rgba(243,156,18,0.4)',
                   }}>
-                    <span style={{ fontSize:18 }}>{hasDoneToday() ? '✅' : '🎯'}</span>
-                    <span>{hasDoneToday() ? 'Daily Done — View Result' : 'Daily Challenge'}</span>
-                    {dailyStreak.count > 0 && (
-                      <span style={{ fontSize:12, background:'rgba(0,0,0,0.25)',
-                        padding:'2px 7px', borderRadius:20, marginLeft:2 }}>
-                        {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
-                      </span>
+                    {todayDone ? (
+                      <div style={{ display:'flex', alignItems:'center', padding:'11px 16px', gap:10 }}>
+                        <span style={{ fontSize:20 }}>✅</span>
+                        <div style={{ textAlign:'left', flex:1 }}>
+                          <div style={{ color:'#ffe066', fontWeight:700, fontSize:13 }}>Daily Challenge — Done!</div>
+                          <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11 }}>Tap to see your result</div>
+                        </div>
+                        {dailyStreak.count > 0 && (
+                          <span style={{ fontSize:13, background:'rgba(255,180,0,0.2)', border:'1px solid rgba(255,180,0,0.3)',
+                            padding:'3px 9px', borderRadius:20, color:'#ffb300', fontWeight:700 }}>
+                            {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', alignItems:'center', padding:'13px 16px', gap:10 }}>
+                        <span style={{ fontSize:22 }}>🎯</span>
+                        <div style={{ textAlign:'left', flex:1 }}>
+                          <div style={{ color:'#fff', fontWeight:800, fontSize:15 }}>Daily Challenge</div>
+                          <div style={{ color:'rgba(255,255,255,0.7)', fontSize:11 }}>New puzzle every day</div>
+                        </div>
+                        {dailyStreak.count > 0 && (
+                          <span style={{ fontSize:13, background:'rgba(0,0,0,0.2)',
+                            padding:'3px 9px', borderRadius:20, color:'#fff', fontWeight:700 }}>
+                            {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </button>
 
