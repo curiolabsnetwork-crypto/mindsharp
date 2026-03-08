@@ -579,141 +579,6 @@
     }
 
 
-    function MenuTourModal({ onDone }) {
-      const [step, setStep] = React.useState(0);
-
-      const handleDone = () => {
-        try { localStorage.setItem('ms_menu_toured', '1'); } catch {}
-        onDone();
-      };
-
-      // step 0 = Daily Challenge, step 1 = Start Game, step 2 = Name field
-      const steps = [
-        {
-          key: 'daily',
-          body: 'One puzzle per day — the same for every player worldwide. Solve it, earn your rank on the Daily Leaderboard, and come back tomorrow to keep your streak alive!',
-          btnLabel: 'Next',
-          // tooltip appears ABOVE the button
-          position: 'above',
-        },
-        {
-          key: 'startgame',
-          body: 'Play as many times as you want. Choose your board size, beat your personal best, and climb the global leaderboard. Every session counts!',
-          btnLabel: 'Next',
-          position: 'above',
-        },
-        {
-          key: 'name',
-          body: 'Enter your name here so your scores appear on the leaderboard. You can change it any time.',
-          btnLabel: "Got it — Let's Play!",
-          position: 'below',
-        },
-      ];
-
-      const s = steps[step];
-      const isLast = step === steps.length - 1;
-
-      // We use a ref-based approach: measure the actual button positions via
-      // fixed percentage estimates that work across screen sizes.
-      // Daily Challenge is always the first big button after the board selector.
-      // On a typical mobile/desktop the layout order is:
-      //   ~38% = name input area
-      //   ~65% = Daily Challenge button
-      //   ~74% = Start Game button
-      // We open a transparent "hole" using box-shadow trick on a highlight div.
-
-      const spotlights = {
-        daily:     { top: 'calc(62% - 28px)', height: 56 },
-        startgame: { top: 'calc(72% - 28px)', height: 56 },
-        name:      { top: 'calc(36% - 26px)', height: 50 },
-      };
-      const sp = spotlights[s.key];
-
-      // Tooltip card position: above or below spotlight
-      const cardAbove = s.position === 'above';
-
-      return (
-        <div style={{
-          position:'fixed', inset:0, zIndex:8000,
-          pointerEvents:'none',
-        }}>
-          {/* Dark overlay with hole via box-shadow */}
-          <div style={{
-            position:'fixed',
-            top: sp.top,
-            left:'50%',
-            transform:'translateX(-50%)',
-            width:'min(380px, calc(100vw - 28px))',
-            height: sp.height,
-            borderRadius:14,
-            boxShadow:'0 0 0 9999px rgba(0,0,0,0.80)',
-            border:'2px solid rgba(255,210,60,0.85)',
-            zIndex:8001,
-            pointerEvents:'none',
-          }} />
-
-          {/* Tooltip card — above or below the spotlight */}
-          <div style={{
-            position:'fixed',
-            top: cardAbove
-              ? 'calc(' + sp.top + ' - 152px)'
-              : 'calc(' + sp.top + ' + ' + sp.height + 'px + 14px)',
-            left:'50%',
-            transform:'translateX(-50%)',
-            width:'min(360px, calc(100vw - 32px))',
-            zIndex:8002,
-            pointerEvents:'auto',
-            background:'rgba(20,12,4,0.96)',
-            borderRadius:16,
-            border:'1px solid rgba(255,200,60,0.35)',
-            padding:'14px 18px 14px',
-            boxShadow:'0 8px 32px rgba(0,0,0,0.7)',
-            boxSizing:'border-box',
-          }}>
-            {/* Step dots */}
-            <div style={{ display:'flex', justifyContent:'center', gap:6, marginBottom:10 }}>
-              {steps.map((_, i) => (
-                <div key={i} style={{
-                  width: i === step ? 20 : 7, height:7, borderRadius:4,
-                  background: i === step ? '#f39c12' : 'rgba(255,255,255,0.18)',
-                  transition:'width 0.25s ease',
-                }} />
-              ))}
-            </div>
-
-            <p style={{
-              color:'rgba(255,255,255,0.82)', fontSize:12, lineHeight:1.6,
-              margin:'0 0 12px', fontWeight:400, textAlign:'center',
-            }}>
-              {s.body}
-            </p>
-
-            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-              <button
-                onClick={() => isLast ? handleDone() : setStep(step + 1)}
-                style={{
-                  flex:1, padding:'10px', borderRadius:11, border:'none',
-                  background:'linear-gradient(135deg,#f39c12,#e67e22)',
-                  color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer',
-                }}>
-                {s.btnLabel}
-              </button>
-              {!isLast && (
-                <button onClick={handleDone} style={{
-                  background:'none', border:'none',
-                  color:'rgba(255,255,255,0.28)', fontSize:11, cursor:'pointer',
-                  whiteSpace:'nowrap',
-                }}>
-                  Skip
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-
     // ── PROFILE SCREEN ────────────────────────────────────────
     function ProfileScreen({ user, onBack, scores }) {
       const stats = loadStats();
@@ -2360,11 +2225,6 @@ Istanbul, Turkey 🇹🇷`
       const [showOnboarding, setShowOnboarding] = useState(() => {
         try { return !localStorage.getItem('ms_onboarded'); } catch { return false; }
       });
-      const [showMenuTour, setShowMenuTour] = useState(() => {
-        try {
-          return !localStorage.getItem('ms_menu_toured') && !!localStorage.getItem('ms_onboarded');
-        } catch { return false; }
-      });
       const [scores, setScores]     = useState([]);
       const [rank, setRank]         = useState(null);
       const scoresRef               = useRef([]);
@@ -3179,12 +3039,6 @@ Istanbul, Turkey 🇹🇷`
             />
           )}
 
-          {showMenuTour && screen === 'menu' && (
-            <MenuTourModal
-              onDone={() => setShowMenuTour(false)}
-            />
-          )}
-
           {showExitConfirm && (
             <ConfirmDialog
               title="Quit Game?"
@@ -3199,10 +3053,7 @@ Istanbul, Turkey 🇹🇷`
 
           {showOnboarding && (
             <OnboardingModal
-              onDone={() => {
-                setShowOnboarding(false);
-                setShowMenuTour(true);
-              }}
+              onDone={() => setShowOnboarding(false)}
               playSound={play}
               sfxEnabled={settings.sfx}
             />
