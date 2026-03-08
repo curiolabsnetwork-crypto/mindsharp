@@ -787,6 +787,119 @@
       return Math.max(0, baseScore - movePenalty - timePenalty + comboBonus);
     }
 
+
+    // ── DAILY CHALLENGE ──────────────────────────────────────────────────
+
+    // Seeded RNG (mulberry32) — same seed → same sequence always
+    function mulberry32(seed) {
+      return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function getDailyDateKey() {
+      const d = new Date();
+      return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function getDailySeed() {
+      const key = getDailyDateKey();
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        hash = Math.imul(31, hash) + key.charCodeAt(i) | 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function generateDailyTiles() {
+      // Daily challenge always uses Classic (8x4) board
+      const cfg = GRID_CONFIGS['8x4'];
+      const rng = mulberry32(getDailySeed());
+      const colorCount = TILE_COLORS.length;
+      const uniquePairs = [];
+      for (let n = 1; n <= cfg.maxNum; n++) {
+        for (let c = 0; c < colorCount; c++) {
+          uniquePairs.push({ number: n, color: TILE_COLORS[c] });
+        }
+      }
+      // Seeded shuffle
+      for (let i = uniquePairs.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [uniquePairs[i], uniquePairs[j]] = [uniquePairs[j], uniquePairs[i]];
+      }
+      const selected = uniquePairs.slice(0, cfg.pairs);
+      const allTiles = [...selected, ...selected].map((p, idx) => ({
+        id: idx, number: p.number, color: p.color, flipped: false, matched: false,
+      }));
+      for (let i = allTiles.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [allTiles[i], allTiles[j]] = [allTiles[j], allTiles[i]];
+      }
+      return allTiles;
+    }
+
+    // ── STREAK helpers ───────────────────────────────────────────────────
+    function loadDailyStreak() {
+      try {
+        const raw = localStorage.getItem('ms_daily_streak');
+        return raw ? JSON.parse(raw) : { count: 0, lastDate: null };
+      } catch { return { count: 0, lastDate: null }; }
+    }
+
+    function saveDailyStreak(streak) {
+      try { localStorage.setItem('ms_daily_streak', JSON.stringify(streak)); } catch {}
+    }
+
+    function updateStreak() {
+      const today = getDailyDateKey();
+      const streak = loadDailyStreak();
+      if (streak.lastDate === today) return streak; // already played today
+      const yesterday = (() => {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+      })();
+      const newCount = streak.lastDate === yesterday ? streak.count + 1 : 1;
+      const newStreak = { count: newCount, lastDate: today };
+      saveDailyStreak(newStreak);
+      return newStreak;
+    }
+
+    function hasDoneToday() {
+      const today = getDailyDateKey();
+      const streak = loadDailyStreak();
+      return streak.lastDate === today;
+    }
+
+    function getDailyResult() {
+      try {
+        const raw = localStorage.getItem('ms_daily_result_' + getDailyDateKey());
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function saveDailyResult(result) {
+      try {
+        localStorage.setItem('ms_daily_result_' + getDailyDateKey(), JSON.stringify(result));
+      } catch {}
+    }
+
+    async function submitDailyScore({ user, moves, time, score }) {
+      if (!db) return null;
+      try {
+        const dateKey = getDailyDateKey();
+        const ref = await db.collection('daily_scores').add({
+          user: user || 'Guest',
+          dateKey,
+          moves, time, score,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return ref.id;
+      } catch(e) { console.warn('Daily score submit failed:', e); return null; }
+    }
+
     async function submitScoreToCloud({ user, mode, moves, time, score }) {
       if (!db) return null;
       try {
@@ -1057,6 +1170,95 @@
               )}
             </>
           )}
+        </div>
+      );
+    }
+
+
+    // ── DAILY CHALLENGE COMPLETE MODAL ───────────────────────────────────
+    function DailyCompleteModal({ result, streak, onMenu, onShare, user, alreadyDone }) {
+      const [confetti, setConfetti] = React.useState([]);
+      React.useEffect(() => {
+        if (alreadyDone) return;
+        const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
+        const shapes = ['■','●','▲','★','◆'];
+        setConfetti(Array.from({ length: 30 }, (_, i) => ({
+          id: i, color: colors[i % colors.length],
+          shape: shapes[i % shapes.length],
+          left: Math.random() * 100, delay: Math.random() * 1.5,
+          duration: 2 + Math.random() * 2, size: 7 + Math.random() * 8,
+          rotate: Math.random() * 720,
+        })));
+      }, []);
+
+      const formatTime = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      const today = new Date();
+      const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+      const streakFire = streak.count >= 7 ? '🔥' : streak.count >= 3 ? '⚡' : '✨';
+
+      return (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:10000,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 16px' }}>
+          {/* Confetti */}
+          {confetti.map(p => (
+            <div key={p.id} style={{
+              position:'fixed', top:'-20px', left:`${p.left}%`,
+              fontSize: p.size, color: p.color, animation: `fall ${p.duration}s ${p.delay}s ease-in forwards`,
+              pointerEvents:'none', zIndex:10001,
+            }}>{p.shape}</div>
+          ))}
+          <div style={{ background:'linear-gradient(160deg,#3a2a12,#1e1206)', borderRadius:22,
+            padding:'28px 22px 24px', width:'100%', maxWidth:360, boxSizing:'border-box',
+            border:'1.5px solid rgba(255,210,80,0.35)', boxShadow:'0 8px 40px rgba(0,0,0,0.7)',
+            textAlign:'center', position:'relative', zIndex:10002 }}>
+
+            {/* Header */}
+            <div style={{ fontSize:36, marginBottom:4 }}>{alreadyDone ? '📅' : '🎯'}</div>
+            <h2 style={{ color:'#ffe066', fontFamily:'Georgia,serif', margin:'0 0 2px',
+              fontSize:22, textShadow:'0 2px 8px rgba(0,0,0,0.8)' }}>
+              {alreadyDone ? "Already Done Today!" : "Daily Challenge Complete!"}
+            </h2>
+            <p style={{ color:'rgba(255,255,255,0.5)', fontSize:12, margin:'0 0 18px' }}>{dateLabel}</p>
+
+            {/* Stats */}
+            <div style={{ display:'flex', gap:10, justifyContent:'center', marginBottom:18 }}>
+              {[
+                { label:'TIME',  value: formatTime(result.time) },
+                { label:'MOVES', value: result.moves },
+                { label:'SCORE', value: result.score.toLocaleString() },
+              ].map(s => (
+                <div key={s.label} style={{ flex:1, background:'rgba(0,0,0,0.35)', borderRadius:12,
+                  padding:'10px 6px', border:'1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ color:'#ffe066', fontWeight:900, fontSize:18 }}>{s.value}</div>
+                  <div style={{ color:'rgba(255,255,255,0.4)', fontSize:9, letterSpacing:1 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Streak */}
+            <div style={{ background:'rgba(255,150,0,0.12)', border:'1px solid rgba(255,150,0,0.3)',
+              borderRadius:14, padding:'12px 16px', marginBottom:20 }}>
+              <div style={{ fontSize:28 }}>{streakFire}</div>
+              <div style={{ color:'#ffb300', fontWeight:900, fontSize:20 }}>{streak.count} Day Streak!</div>
+              <div style={{ color:'rgba(255,255,255,0.45)', fontSize:11, marginTop:2 }}>
+                {streak.count === 1 ? 'Come back tomorrow to build your streak'
+                  : streak.count < 7 ? `${7 - streak.count} more days for a 7-day streak!`
+                  : 'You're on fire! Keep it going 🔥'}
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <button onClick={onShare} style={{ width:'100%', padding:'13px', borderRadius:14, marginBottom:10,
+              background:'linear-gradient(135deg,#f39c12,#e67e22)', border:'none',
+              color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer', letterSpacing:0.5 }}>
+              📤 Share Result
+            </button>
+            <button onClick={onMenu} style={{ width:'100%', padding:'11px', borderRadius:14,
+              background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)',
+              color:'rgba(255,255,255,0.7)', fontWeight:600, fontSize:14, cursor:'pointer' }}>
+              Back to Menu
+            </button>
+          </div>
         </div>
       );
     }
@@ -1918,6 +2120,10 @@ Istanbul, Turkey 🇹🇷`
       const [scoreDocId, setScoreDocId] = useState(null);
       const [toast, setToast]         = useState(null);
       const [showExitConfirm, setShowExitConfirm] = useState(false);
+      const [isDailyMode, setIsDailyMode]         = useState(false);
+      const [showDailyModal, setShowDailyModal]   = useState(false);
+      const [dailyResult, setDailyResult]         = useState(null);
+      const [dailyStreak, setDailyStreak]         = useState(() => loadDailyStreak());
       const settings   = useSettings();
       const [showSettings, setShowSettings] = React.useState(false);
 
@@ -2061,6 +2267,17 @@ Istanbul, Turkey 🇹🇷`
         setTimeout(() => setToast(null), 2400);
       }, []);
 
+      const startDailyChallenge = useCallback(() => {
+        setTiles(generateDailyTiles());
+        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+        setRunning(false); setWon(false); lockRef.current = false;
+        setMode('8x4'); setScreen('game');
+        setScore(0); setComboBonus(0); setCombo(0);
+        setScoreDocId(null);
+        comboBonusRef.current = 0; comboRef.current = 0;
+        setIsDailyMode(true);
+      }, []);
+
       const startGame = useCallback((m) => {
         const cfg = GRID_CONFIGS[m];
         setTiles(generateTiles(cfg.pairs, cfg.maxNum));
@@ -2070,6 +2287,7 @@ Istanbul, Turkey 🇹🇷`
         setScore(0); setComboBonus(0); setCombo(0);
         setScoreDocId(null);
         comboBonusRef.current = 0; comboRef.current = 0;
+        setIsDailyMode(false);
       }, []);
 
       const handleTile = useCallback((id) => {
@@ -2150,15 +2368,25 @@ Istanbul, Turkey 🇹🇷`
                         ) + 1;
                         setRank(myRank);
 
-                        submitScoreToCloud({
-                          user: user || "Guest",
-                          mode,
-                          moves: mv,
-                          time: tm,
-                          score: finalScore,
-                        }).then(docId => {
-                          if (docId) setScoreDocId(docId);
-                        });
+                        if (isDailyMode) {
+                          const result = { moves: mv, time: tm, score: finalScore };
+                          saveDailyResult(result);
+                          const newStreak = updateStreak();
+                          setDailyStreak(newStreak);
+                          setDailyResult(result);
+                          submitDailyScore({ user: user || 'Guest', moves: mv, time: tm, score: finalScore });
+                          setTimeout(() => { setWon(false); setShowDailyModal(true); }, 400);
+                        } else {
+                          submitScoreToCloud({
+                            user: user || "Guest",
+                            mode,
+                            moves: mv,
+                            time: tm,
+                            score: finalScore,
+                          }).then(docId => {
+                            if (docId) setScoreDocId(docId);
+                          });
+                        }
 
                         // İstatistikleri kaydet
                         recordGameStats({
