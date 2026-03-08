@@ -3013,7 +3013,7 @@ Istanbul, Turkey 🇹🇷`
             <DailyCompleteModal
               result={dailyResult}
               streak={dailyStreak}
-              alreadyDone={todayDone && screen === 'menu'}
+              alreadyDone={todayDoneForMode(dailyModeKey) && screen === 'menu'}
               user={user}
               dailyRank={dailyRank}
               dailyTotal={dailyTotal}
