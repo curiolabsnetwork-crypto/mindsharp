@@ -2919,11 +2919,13 @@ Istanbul, Turkey 🇹🇷`
                 const dateLabel = today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
                 const fire = dailyStreak.count >= 7 ? '🔥' : dailyStreak.count >= 3 ? '⚡' : '✨';
                 const rankTxt = dailyRank ? ' | #' + dailyRank + ' today' : '';
-                const text = '🎯 MindSharp Daily Challenge
-' + dateLabel + '
-⏱ ' + fmtT(dailyResult.time) + '  🃏 ' + dailyResult.moves + ' moves  🏆 ' + dailyResult.score.toLocaleString() + ' pts' + rankTxt + '
-' + fire + ' ' + dailyStreak.count + ' day streak!
-mindsharp.co';
+                const text = [
+                  '🎯 MindSharp Daily Challenge',
+                  dateLabel,
+                  '\u23f1 ' + fmtT(dailyResult.time) + '  \u{1F0CF} ' + dailyResult.moves + ' moves  \u{1F3C6} ' + dailyResult.score.toLocaleString() + ' pts' + rankTxt,
+                  fire + ' ' + dailyStreak.count + ' day streak!',
+                  'mindsharp.co'
+                ].join('\n');
                 if (navigator.share) navigator.share({ text: text }).catch(function(){});
                 else navigator.clipboard.writeText(text).catch(function(){});
               }}
