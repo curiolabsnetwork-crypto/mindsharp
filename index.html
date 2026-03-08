@@ -2715,7 +2715,6 @@ Istanbul, Turkey 🇹🇷`
                       const r = getDailyResult();
                       if (r) {
                         setDailyResult(r);
-                        // Fetch rank for viewing
                         (async () => {
                           try {
                             if (db) {
@@ -2732,27 +2731,27 @@ Istanbul, Turkey 🇹🇷`
                       startDailyChallenge();
                     }
                   }} style={{
-                    width:'100%', marginBottom:8, padding:'15px 18px', borderRadius:14,
+                    width:'100%', marginBottom:8, padding:'15px', borderRadius:14,
                     background: todayDone
-                      ? 'rgba(0,0,0,0.35)'
-                      : 'linear-gradient(135deg,#27ae60,#2ecc71)',
-                    border: todayDone ? '1.5px solid rgba(255,220,0,0.25)' : 'none',
-                    cursor:'pointer',
-                    boxShadow: todayDone ? 'none' : '0 4px 18px rgba(46,204,113,0.45)',
-                    display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+                      ? 'linear-gradient(135deg,#b35a00,#e67e22)'
+                      : 'linear-gradient(135deg,#f39c12,#e67e22)',
+                    border:'none', cursor:'pointer',
+                    boxShadow: todayDone
+                      ? '0 4px 16px rgba(230,126,34,0.4)'
+                      : '0 4px 16px rgba(243,156,18,0.4)',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
                   }}>
                     <span style={{ fontSize:20 }}>{todayDone ? '✅' : '🎯'}</span>
-                    <span style={{ color: todayDone ? '#ffe066' : '#fff', fontWeight:800, fontSize:17 }}>
+                    <span style={{ color:'#fff', fontWeight:800, fontSize:17 }}>
                       Daily Challenge
                     </span>
-                    <span style={{ color: todayDone ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.65)',
-                      fontSize:12, fontStyle:'italic', fontWeight:400 }}>
-                      {todayDone ? '— Done! Tap to see result' : '(new puzzle every day)'}
+                    <span style={{ color:'rgba(255,255,255,0.7)', fontSize:12, fontStyle:'italic', fontWeight:400 }}>
+                      {todayDone ? '(done — tap to view)' : '(new puzzle every day)'}
                     </span>
                     {dailyStreak.count > 0 && (
                       <span style={{ fontSize:12, background:'rgba(0,0,0,0.2)',
                         padding:'2px 8px', borderRadius:20,
-                        color: todayDone ? '#ffb300' : '#fff', fontWeight:700, marginLeft:'auto' }}>
+                        color:'#fff', fontWeight:700, marginLeft:'auto', flexShrink:0 }}>
                         {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
                       </span>
                     )}
