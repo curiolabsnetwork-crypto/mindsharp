@@ -1,0 +1,3614 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>MindSharp — Memory & Focus Game</title>
+  <meta name="description" content="Train your memory with MindSharp! Flip tiles, find matching pairs, beat the leaderboard." />
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://mindsharp.co/" />
+  <meta property="og:title"       content="MindSharp — Memory & Focus Workout" />
+  <meta property="og:description" content="Flip tiles, match pairs, beat the leaderboard. Daily Challenge every day. Free to play!" />
+  <meta property="og:image"       content="https://mindsharp.co/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:url"         content="https://mindsharp.co/" />
+  <meta name="twitter:title"       content="MindSharp — Memory & Focus Workout" />
+  <meta name="twitter:description" content="Flip tiles, match pairs, beat the leaderboard. Daily Challenge every day. Free to play!" />
+  <meta name="twitter:image"       content="https://mindsharp.co/og-image.png" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#2b1a10" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MindSharp" />
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-F04KE32281"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-F04KE32281');
+  </script>
+  <style>
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+      background: #2b1a10 url("./wood_bg.png") center / cover no-repeat fixed;
+      overflow-x: hidden;
+    }
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 25%, rgba(0,0,0,0.10), rgba(0,0,0,0.58));
+      z-index: 0;
+    }
+    #root{
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+    }
+    body::after{
+      content:"© 2026 Mendebur Studios. All rights reserved.";
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255, 224, 130, 0.75);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+      z-index: 2;
+      pointer-events: none;
+      user-select: none;
+    }
+    /* BUG FIX #7: margin: 6 → 6px */
+    .ms-hint {
+      width: calc(100% - 24px);
+      margin: 0px 12px 6px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 0 12px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.8);
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+      backdrop-filter: blur(4px);
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .35s ease, transform .35s ease;
+      pointer-events: none;
+      z-index: 50;
+    }
+    .ms-hint.hide {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    /* Confirmation dialog */
+    .ms-confirm-overlay {
+      position: fixed; inset: 0; z-index: 700;
+      background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.15s ease;
+    }
+    .ms-confirm-box {
+      width: 100%; max-width: 300px;
+      background: linear-gradient(160deg, #fdf8ec, #f5e6c3);
+      border-radius: 20px; border: 2px solid #c8a96e;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      padding: 22px 20px 16px;
+      text-align: center;
+      animation: cardSlideUp 0.25s cubic-bezier(.22,1.2,.36,1);
+    }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes dailyPulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(243,156,18,0.45), 0 0 0 0 rgba(243,156,18,0); }
+      50%      { box-shadow: 0 4px 22px rgba(243,156,18,0.7), 0 0 0 7px rgba(243,156,18,0); }
+    }
+    @keyframes dailyGlow {
+      0%,100% { box-shadow: 0 4px 16px rgba(243,156,18,0.45), 0 0 0 2px rgba(255,210,60,0.35); }
+      50%      { box-shadow: 0 6px 28px rgba(243,156,18,0.85), 0 0 0 5px rgba(255,210,60,0.55); }
+    }
+    /* Username input in menu */
+    .ms-username-input {
+      width: 100%; padding: 11px 14px; border-radius: 11px;
+      border: 2px solid rgba(200,169,110,0.5);
+      background: rgba(255,255,255,0.12);
+      color: #fff; font-size: 14px; font-weight: 700;
+      outline: none; box-sizing: border-box;
+      backdrop-filter: blur(4px);
+      transition: border-color 0.2s;
+    }
+    .ms-username-input::placeholder { color: rgba(255,224,130,0.45); }
+    .ms-username-input:focus { border-color: #ffe082; }
+    /* Toast notification */
+    .ms-toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: rgba(39,174,96,0.95); color: #fff;
+      padding: 10px 22px; border-radius: 30px;
+      font-weight: 800; font-size: 13px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      z-index: 800; white-space: nowrap;
+      animation: toastIn 0.3s cubic-bezier(.22,1.2,.36,1);
+    }
+    @keyframes toastIn {
+      from { opacity:0; transform: translateX(-50%) translateY(20px) scale(0.9); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.5); border-radius: 2px; }
+  </style>
+  <!-- Capacitor AdMob -->
+  <script>
+    // AdMob helper — Capacitor native ortamında çalışır, web'de sessizce skip eder
+    window.MindSharpAds = {
+      _initialized: false,
+      _rewardedReady: false,
+      AD_UNIT_ID: 'ca-app-pub-9758848686103243/3344380722',
+
+      async init() {
+        try {
+          if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+          const { AdMob } = window.CapacitorAdMob || {};
+          if (!AdMob) return;
+          await AdMob.initialize({ testingDevices: [], initializeForTesting: false });
+          this._initialized = true;
+          console.log('[AdMob] Initialized');
+          this.loadRewarded();
+        } catch(e) { console.warn('[AdMob] Init error:', e); }
+      },
+
+      async loadRewarded() {
+        try {
+          if (!this._initialized) return;
+          const { AdMob } = window.CapacitorAdMob || {};
+          if (!AdMob) return;
+          await AdMob.prepareRewardVideoAd({
+            adId: this.AD_UNIT_ID,
+            isTesting: false,
+          });
+          this._rewardedReady = true;
+          console.log('[AdMob] Rewarded ad ready');
+        } catch(e) {
+          this._rewardedReady = false;
+          console.warn('[AdMob] Load rewarded error:', e);
+        }
+      },
+
+      isReady() {
+        return this._initialized && this._rewardedReady;
+      },
+
+      async showRewarded(onReward) {
+        try {
+          if (!this.isReady()) { onReward && onReward(false); return; }
+          const { AdMob, AdMobRewardItem } = window.CapacitorAdMob || {};
+          if (!AdMob) { onReward && onReward(false); return; }
+          const result = await AdMob.showRewardVideoAd();
+          this._rewardedReady = false;
+          this.loadRewarded(); // preload next
+          if (result && result.type === 'Rewarded') {
+            onReward && onReward(true);
+          } else {
+            onReward && onReward(false);
+          }
+        } catch(e) {
+          console.warn('[AdMob] Show rewarded error:', e);
+          onReward && onReward(false);
+        }
+      }
+    };
+
+    // Capacitor hazır olunca AdMob'u init et
+    document.addEventListener('deviceready', () => window.MindSharpAds.init(), false);
+    // Web Capacitor için
+    window.addEventListener('load', () => {
+      setTimeout(() => window.MindSharpAds.init(), 800);
+    });
+  </script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div id="root">
+    <!-- Loading spinner shown while Babel compiles JSX (2-5 sec) -->
+    <div id="ms-loader" style="
+      position:fixed; inset:0; z-index:9999;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:16px;
+    ">
+      <div style="
+        width:52px; height:52px; border-radius:50%;
+        border:4px solid rgba(200,169,110,0.2);
+        border-top-color:#ffe082;
+        animation:spin 0.9s linear infinite;
+      "></div>
+      <div style="color:#ffe082; font-family:Georgia,serif; font-size:22px; font-weight:900;
+        text-shadow:0 2px 8px rgba(0,0,0,0.8);">MindSharp</div>
+      <div style="color:rgba(255,224,130,0.55); font-size:12px; font-weight:600;">Loading…</div>
+    </div>
+  </div>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script>
+    // Global error handler — shows friendly message if React/Babel crashes
+    window.addEventListener('error', function(e) {
+      const loader = document.getElementById('ms-loader');
+      if (loader) {
+        loader.innerHTML = `
+          <div style="text-align:center;padding:24px;max-width:320px;">
+            <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+            <div style="color:#ffe082;font-family:Georgia,serif;font-size:20px;font-weight:900;margin-bottom:8px;">MindSharp</div>
+            <div style="color:rgba(255,224,130,0.7);font-size:13px;line-height:1.6;margin-bottom:20px;">
+              Yüklenirken bir hata oluştu.<br>Sayfayı yenilemeyi deneyin.
+            </div>
+            <button onclick="location.reload()" style="
+              padding:12px 28px;border-radius:12px;border:none;
+              background:linear-gradient(135deg,#f39c12,#e67e22);
+              color:#fff;font-weight:800;font-size:14px;cursor:pointer;
+            ">🔄 Yenile</button>
+          </div>`;
+      }
+    });
+  </script>
+  <script type="text/babel">
+    // === Firebase Init ===
+    const firebaseConfig = {
+      apiKey: ["AIzaSyBqtoU6Drecy", "hCvjYoWOtOcCyadNMDu5dY"].join(""),
+      authDomain: "mindsharp-af404.firebaseapp.com",
+      projectId: "mindsharp-af404",
+      storageBucket: "mindsharp-af404.firebasestorage.app",
+      messagingSenderId: "520056575924",
+      appId: "1:520056575924:web:4aff3dbee97a38650cc4e1",
+      measurementId: "G-9HCMNEQBF6"
+    };
+    let db = null;
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        console.log("Firebase connected");
+      } else {
+        console.warn("Firebase not loaded — offline mode");
+      }
+    } catch (e) {
+      console.warn("Firebase error:", e);
+    }
+
+    // ── GA4 event helper ─────────────────────────────────────
+    function trackEvent(name, params) {
+      try { if (typeof gtag !== 'undefined') gtag('event', name, params); } catch(e) {}
+    }
+
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ── STATS HELPERS ─────────────────────────────────────────
+    function loadStats() {
+      try {
+        const s = localStorage.getItem('ms_stats');
+        return s ? JSON.parse(s) : {
+          totalGames: 0,
+          totalWins: 0,
+          bestScores: {},      // { '8x4': n, '8x7': n }
+          bestMoves: {},       // { mode: n }
+          bestTime: {},        // { mode: n }
+          totalMoves: 0,
+          totalTime: 0,
+          maxCombo: 0,
+          streak: [],          // ['2025-03-01', ...] günlük oynama günleri
+        };
+      } catch { return { totalGames:0, totalWins:0, bestScores:{}, bestMoves:{}, bestTime:{}, totalMoves:0, totalTime:0, maxCombo:0, streak:[] }; }
+    }
+
+    function saveStats(stats) {
+      try { localStorage.setItem('ms_stats', JSON.stringify(stats)); } catch {}
+    }
+
+    function recordGameStats({ mode, moves, time, score, comboBonus }) {
+      const stats = loadStats();
+      stats.totalGames = (stats.totalGames || 0) + 1;
+      stats.totalWins  = (stats.totalWins  || 0) + 1;
+      if (!stats.bestScores[mode] || score > stats.bestScores[mode]) stats.bestScores[mode] = score;
+      if (!stats.bestMoves[mode]  || moves < stats.bestMoves[mode])  stats.bestMoves[mode]  = moves;
+      if (!stats.bestTime[mode]   || time  < stats.bestTime[mode])   stats.bestTime[mode]   = time;
+      stats.totalMoves = (stats.totalMoves || 0) + moves;
+      stats.totalTime  = (stats.totalTime  || 0) + time;
+      if (comboBonus > (stats.maxCombo || 0)) stats.maxCombo = comboBonus;
+      // streak — bugünün tarihini ekle
+      const today = new Date().toISOString().slice(0, 10);
+      if (!stats.streak) stats.streak = [];
+      if (!stats.streak.includes(today)) stats.streak.push(today);
+      saveStats(stats);
+      return stats;
+    }
+
+    function getStreakCount(streak) {
+      if (!streak || streak.length === 0) return 0;
+      const sorted = [...streak].sort().reverse();
+      let count = 0;
+      let cur = new Date();
+      cur.setHours(0,0,0,0);
+      for (const d of sorted) {
+        const dd = new Date(d);
+        dd.setHours(0,0,0,0);
+        const diff = Math.round((cur - dd) / 86400000);
+        if (diff === 0 || diff === count) { count++; cur = dd; }
+        else break;
+      }
+      return count;
+    }
+
+    // ── ONBOARDING ────────────────────────────────────────────
+    // Örnek taş verisi — görsel demo için
+    const OB_PAIRS = [
+      { number: 3, color: '#E8000A' },
+      { number: 4, color: '#29B6F6' },
+      { number: 3, color: '#E8000A' }, // eşi
+      { number: 4, color: '#29B6F6' }, // eşi
+    ];
+
+    function ObTile({ number, color, flipped, matched, onClick, pulse }) {
+      const s = 52, tileH = s * 1.45, dimple = s * 0.28;
+      return (
+        <div onClick={onClick} style={{
+          width: s, height: tileH, perspective: 600, cursor: 'pointer', flexShrink: 0,
+        }}>
+          <div style={{
+            width:'100%', height:'100%', position:'relative', transformStyle:'preserve-3d',
+            transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+            transition: 'transform 0.4s cubic-bezier(.4,2,.6,1)',
+          }}>
+            {/* Arka yüz */}
+            <div style={{
+              position:'absolute', width:'100%', height:'100%', backfaceVisibility:'hidden',
+              borderRadius:8, background:'linear-gradient(160deg,#F8F3E2 60%,#EDE5C8 100%)',
+              border:'2px solid #c8b98a', boxShadow:'0 4px 10px rgba(0,0,0,0.35)',
+            }}/>
+            {/* Ön yüz */}
+            <div style={{
+              position:'absolute', width:'100%', height:'100%', backfaceVisibility:'hidden',
+              transform:'rotateY(180deg)', borderRadius:8,
+              background: matched ? 'linear-gradient(160deg,#e8f5e9,#c8e6c9)' : 'linear-gradient(160deg,#FDFAF0 60%,#EDE5C8 100%)',
+              border:`2px solid ${matched ? '#66bb6a' : color}`,
+              boxShadow: matched
+                ? `0 0 14px ${color}66, 0 4px 10px rgba(0,0,0,0.2)`
+                : '0 5px 12px rgba(0,0,0,0.28)',
+              display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-start',
+              paddingTop: s * 0.06, boxSizing:'border-box', overflow:'hidden',
+            }}>
+              <span style={{
+                color, fontWeight:900, fontSize: s * 0.72, fontFamily:'Georgia,serif',
+                lineHeight:1, textShadow:'0 2px 4px rgba(0,0,0,0.2)',
+              }}>{number}</span>
+              <div style={{ flex:1 }}/>
+              <div style={{
+                width: dimple * 1.08, height: dimple * 1.08, borderRadius:'50%',
+                background:'radial-gradient(circle at 40% 35%,#d8cfa8,#b8a870)',
+                display:'flex', alignItems:'center', justifyContent:'center', marginBottom: s * 0.11,
+              }}>
+                <span style={{ color, fontSize: dimple * 0.6, lineHeight:1 }}>♥</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function OnboardingModal({ onDone, playSound, sfxEnabled }) {
+      const [demoStep, setDemoStep] = React.useState(0);
+      const [audioUnlocked, setAudioUnlocked] = React.useState(false);
+      const prevStepRef = React.useRef(0);
+
+      // Unlock AudioContext on first tap anywhere on the modal
+      const handleUnlockAudio = React.useCallback(() => {
+        if (!audioUnlocked && sfxEnabled) {
+          playSound('flip'); // silent unlock tap — very short, just opens the context
+          setAudioUnlocked(true);
+        }
+      }, [audioUnlocked, sfxEnabled, playSound]);
+
+      // step → tile states: [t0_flip, t0_match, t1_flip, t1_match, t2_flip, t2_match, t3_flip, t3_match]
+      const tileStates = [
+        [false,false, false,false, false,false, false,false], // 0 all closed
+        [true, false, false,false, false,false, false,false], // 1 flip #1
+        [true, false, true, false, false,false, false,false], // 2 flip #2 — wrong pair
+        [false,false, false,false, false,false, false,false], // 3 close all
+        [true, false, false,false, false,false, false,false], // 4 flip #1 again
+        [true, true,  false,false, true, true,  false,false], // 5 match! pair A
+        [true, true,  true, false, true, true,  false,false], // 6 flip #3
+        [true, true,  true, true,  true, true,  true, true ], // 7 match! pair B — all done
+        [true, true,  true, true,  true, true,  true, true ], // 8 hold → restart
+      ];
+
+      const delays = [900, 850, 950, 650, 850, 950, 850, 950, 1800];
+      const shakeSteps = new Set([2]);
+
+      // Ses çalma — hangi adımda ne çalacak
+      const soundMap = {
+        1: 'flip',
+        2: 'flip',
+        3: 'fail',
+        4: 'flip',
+        5: 'match',
+        6: 'flip',
+        7: 'match',
+      };
+
+      React.useEffect(() => {
+        let t;
+        const next = (step) => {
+          t = setTimeout(() => {
+            const nextStep = (step + 1) % delays.length;
+            if (sfxEnabled && audioUnlocked && soundMap[nextStep]) {
+              playSound(soundMap[nextStep]);
+            }
+            setDemoStep(nextStep);
+            next(nextStep);
+          }, delays[step]);
+        };
+        next(demoStep);
+        return () => clearTimeout(t);
+      }, [sfxEnabled, audioUnlocked]);
+
+      const ts    = tileStates[demoStep] || tileStates[0];
+      const tiles = [
+        { number: OB_PAIRS[0].number, color: OB_PAIRS[0].color, flipped: ts[0], matched: ts[1] },
+        { number: OB_PAIRS[1].number, color: OB_PAIRS[1].color, flipped: ts[2], matched: ts[3] },
+        { number: OB_PAIRS[2].number, color: OB_PAIRS[2].color, flipped: ts[4], matched: ts[5] },
+        { number: OB_PAIRS[3].number, color: OB_PAIRS[3].color, flipped: ts[6], matched: ts[7] },
+      ];
+
+      const wrongPair  = shakeSteps.has(demoStep);
+      const allMatched = demoStep >= 7;
+      const firstMatch = demoStep === 5 || demoStep === 6;
+
+      const handleDone = () => {
+        try { localStorage.setItem('ms_onboarded', '1'); } catch {}
+        onDone();
+      };
+
+      return (
+        <div onClick={handleUnlockAudio} style={{
+          position:'fixed', inset:0, zIndex:600,
+          background:'rgba(0,0,0,0.90)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          padding:20,
+        }}>
+          <style>{`
+            @keyframes obIn {
+              from { opacity:0; transform:scale(0.92) translateY(20px); }
+              to   { opacity:1; transform:scale(1) translateY(0); }
+            }
+            @keyframes obShake {
+              0%,100%{transform:translateX(0)}
+              20%{transform:translateX(-6px)}
+              40%{transform:translateX(6px)}
+              60%{transform:translateX(-4px)}
+              80%{transform:translateX(4px)}
+            }
+          `}</style>
+
+          <div style={{
+            width:'100%', maxWidth:340,
+            background:'linear-gradient(160deg,#fdf8ec 0%,#fef5da 50%,#f5e6c3 100%)',
+            borderRadius:28,
+            border:'3px solid #c8a96e',
+            boxShadow:'0 0 0 6px rgba(200,169,110,0.15), 0 32px 80px rgba(0,0,0,0.7)',
+            overflow:'hidden',
+            animation:'obIn 0.45s cubic-bezier(.22,1.2,.36,1)',
+          }}>
+            {/* Gold top bar */}
+            <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
+
+            <div style={{ padding:'22px 24px 20px', textAlign:'center' }}>
+
+              {/* Title */}
+              <div style={{
+                fontFamily:'Georgia,serif', fontSize:28, fontWeight:900,
+                color:'#3d1a00',
+                marginBottom:6,
+                letterSpacing:-0.3,
+              }}>How to Play</div>
+
+              {/* Subtitle */}
+              <div style={{
+                fontSize:13, fontWeight:600, lineHeight:1.55,
+                color:'rgba(70,35,5,0.60)',
+                marginBottom:18,
+              }}>
+                Flip tiles — find the matching pair!
+              </div>
+
+              {/* ── LIVE DEMO ── */}
+              <div style={{
+                background:'rgba(43,26,16,0.55)',
+                borderRadius:16,
+                border:'2px solid rgba(200,169,110,0.3)',
+                padding:'18px 12px 14px',
+                marginBottom:16,
+                position:'relative',
+              }}>
+                {/* DEMO watermark label */}
+                <div style={{
+                  position:'absolute', bottom:8, right:10,
+                  background:'rgba(200,169,110,0.2)',
+                  border:'1px solid rgba(200,169,110,0.35)',
+                  color:'rgba(255,224,130,0.6)',
+                  fontSize:9, fontWeight:800, letterSpacing:2,
+                  padding:'2px 8px', borderRadius:6,
+                  textTransform:'uppercase', pointerEvents:'none',
+                }}>DEMO</div>
+
+                {/* Status badge */}
+                {wrongPair && (
+                  <div style={{
+                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
+                    background:'linear-gradient(135deg,#e74c3c,#c0392b)',
+                    color:'#fff', fontWeight:800, fontSize:11,
+                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
+                    boxShadow:'0 2px 8px rgba(231,76,60,0.5)',
+                  }}>✗ Different color!</div>
+                )}
+                {firstMatch && (
+                  <div style={{
+                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
+                    background:'linear-gradient(135deg,#27ae60,#2ecc71)',
+                    color:'#fff', fontWeight:800, fontSize:11,
+                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
+                    boxShadow:'0 2px 8px rgba(46,204,113,0.5)',
+                  }}>✓ Match!</div>
+                )}
+                {allMatched && (
+                  <div style={{
+                    position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
+                    background:'linear-gradient(135deg,#f39c12,#e67e22)',
+                    color:'#fff', fontWeight:800, fontSize:11,
+                    padding:'3px 14px', borderRadius:20, whiteSpace:'nowrap',
+                    boxShadow:'0 2px 8px rgba(243,156,18,0.5)',
+                  }}>🎉 All matched!</div>
+                )}
+
+                {/* Tile grid */}
+                <div style={{
+                  display:'grid', gridTemplateColumns:'repeat(4,52px)',
+                  gap:8, justifyContent:'center',
+                  animation: wrongPair ? 'obShake 0.4s ease' : 'none',
+                }}>
+                  {tiles.map((t, i) => (
+                    <ObTile
+                      key={i}
+                      number={t.number}
+                      color={t.color}
+                      flipped={t.flipped}
+                      matched={t.matched}
+                    />
+                  ))}
+                </div>
+
+                {/* Legend */}
+                <div style={{
+                  marginTop:12, display:'flex', justifyContent:'center', gap:16,
+                }}>
+                  {[
+                    { color:'#E8000A', label:'3  ×  2' },
+                    { color:'#29B6F6', label:'4  ×  2' },
+                  ].map(({ color, label }) => (
+                    <div key={color} style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <div style={{
+                        width:13, height:13, borderRadius:3,
+                        background:color, flexShrink:0,
+                        boxShadow:`0 0 6px ${color}88`,
+                      }}/>
+                      <span style={{ color:'rgba(255,224,130,0.65)', fontSize:11, fontWeight:700 }}>
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rule summary */}
+              <div style={{
+                display:'flex', justifyContent:'center', alignItems:'center', gap:8,
+                marginBottom: audioUnlocked ? 20 : 8,
+                padding:'10px 14px',
+                background:'rgba(200,169,110,0.12)',
+                borderRadius:12,
+                border:'1px solid rgba(200,169,110,0.2)',
+              }}>
+                {[
+                  { icon:'🔢', text:'Same number' },
+                  { icon:'+', text:null },
+                  { icon:'🎨', text:'Same color' },
+                  { icon:'=', text:null },
+                  { icon:'✅', text:'Match' },
+                ].map((item, i) =>
+                  item.text === null ? (
+                    <div key={i} style={{ color:'rgba(200,169,110,0.6)', fontSize:14, fontWeight:900 }}>{item.icon}</div>
+                  ) : (
+                    <div key={i} style={{ textAlign:'center' }}>
+                      <div style={{ fontSize:20 }}>{item.icon}</div>
+                      <div style={{ fontSize:9, color:'rgba(80,40,10,0.6)', fontWeight:800, marginTop:2, whiteSpace:'nowrap' }}>{item.text}</div>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Tap for sound nudge — only shown before audio unlocked */}
+              {!audioUnlocked && sfxEnabled && (
+                <div style={{
+                  textAlign:'center', marginBottom:14,
+                  color:'rgba(70,35,5,0.45)', fontSize:10, fontWeight:700,
+                  letterSpacing:0.5,
+                }}>🔊 Tap anywhere to enable sound</div>
+              )}
+
+              {/* CTA button */}
+              <button onClick={handleDone} style={{
+                width:'100%', padding:'16px 0', borderRadius:16, border:'none',
+                background:'linear-gradient(135deg,#27ae60,#2ecc71)',
+                color:'#fff', fontWeight:900, fontSize:18, cursor:'pointer',
+                boxShadow:'0 6px 20px rgba(46,204,113,0.45)',
+                letterSpacing:0.5,
+              }}>▶ Let's Play!</button>
+
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+
+    function InstallBanner({ onDismiss }) {
+      const [visible, setVisible] = React.useState(false);
+      const [installing, setInstalling] = React.useState(false);
+      const [installed, setInstalled] = React.useState(false);
+
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+      const isIOS     = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isSafari  = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isAndroid = /android/i.test(navigator.userAgent);
+
+      React.useEffect(() => {
+        // Don't show if already installed as PWA
+        if (isStandalone) return;
+        // Don't show if user dismissed before
+        try { if (localStorage.getItem('ms_install_dismissed')) return; } catch {}
+        // Don't show if already installed
+        try { if (localStorage.getItem('ms_pwa_installed')) return; } catch {}
+
+        if (isAndroid) {
+          // Show when prompt is available (may already be captured)
+          if (window.__installPromptEvent) {
+            setVisible(true);
+          } else {
+            // Wait for prompt
+            window.__onInstallPromptReady = () => setVisible(true);
+          }
+        } else if (isIOS && isSafari) {
+          // iOS Safari — show manual instructions
+          setVisible(true);
+        }
+
+        // Listen for install completion
+        window.__onAppInstalled = () => {
+          setInstalled(true);
+          setTimeout(() => { setVisible(false); onDismiss(); }, 2200);
+        };
+
+        return () => {
+          window.__onInstallPromptReady = null;
+          window.__onAppInstalled = null;
+        };
+      }, []);
+
+      const handleInstall = async () => {
+        if (!window.__installPromptEvent) return;
+        setInstalling(true);
+        try {
+          await window.__installPromptEvent.prompt();
+          const result = await window.__installPromptEvent.userChoice;
+          if (result.outcome === 'accepted') {
+            try { localStorage.setItem('ms_pwa_installed', '1'); } catch {}
+            setInstalled(true);
+            setTimeout(() => { setVisible(false); onDismiss(); }, 2000);
+          } else {
+            setInstalling(false);
+          }
+          window.__installPromptEvent = null;
+        } catch(e) {
+          setInstalling(false);
+        }
+      };
+
+      const handleDismiss = () => {
+        try { localStorage.setItem('ms_install_dismissed', '1'); } catch {}
+        setVisible(false);
+        onDismiss();
+      };
+
+      if (!visible) return null;
+
+      if (installed) {
+        return (
+          <div style={{
+            width:'100%', marginTop:8,
+            background:'linear-gradient(135deg,rgba(39,174,96,0.25),rgba(46,204,113,0.15))',
+            border:'1.5px solid rgba(46,204,113,0.5)',
+            borderRadius:14, padding:'12px 16px',
+            display:'flex', alignItems:'center', gap:10,
+          }}>
+            <span style={{ fontSize:22 }}>🎉</span>
+            <span style={{ color:'#2ecc71', fontWeight:800, fontSize:14 }}>
+              MindSharp added to your home screen!
+            </span>
+          </div>
+        );
+      }
+
+      // iOS — manual instructions
+      if (isIOS) {
+        const ic = 'rgba(255,255,255,0.4)';
+        const ShareIcon = () => (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ic} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+            <path d="M8 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/>
+          </svg>
+        );
+        const AddIcon = () => (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ic} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+            <rect x="3" y="3" width="18" height="18" rx="3.5"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        );
+        const stepStyle = { color:'rgba(255,255,255,0.38)', fontSize:12 };
+        return (
+          <div style={{
+            width:'100%', marginTop:8, boxSizing:'border-box',
+            background:'rgba(15,15,22,0.95)',
+            border:'1px solid rgba(255,255,255,0.09)',
+            borderRadius:13, padding:'12px 14px 13px',
+            position:'relative',
+          }}>
+            <button onClick={handleDismiss} style={{
+              position:'absolute', top:9, right:11,
+              background:'none', border:'none', color:'rgba(255,255,255,0.18)',
+              fontSize:13, cursor:'pointer', lineHeight:1, padding:0,
+            }}>✕</button>
+            {/* Title */}
+            <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:11 }}>
+              <span style={{ fontSize:17 }}>📲</span>
+              <span style={{ color:'#fff', fontWeight:800, fontSize:15, letterSpacing:0.1 }}>Install App</span>
+            </div>
+            {/* Step 1 */}
+            <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7 }}>
+              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>1.</span>
+              <span style={stepStyle}>Tap</span>
+              <ShareIcon/>
+              <span style={stepStyle}>Share</span>
+            </div>
+            {/* Step 2 */}
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>2.</span>
+              <span style={stepStyle}>Tap</span>
+              <AddIcon/>
+              <span style={stepStyle}>Add to Home Screen</span>
+              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:11 }}>›</span>
+              <span style={stepStyle}>Add</span>
+            </div>
+          </div>
+        );
+      }
+
+      // Android — automatic prompt
+      return (
+        <div style={{
+          width:'100%', marginTop:8,
+          background:'linear-gradient(135deg,rgba(243,156,18,0.22),rgba(230,126,34,0.14))',
+          border:'1.5px solid rgba(255,200,60,0.5)',
+          borderRadius:14, padding:'12px 14px',
+          display:'flex', alignItems:'center', gap:10,
+          position:'relative',
+        }}>
+          <button onClick={handleDismiss} style={{
+            position:'absolute', top:7, right:10,
+            background:'none', border:'none', color:'rgba(255,255,255,0.3)',
+            fontSize:15, cursor:'pointer', lineHeight:1,
+          }}>✕</button>
+          <span style={{ fontSize:22, flexShrink:0 }}>📲</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:'#ffe066', fontWeight:800, fontSize:13, marginBottom:2 }}>
+              Install MindSharp
+            </div>
+            <div style={{ color:'rgba(255,255,255,0.55)', fontSize:11 }}>
+              Add to home screen — plays like a native app
+            </div>
+          </div>
+          <button
+            onClick={handleInstall}
+            disabled={installing}
+            style={{
+              padding:'8px 14px', borderRadius:10, border:'none', flexShrink:0,
+              background:'linear-gradient(135deg,#f39c12,#e67e22)',
+              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+              opacity: installing ? 0.7 : 1,
+            }}>
+            {installing ? '...' : 'Install'}
+          </button>
+        </div>
+      );
+    }
+
+    // ── PROFILE SCREEN ────────────────────────────────────────
+    function ProfileScreen({ user, onBack, scores }) {
+      const stats = loadStats();
+      const streak = getStreakCount(stats.streak || []);
+      const avgMoves = stats.totalGames > 0 ? Math.round(stats.totalMoves / stats.totalGames) : 0;
+      const avgTime  = stats.totalGames > 0 ? Math.round(stats.totalTime  / stats.totalGames) : 0;
+
+      // Son 35 günlük streak takvimi
+      const calDays = [];
+      for (let i = 34; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        calDays.push(d.toISOString().slice(0,10));
+      }
+      const playedSet = new Set(stats.streak || []);
+
+      const Card = ({ children, style }) => (
+        <div style={{
+          background:'rgba(0,0,0,0.42)',
+          borderRadius:16,
+          border:'1px solid rgba(255,255,255,0.12)',
+          padding:'14px 16px',
+          ...style,
+        }}>{children}</div>
+      );
+
+      const Label = ({ children }) => (
+        <div style={{ color:'rgba(255,224,130,0.55)', fontSize:9, fontWeight:800, letterSpacing:1.5, textTransform:'uppercase', marginBottom:4 }}>
+          {children}
+        </div>
+      );
+
+      const BigNum = ({ children, color }) => (
+        <div style={{ color: color || '#fff', fontWeight:900, fontSize:28, lineHeight:1, fontFamily:'Georgia,serif' }}>
+          {children}
+        </div>
+      );
+
+      return (
+        <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:2 }}>
+            <button onClick={onBack} style={{
+              background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.2)',
+              color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16,
+            }}>←</button>
+            <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:20,
+              textShadow:'0 2px 6px rgba(0,0,0,0.8)' }}>👤 Profile</h2>
+          </div>
+
+          {/* User card */}
+          <Card>
+            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{
+                width:52, height:52, borderRadius:'50%',
+                background:'linear-gradient(135deg,#f39c12,#e67e22)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:22, fontWeight:900, color:'#fff',
+                boxShadow:'0 4px 14px rgba(243,156,18,0.4)',
+                flexShrink:0,
+              }}>
+                {(user||'G')[0].toUpperCase()}
+              </div>
+              <div>
+                <div style={{ color:'#fff', fontWeight:900, fontSize:18, fontFamily:'Georgia,serif' }}>{user || 'Guest'}</div>
+                <div style={{ color:'rgba(255,224,130,0.6)', fontSize:11, marginTop:2 }}>
+                  🔥 {streak} day streak
+                </div>
+              </div>
+              <div style={{ marginLeft:'auto', textAlign:'center' }}>
+                <div style={{ color:'#ffe082', fontWeight:900, fontSize:22, fontFamily:'Georgia,serif' }}>{stats.totalWins || 0}</div>
+                <div style={{ color:'rgba(255,224,130,0.5)', fontSize:9, letterSpacing:1 }}>WINS</div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Overview row */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            <Card>
+              <Label>Total Games</Label>
+              <BigNum color='#29B6F6'>{stats.totalGames || 0}</BigNum>
+            </Card>
+            <Card>
+              <Label>Max Combo Bonus</Label>
+              <BigNum color='#f39c12'>{stats.maxCombo || 0}</BigNum>
+              <div style={{ color:'rgba(255,200,80,0.5)', fontSize:10 }}>pts</div>
+            </Card>
+            <Card>
+              <Label>Avg Moves</Label>
+              <BigNum color='#e74c3c'>{avgMoves || '-'}</BigNum>
+            </Card>
+            <Card>
+              <Label>Avg Time</Label>
+              <BigNum color='#2ecc71'>{avgTime ? formatTime(avgTime) : '-'}</BigNum>
+            </Card>
+          </div>
+
+          {/* Best scores per difficulty */}
+          <Card>
+            <Label>Best Scores by Difficulty</Label>
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:6 }}>
+              {Object.entries(GRID_CONFIGS).map(([key, val]) => {
+                const best = stats.bestScores?.[key];
+                const bestM = stats.bestMoves?.[key];
+                const bestT = stats.bestTime?.[key];
+                return (
+                  <div key={key} style={{
+                    display:'flex', alignItems:'center', justifyContent:'space-between',
+                    padding:'8px 12px',
+                    background:'rgba(255,255,255,0.06)',
+                    borderRadius:10,
+                    border:'1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <div>
+                      <div style={{ color:'#fff', fontWeight:700, fontSize:13 }}>{val.difficulty}</div>
+                      <div style={{ color:'rgba(255,224,130,0.45)', fontSize:10 }}>{val.label}</div>
+                    </div>
+                    {best ? (
+                      <div style={{ textAlign:'right' }}>
+                        <div style={{ color:'#ffe082', fontWeight:900, fontSize:16 }}>{best.toLocaleString()}</div>
+                        <div style={{ color:'rgba(255,224,130,0.5)', fontSize:10 }}>
+                          {bestM}mv · {formatTime(bestT)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ color:'rgba(255,255,255,0.2)', fontSize:12 }}>No games yet</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {/* Streak calendar — son 35 gün */}
+          <Card>
+            <Label>Activity — Last 35 Days</Label>
+            <div style={{ marginTop:8, display:'flex', flexWrap:'wrap', gap:4 }}>
+              {calDays.map(day => {
+                const played = playedSet.has(day);
+                const isToday = day === new Date().toISOString().slice(0,10);
+                return (
+                  <div key={day} title={day} style={{
+                    width:16, height:16, borderRadius:4,
+                    background: played
+                      ? 'linear-gradient(135deg,#27ae60,#2ecc71)'
+                      : 'rgba(255,255,255,0.07)',
+                    border: isToday ? '1.5px solid #ffe082' : '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: played ? '0 0 6px rgba(46,204,113,0.4)' : 'none',
+                    transition:'background 0.2s',
+                  }}/>
+                );
+              })}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8 }}>
+              <div style={{ width:12, height:12, borderRadius:3, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)' }}/>
+              <span style={{ color:'rgba(255,224,130,0.4)', fontSize:10 }}>No play</span>
+              <div style={{ width:12, height:12, borderRadius:3, background:'linear-gradient(135deg,#27ae60,#2ecc71)', marginLeft:10 }}/>
+              <span style={{ color:'rgba(255,224,130,0.4)', fontSize:10 }}>Played</span>
+            </div>
+          </Card>
+
+          <div style={{ height:20 }}/>
+        </div>
+      );
+    }
+
+    const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
+    const GRID_CONFIGS = {
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Classic' },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'    },
+    };
+    const PREVIEW_TILES = [
+      { color: '#E8000A', number: 1, rot: -8,  y:  4 },
+      { color: '#29B6F6', number: 4, rot:  4,  y: -6 },
+      { color: '#F9A825', number: 7, rot: -5,  y:  8 },
+      { color: '#212121', number: 9, rot:  7,  y: -3 },
+    ];
+
+    function generateTiles(pairs, maxNum) {
+      const colorCount = TILE_COLORS.length;
+      const uniquePairs = [];
+      for (let n = 1; n <= maxNum; n++) {
+        for (let c = 0; c < colorCount; c++) {
+          uniquePairs.push({ number: n, color: TILE_COLORS[c] });
+        }
+      }
+      for (let i = uniquePairs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [uniquePairs[i], uniquePairs[j]] = [uniquePairs[j], uniquePairs[i]];
+      }
+      const selected = uniquePairs.slice(0, pairs);
+      const allTiles = [...selected, ...selected].map((p, idx) => ({
+        id: idx, number: p.number, color: p.color, flipped: false, matched: false,
+      }));
+      for (let i = allTiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allTiles[i], allTiles[j]] = [allTiles[j], allTiles[i]];
+      }
+      return allTiles;
+    }
+
+    function calcScore({ pairs, moves, time, comboBonus }) {
+      const baseScore = pairs * 100;
+      const movePenalty = Math.max(0, (moves - pairs) * 8);
+      const timePenalty = Math.floor(time * 1.5);
+      return Math.max(0, baseScore - movePenalty - timePenalty + comboBonus);
+    }
+
+
+    // ── DAILY CHALLENGE ──────────────────────────────────────────────────
+
+    // Seeded RNG (mulberry32) — same seed → same sequence always
+    function mulberry32(seed) {
+      return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function getDailyDateKey() {
+      const d = new Date();
+      return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function getDailySeed() {
+      const key = getDailyDateKey();
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        hash = Math.imul(31, hash) + key.charCodeAt(i) | 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function generateDailyTiles(gridMode) {
+      const m = gridMode || '8x4';
+      const cfg = GRID_CONFIGS[m];
+
+      // ── Shared seed: determines WHICH pairs are in today's board ──
+      // Same for every player → leaderboard is fair
+      const sharedKey = getDailyDateKey() + m;
+      let sharedHash = 0;
+      for (let i = 0; i < sharedKey.length; i++) {
+        sharedHash = Math.imul(31, sharedHash) + sharedKey.charCodeAt(i) | 0;
+      }
+      const sharedRng = mulberry32(Math.abs(sharedHash));
+
+      const colorCount = TILE_COLORS.length;
+      const uniquePairs = [];
+      for (let n = 1; n <= cfg.maxNum; n++) {
+        for (let c = 0; c < colorCount; c++) {
+          uniquePairs.push({ number: n, color: TILE_COLORS[c] });
+        }
+      }
+      for (let i = uniquePairs.length - 1; i > 0; i--) {
+        const j = Math.floor(sharedRng() * (i + 1));
+        [uniquePairs[i], uniquePairs[j]] = [uniquePairs[j], uniquePairs[i]];
+      }
+      const selected = uniquePairs.slice(0, cfg.pairs);
+
+      // ── Personal seed: determines WHERE tiles appear on the board ──
+      // Different per user → memorizing positions from another device is useless
+      const uid = (() => {
+        try {
+          let id = localStorage.getItem('ms_uid');
+          if (!id) {
+            id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+            localStorage.setItem('ms_uid', id);
+          }
+          return id;
+        } catch { return 'anon'; }
+      })();
+      const personalKey = getDailyDateKey() + m + uid;
+      let personalHash = 0;
+      for (let i = 0; i < personalKey.length; i++) {
+        personalHash = Math.imul(31, personalHash) + personalKey.charCodeAt(i) | 0;
+      }
+      const personalRng = mulberry32(Math.abs(personalHash));
+
+      const allTiles = [...selected, ...selected].map((p, idx) => ({
+        id: idx, number: p.number, color: p.color, flipped: false, matched: false,
+      }));
+      // Shuffle positions with personal seed
+      for (let i = allTiles.length - 1; i > 0; i--) {
+        const j = Math.floor(personalRng() * (i + 1));
+        [allTiles[i], allTiles[j]] = [allTiles[j], allTiles[i]];
+      }
+      return allTiles;
+    }
+
+    // ── STREAK helpers ───────────────────────────────────────────────────
+    function loadDailyStreak() {
+      try {
+        const raw = localStorage.getItem('ms_daily_streak');
+        return raw ? JSON.parse(raw) : { count: 0, lastDate: null };
+      } catch { return { count: 0, lastDate: null }; }
+    }
+
+    function saveDailyStreak(streak) {
+      try { localStorage.setItem('ms_daily_streak', JSON.stringify(streak)); } catch {}
+    }
+
+    function updateStreak() {
+      const today = getDailyDateKey();
+      const streak = loadDailyStreak();
+      if (streak.lastDate === today) return streak; // already played today
+      const yesterday = (() => {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+      })();
+      const newCount = streak.lastDate === yesterday ? streak.count + 1 : 1;
+      const newStreak = { count: newCount, lastDate: today };
+      saveDailyStreak(newStreak);
+      return newStreak;
+    }
+
+    function hasDoneToday() {
+      const today = getDailyDateKey();
+      const streak = loadDailyStreak();
+      return streak.lastDate === today;
+    }
+
+    function getDailyResult(gridMode) {
+      try {
+        const m = gridMode || '8x4';
+        const raw = localStorage.getItem('ms_daily_result_' + getDailyDateKey() + '_' + m);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function saveDailyResult(result, gridMode) {
+      try {
+        const m = gridMode || '8x4';
+        localStorage.setItem('ms_daily_result_' + getDailyDateKey() + '_' + m, JSON.stringify(result));
+      } catch {}
+    }
+
+    function getDailyDoneForMode(gridMode) {
+      return getDailyResult(gridMode) !== null;
+    }
+
+    async function submitDailyScore({ user, moves, time, score, gridMode }) {
+      if (!db) return null;
+      try {
+        const dateKey = getDailyDateKey();
+        const m = gridMode || '8x4';
+        const ref = await db.collection('daily_scores').add({
+          user: user || 'Guest',
+          dateKey,
+          gridMode: m,
+          moves, time, score,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return ref.id;
+      } catch(e) { console.warn('Daily score submit failed:', e); return null; }
+    }
+
+    async function submitScoreToCloud({ user, mode, moves, time, score }) {
+      if (!db) return null;
+      try {
+        const ref = await db.collection("scores").add({
+          user: user || "Guest",
+          mode,
+          moves,
+          time,
+          score,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        console.log("Score sent to cloud:", ref.id);
+        return ref.id;
+      } catch (e) {
+        console.warn("Cloud submit failed:", e);
+        return null;
+      }
+    }
+
+    // Update username in an existing score document
+    async function updateScoreUsername(docId, newUser) {
+      if (!db || !docId) return;
+      try {
+        await db.collection("scores").doc(docId).update({ user: newUser });
+        console.log("Username updated in cloud");
+      } catch (e) {
+        console.warn("Username update failed:", e);
+      }
+    }
+
+    // ── TOAST COMPONENT ──────────────────────────────────────
+    function Toast({ message, onDone }) {
+      React.useEffect(() => {
+        const t = setTimeout(onDone, 2200);
+        return () => clearTimeout(t);
+      }, []);
+      return <div className="ms-toast">{message}</div>;
+    }
+
+    // ── CONFIRM DIALOG ───────────────────────────────────────
+    function ConfirmDialog({ title, message, confirmLabel, confirmColor, onConfirm, onCancel }) {
+      return (
+        <div className="ms-confirm-overlay" onClick={onCancel}>
+          <div className="ms-confirm-box" onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>⚠️</div>
+            <div style={{ fontWeight: 900, fontSize: 16, color: '#3d1a00', marginBottom: 8, fontFamily: 'Georgia,serif' }}>{title}</div>
+            <div style={{ fontSize: 13, color: 'rgba(80,40,10,0.7)', marginBottom: 20, lineHeight: 1.5 }}>{message}</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={onCancel} style={{
+                flex: 1, padding: '10px', borderRadius: 12,
+                border: '2px solid #c8a96e', background: 'transparent',
+                color: '#7a5c2e', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+              }}>Cancel</button>
+              <button onClick={onConfirm} style={{
+                flex: 1, padding: '10px', borderRadius: 12, border: 'none',
+                background: confirmColor || 'linear-gradient(135deg,#e74c3c,#c0392b)',
+                color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+              }}>{confirmLabel || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    async function fetchScoresFromCloud(mode) {
+      if (!db) return [];
+      try {
+        const snap = await db
+          .collection("scores")
+          .where("mode", "==", mode)
+          .orderBy("score", "desc")
+          .limit(50)
+          .get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (e) {
+        console.warn("Fetch failed:", e);
+        return [];
+      }
+    }
+
+    // BUG FIX #4: Firebase'den silme fonksiyonu eklendi
+    async function clearScoresFromCloud(mode) {
+      if (!db) return;
+      try {
+        const snap = await db
+          .collection("scores")
+          .where("mode", "==", mode)
+          .get();
+        const batch = db.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        console.log(`Cleared ${snap.docs.length} scores for mode ${mode}`);
+      } catch (e) {
+        console.warn("Clear failed:", e);
+      }
+    }
+
+    function useSound() {
+      const ctx = useRef(null);
+      const getCtx = () => {
+        if (!ctx.current) { try { ctx.current = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+        return ctx.current;
+      };
+      const play = (type) => {
+        const ac = getCtx(); if (!ac) return;
+        if (type === 'win') {
+          [523,659,784,1047].forEach((f,i) => {
+            const o2=ac.createOscillator(); const g2=ac.createGain();
+            o2.connect(g2); g2.connect(ac.destination); o2.frequency.value=f;
+            g2.gain.setValueAtTime(0.12,ac.currentTime+i*0.12);
+            g2.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.12+0.3);
+            o2.start(ac.currentTime+i*0.12); o2.stop(ac.currentTime+i*0.12+0.3);
+          }); return;
+        }
+        if (type === 'combo3') {
+          [523,659,784,880,1047].forEach((f,i) => {
+            const o2=ac.createOscillator(); const g2=ac.createGain();
+            o2.connect(g2); g2.connect(ac.destination);
+            o2.type='sine'; o2.frequency.value=f;
+            g2.gain.setValueAtTime(0.18,ac.currentTime+i*0.07);
+            g2.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.07+0.25);
+            o2.start(ac.currentTime+i*0.07); o2.stop(ac.currentTime+i*0.07+0.25);
+          }); return;
+        }
+        if (type === 'combo') {
+          [660,880].forEach((f,i) => {
+            const o2=ac.createOscillator(); const g2=ac.createGain();
+            o2.connect(g2); g2.connect(ac.destination);
+            o2.type='sine'; o2.frequency.value=f;
+            g2.gain.setValueAtTime(0.14,ac.currentTime+i*0.1);
+            g2.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.1+0.25);
+            o2.start(ac.currentTime+i*0.1); o2.stop(ac.currentTime+i*0.1+0.25);
+          }); return;
+        }
+        const o = ac.createOscillator(); const g = ac.createGain();
+        o.connect(g); g.connect(ac.destination);
+        if (type === 'flip')  { o.frequency.value=440; g.gain.setValueAtTime(0.1,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.1); }
+        else if (type === 'match') { o.frequency.value=660; o.frequency.setValueAtTime(880,ac.currentTime+0.1); g.gain.setValueAtTime(0.15,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.3); }
+        else if (type === 'fail')  { o.frequency.value=220; g.gain.setValueAtTime(0.08,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.2); }
+        o.start(); o.stop(ac.currentTime+0.3);
+      };
+      return play;
+    }
+
+    function formatTime(s) { const m = Math.floor(s/60); return `${m}:${String(s%60).padStart(2,'0')}`; }
+
+    function formatDate(ts) {
+      if (!ts) return "-";
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      const day = String(d.getDate()).padStart(2,'0');
+      const mon = String(d.getMonth()+1).padStart(2,'0');
+      const yr  = String(d.getFullYear()).slice(-2);
+      return `${day}-${mon}-${yr}`;
+    }
+
+    function Tile({ tile, onClick, size }) {
+      const isVisible = tile.flipped || tile.matched;
+      const s = size;
+      const tileH = s * 1.45;
+      const dimpleSize = s * 0.28;
+      return (
+        <div onClick={() => !tile.matched && !tile.flipped && onClick(tile.id)}
+          style={{ width: s, height: tileH, perspective: '600px', cursor: tile.matched ? 'default' : 'pointer', flexShrink: 0 }}>
+          <div style={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d', willChange: 'transform',
+            transform: isVisible ? 'rotateY(180deg)' : 'rotateY(0deg)', transition: 'transform 0.35s cubic-bezier(.4,2,.6,1)' }}>
+            <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden',
+              borderRadius: 8, background: 'linear-gradient(160deg, #F8F3E2 60%, #EDE5C8 100%)',
+              border: '2px solid #c8b98a', boxShadow: '0 4px 10px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.8)' }} />
+            <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg)', borderRadius: 8,
+              background: 'linear-gradient(160deg, #FDFAF0 60%, #EDE5C8 100%)',
+              border: `2px solid ${tile.matched ? '#bbb' : '#c8b98a'}`,
+              boxShadow: tile.matched ? 'inset 0 1px 2px rgba(255,255,255,0.5)' : '0 5px 12px rgba(0,0,0,0.28), inset 0 1px 2px rgba(255,255,255,0.9)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+              paddingTop: s * 0.06, opacity: tile.matched ? 0.45 : 1, overflow: 'hidden', boxSizing: 'border-box' }}>
+              <span style={{ color: tile.color, fontWeight: 900, fontSize: s * 0.72, fontFamily: 'Georgia, serif',
+                lineHeight: 1, letterSpacing: -1, textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                marginTop: s * 0.02, WebkitTextStroke: '0.5px rgba(0,0,0,0.15)' }}>{tile.number}</span>
+              <div style={{ flex: 1 }} />
+              <div style={{ width: dimpleSize * 1.08, height: dimpleSize * 1.08, borderRadius: '50%',
+                background: 'radial-gradient(circle at 40% 35%, #d8cfa8, #b8a870)',
+                boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.35), inset 0 1px 3px rgba(0,0,0,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: s * 0.11 }}>
+                <span style={{ color: tile.color, fontSize: dimpleSize * 0.6, lineHeight: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))' }}>♥</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryChange, onClearCategory }) {
+      const [confirmClear, setConfirmClear] = React.useState(false);
+      const categories = Object.entries(GRID_CONFIGS).map(([key, val]) => ({ key, label: val.difficulty }));
+      const filtered = scores.filter(s => s.mode === activeCategory);
+      const sortedScores = [...filtered].sort((a, b) => {
+        if (sortBy === 'score') return b.score - a.score;
+        if (sortBy === 'time')  return a.time - b.time;
+        if (sortBy === 'moves') return a.moves - b.moves;
+        return 0;
+      });
+      const tabStyle = (key) => ({
+        flex: 1, padding: '7px 2px', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700,
+        background: activeCategory === key ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.08)',
+        color: activeCategory === key ? '#fff' : '#ffe082',
+        boxShadow: activeCategory === key ? '0 2px 8px rgba(243,156,18,0.4)' : 'none',
+        transition: 'all 0.2s',
+      });
+      const sortBtnStyle = (key) => ({
+        background: 'none', border: 'none',
+        color: sortBy === key ? '#fff' : '#ffe082',
+        cursor: 'pointer', fontSize: 11, fontWeight: sortBy === key ? 900 : 600,
+        textDecoration: sortBy === key ? 'underline' : 'none', padding: '0 4px',
+      });
+      return (
+        <div style={{ width: '100%' }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+            {categories.map(cat => (
+              <button key={cat.key} style={tabStyle(cat.key)} onClick={() => onCategoryChange(cat.key)}>{cat.label}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 2, marginBottom: 6, paddingRight: 4 }}>
+            <span style={{ color: '#ffe082', fontSize: 11, alignSelf: 'center', marginRight: 4 }}>Sort:</span>
+            <button style={sortBtnStyle('score')} onClick={() => onSortChange('score')}>Score</button>
+            <button style={sortBtnStyle('moves')} onClick={() => onSortChange('moves')}>Moves</button>
+            <button style={sortBtnStyle('time')}  onClick={() => onSortChange('time')}>Time</button>
+          </div>
+          {sortedScores.length === 0
+            ? <p style={{ color: '#ffe082', textAlign: 'center', fontSize: 13, margin: '16px 0' }}>No games yet for this category</p>
+            : (
+              <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+                {sortedScores.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center',
+                    padding: '6px 8px', marginBottom: 4, gap: 4,
+                    background: i === 0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
+                    borderRadius: 8, fontSize: 11,
+                    border: i === 0 ? '1px solid rgba(255,200,0,0.4)' : '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontWeight: 700, color: i===0?'#ffe066':'#fff', minWidth: 52, flexShrink: 0 }}>#{i+1}</span>
+                    <span style={{ color: '#fff', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.user || 'Guest'}</span>
+                    <span style={{ color: '#ffe082', fontWeight: 800, minWidth: 44, textAlign: 'right', flexShrink: 0 }}>{s.score ? s.score.toLocaleString() : '-'}</span>
+                    <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{s.moves}mv</span>
+                    <span style={{ color: '#ffe082', minWidth: 36, textAlign: 'right', flexShrink: 0 }}>{formatTime(s.time)}</span>
+                    <span style={{ color: 'rgba(255,224,130,0.7)', minWidth: 52, textAlign: 'right', flexShrink: 0, fontSize: 10 }}>
+                      {formatDate(s.createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )
+          }
+          {filtered.length > 0 && (
+            <>
+              <button onClick={() => setConfirmClear(true)}
+                style={{ width: '100%', marginTop: 8, padding: '8px', borderRadius: 10, border: '1.5px solid #c0392b',
+                  background: 'rgba(0,0,0,0.3)', color: '#e74c3c', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+                🗑 Clear {GRID_CONFIGS[activeCategory].difficulty} Scores
+              </button>
+              {confirmClear && (
+                <ConfirmDialog
+                  title="Clear Scores?"
+                  message={`All ${GRID_CONFIGS[activeCategory].difficulty} scores will be permanently deleted from the leaderboard.`}
+                  confirmLabel="Delete All"
+                  onConfirm={() => { setConfirmClear(false); onClearCategory(activeCategory); }}
+                  onCancel={() => setConfirmClear(false)}
+                />
+              )}
+            </>
+          )}
+        </div>
+      );
+    }
+
+
+    // ── DAILY CHALLENGE COMPLETE MODAL ───────────────────────────────────
+    function DailyCompleteModal({ result, streak, onMenu, onShare, onLeaderboard, user, alreadyDone, dailyRank, dailyTotal, personalBest, onSaveName }) {
+      const [confetti, setConfetti] = React.useState([]);
+      const [nameInput, setNameInput] = React.useState(user || '');
+      const [nameSaved, setNameSaved] = React.useState(!!user);
+
+      React.useEffect(() => {
+        const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
+        const shapes = ['■','●','▲','★','◆'];
+        setConfetti(Array.from({ length: 36 }, (_, i) => ({
+          id: i, color: colors[i % colors.length], shape: shapes[i % shapes.length],
+          left: Math.random() * 100, delay: Math.random() * 1.8,
+          duration: 2.2 + Math.random() * 2, size: 8 + Math.random() * 9,
+        })));
+      }, []);
+
+      const fmtT = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      const today = new Date();
+      const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+      const streakFire = streak.count >= 7 ? '🔥' : streak.count >= 3 ? '⚡' : '✨';
+
+      const isPersonalBest = personalBest && result.score >= personalBest;
+      const rankLabel = dailyRank
+        ? (dailyRank === 1 ? '🥇 #1 Today!' : dailyRank === 2 ? '🥈 #2 Today' : dailyRank === 3 ? '🥉 #3 Today' : `#${dailyRank} Today`)
+        : null;
+      const rankColor = dailyRank === 1 ? '#f1c40f' : dailyRank <= 3 ? '#e67e22' : '#aaa';
+
+      const tomorrowMsg = streak.count === 0 ? "Start your streak — come back tomorrow!" :
+        streak.count < 3 ? `${3 - streak.count} more days to unlock ⚡` :
+        streak.count < 7 ? `${7 - streak.count} more days to unlock 🔥` :
+        "You're on fire — don't break the chain!";
+
+      return (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', zIndex:10000,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }}>
+          {confetti.map(p => (
+            <div key={p.id} style={{ position:'fixed', top:'-20px', left:`${p.left}%`,
+              fontSize: p.size, color: p.color, animation: `fall ${p.duration}s ${p.delay}s ease-in forwards`,
+              pointerEvents:'none', zIndex:10001 }}>{p.shape}</div>
+          ))}
+
+          <div style={{ background:'linear-gradient(160deg,#2a1e08,#1a1004)', borderRadius:24,
+            padding:'24px 20px 20px', width:'100%', maxWidth:360, boxSizing:'border-box',
+            border:'1.5px solid rgba(255,210,80,0.3)', boxShadow:'0 12px 50px rgba(0,0,0,0.8)',
+            textAlign:'center', position:'relative', zIndex:10002, maxHeight:'90vh', overflowY:'auto' }}>
+
+            {/* Header */}
+            <div style={{ fontSize:40, marginBottom:4 }}>🎯</div>
+            <h2 style={{ color:'#ffe066', fontFamily:'Georgia,serif', margin:'0 0 1px', fontSize:22 }}>
+              {alreadyDone ? "Today's Challenge" : "Challenge Complete!"}
+            </h2>
+            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:11, margin:'0 0 16px', letterSpacing:0.5 }}>{dateLabel}</p>
+
+            {/* Personal best badge */}
+            {isPersonalBest && !alreadyDone && (
+              <div style={{ background:'linear-gradient(135deg,rgba(241,196,15,0.25),rgba(243,156,18,0.15))',
+                border:'1px solid rgba(241,196,15,0.5)', borderRadius:10, padding:'6px 14px',
+                color:'#f1c40f', fontWeight:800, fontSize:13, marginBottom:12, display:'inline-block' }}>
+                👑 Personal Best!
+              </div>
+            )}
+
+            {/* Stats row */}
+            <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+              {[
+                { label:'TIME',  value: fmtT(result.time), icon:'⏱' },
+                { label:'MOVES', value: result.moves,      icon:'🃏' },
+                { label:'SCORE', value: result.score.toLocaleString(), icon:'🏆' },
+              ].map(s => (
+                <div key={s.label} style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:12,
+                  padding:'10px 4px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize:14, marginBottom:2 }}>{s.icon}</div>
+                  <div style={{ color:'#ffe066', fontWeight:900, fontSize:17 }}>{s.value}</div>
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:9, letterSpacing:1 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Today's ranking */}
+            <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)',
+              borderRadius:14, padding:'12px 14px', marginBottom:10, display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ flex:1, textAlign:'left' }}>
+                <div style={{ color:'rgba(255,255,255,0.45)', fontSize:10, letterSpacing:1, marginBottom:2 }}>TODAY'S RANKING</div>
+                {rankLabel ? (
+                  <div style={{ color: rankColor, fontWeight:900, fontSize:20 }}>{rankLabel}</div>
+                ) : (
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:13 }}>Calculating...</div>
+                )}
+                {dailyTotal > 0 && (
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11 }}>out of {dailyTotal} players today</div>
+                )}
+              </div>
+              <button onClick={onLeaderboard} style={{ background:'rgba(255,180,0,0.15)',
+                border:'1px solid rgba(255,180,0,0.35)', borderRadius:10, padding:'8px 12px',
+                color:'#ffb300', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                View All →
+              </button>
+            </div>
+
+            {/* Streak */}
+            <div style={{ background:'rgba(255,140,0,0.1)', border:'1px solid rgba(255,140,0,0.25)',
+              borderRadius:14, padding:'10px 14px', marginBottom:14,
+              display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ fontSize:26 }}>{streakFire}</div>
+              <div style={{ textAlign:'left', flex:1 }}>
+                <div style={{ color:'#ffb300', fontWeight:900, fontSize:16 }}>
+                  {streak.count} Day Streak
+                </div>
+                <div style={{ color:'rgba(255,255,255,0.4)', fontSize:11, marginTop:1 }}>{tomorrowMsg}</div>
+              </div>
+            </div>
+
+            {/* Name input — show whenever no name saved yet */}
+            {(!nameSaved || !nameInput.trim()) ? (
+              <div style={{
+                marginBottom:14, borderRadius:14,
+                background:'linear-gradient(135deg,rgba(255,220,80,0.18),rgba(243,156,18,0.12))',
+                border:'1.5px solid rgba(255,210,60,0.55)',
+                padding:'14px 14px 12px',
+                boxShadow:'0 0 18px rgba(243,156,18,0.15)',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8, justifyContent:'center' }}>
+                  <span style={{ fontSize:16 }}>👤</span>
+                  <span style={{ color:'#ffe066', fontWeight:800, fontSize:13, letterSpacing:0.2 }}>
+                    Add your name to the leaderboard!
+                  </span>
+                </div>
+                <div style={{ display:'flex', gap:7 }}>
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={e => setNameInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { const n = nameInput.trim(); if (n) { onSaveName(n); setNameSaved(true); } } }}
+                    placeholder="Your name..."
+                    maxLength={20}
+                    style={{
+                      flex:1, padding:'11px 13px', borderRadius:11,
+                      background:'rgba(255,255,255,0.92)', border:'2px solid rgba(243,156,18,0.7)',
+                      color:'#1a0e00', fontSize:15, fontWeight:600, outline:'none', boxSizing:'border-box',
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const n = nameInput.trim();
+                      if (n) { onSaveName(n); setNameSaved(true); }
+                    }}
+                    style={{
+                      padding:'11px 18px', borderRadius:11, border:'none',
+                      background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.15)',
+                      color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', flexShrink:0,
+                      boxShadow: nameInput.trim() ? '0 3px 12px rgba(243,156,18,0.4)' : 'none',
+                      transition:'all 0.2s',
+                    }}>
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ color:'rgba(255,255,255,0.45)', fontSize:12, textAlign:'center', padding:'4px 0 10px' }}>
+                ✓ Leaderboard name: <span style={{ color:'#ffe066', fontWeight:700 }}>{nameInput}</span>
+                <button onClick={() => setNameSaved(false)} style={{
+                  background:'none', border:'none', color:'rgba(255,180,0,0.5)',
+                  fontSize:11, cursor:'pointer', marginLeft:6,
+                }}>edit</button>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <button onClick={onShare} style={{ width:'100%', padding:'13px', borderRadius:14, marginBottom:8,
+              background:'linear-gradient(135deg,#f39c12,#e67e22)', border:'none',
+              color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer' }}>
+              📤 Share My Result
+            </button>
+            <button onClick={onMenu} style={{ width:'100%', padding:'11px', borderRadius:14,
+              background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
+              color:'rgba(255,255,255,0.55)', fontWeight:600, fontSize:13, cursor:'pointer' }}>
+              Back to Menu
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function DailyScoresScreen({ onBack, dateKey, gridMode, myScore }) {
+      const [entries, setEntries] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const fmtT = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+      const modeLabel = { '8x4': 'Classic', '8x7': 'Hard' }[gridMode] || gridMode;
+      const today = new Date();
+      const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+      React.useEffect(() => {
+        if (!db) { setLoading(false); return; }
+        db.collection('daily_scores')
+          .where('dateKey', '==', dateKey)
+          .where('gridMode', '==', gridMode)
+          .get()
+          .then(snap => {
+            const rows = snap.docs.map(d => d.data());
+            rows.sort((a, b) => (b.score || 0) - (a.score || 0));
+            setEntries(rows);
+            setLoading(false);
+          })
+          .catch(() => setLoading(false));
+      }, [dateKey, gridMode]);
+
+      return (
+        <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+            <button onClick={onBack} style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.15)',
+              color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16 }}>
+              {'←'}
+            </button>
+            <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:18, fontWeight:900 }}>
+              {'Daily — ' + modeLabel}
+            </h2>
+          </div>
+          <div style={{ background:'rgba(0,0,0,0.3)', borderRadius:14, padding:'10px 14px',
+            border:'1px solid rgba(255,255,255,0.1)', marginBottom:4 }}>
+            <div style={{ color:'rgba(255,224,130,0.6)', fontSize:11, fontWeight:700, letterSpacing:1 }}>
+              {dateLabel + ' · ' + entries.length + (entries.length === 1 ? ' player' : ' players') + ' today'}
+            </div>
+          </div>
+          {loading ? (
+            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>Loading...</div>
+          ) : entries.length === 0 ? (
+            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>
+              No scores yet today. Be the first!
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {entries.map((e, i) => {
+                const isMe = myScore > 0 && e.score === myScore;
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+                return (
+                  <div key={i} style={{
+                    display:'flex', alignItems:'center', gap:8,
+                    background: isMe ? 'rgba(243,156,18,0.25)' : i === 0 ? 'rgba(241,196,15,0.15)' : 'rgba(255,255,255,0.07)',
+                    border: isMe ? '1.5px solid rgba(243,156,18,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius:10, padding:'10px 12px',
+                  }}>
+                    <span style={{ color:'#ffe082', fontWeight:900, fontSize:13, minWidth:28 }}>
+                      {medal || ('#' + (i+1))}
+                    </span>
+                    <span style={{ color: isMe ? '#ffe066' : '#fff', fontWeight: isMe ? 800 : 600,
+                      flex:1, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {(e.user || 'Guest') + (isMe ? ' (you)' : '')}
+                    </span>
+                    <span style={{ color:'#ffe082', fontWeight:800, fontSize:13 }}>
+                      {(e.score||0).toLocaleString()}
+                    </span>
+                    <span style={{ color:'rgba(255,224,130,0.55)', fontSize:11, minWidth:44, textAlign:'right' }}>
+                      {fmtT(e.time||0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function WinModal({ moves, time, mode, score, comboBonus, rank, user, scoreDocId, onReplay, onMenu, onScores, onSaveName, onScoreDoubled }) {
+      const [sharing, setSharing] = React.useState(false);
+      const [confetti, setConfetti] = React.useState([]);
+      const [nameInput, setNameInput] = React.useState('');
+      const [nameSaved, setNameSaved] = React.useState(false);
+      const [adWatched, setAdWatched] = React.useState(false);
+      const [adLoading, setAdLoading] = React.useState(false);
+      const [adAvailable, setAdAvailable] = React.useState(false);
+      const needsName = !user || user.trim() === '';
+
+      React.useEffect(() => {
+        const check = () => setAdAvailable(!!(window.MindSharpAds && window.MindSharpAds.isReady()));
+        check();
+        const t = setInterval(check, 1000);
+        return () => clearInterval(t);
+      }, []);
+
+      const handleWatchAd = () => {
+        if (adWatched || adLoading) return;
+        setAdLoading(true);
+        window.MindSharpAds.showRewarded((rewarded) => {
+          setAdLoading(false);
+          if (rewarded) { setAdWatched(true); onScoreDoubled && onScoreDoubled(); }
+        });
+      };
+      const displayName = needsName ? (nameSaved ? nameInput : 'You') : user;
+
+      const handleSaveName = () => {
+        const n = nameInput.trim();
+        if (!n) return;
+        onSaveName(n);
+        // Also update the already-submitted cloud score document
+        if (scoreDocId) updateScoreUsername(scoreDocId, n);
+        setNameSaved(true);
+      };
+
+      React.useEffect(() => {
+        const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f','#1abc9c','#e67e22'];
+        const shapes = ['■','●','▲','★','◆'];
+        const pieces = Array.from({ length: 38 }, (_, i) => ({
+          id: i,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          left: Math.random() * 100,
+          delay: Math.random() * 2.5,
+          duration: 2.5 + Math.random() * 2,
+          size: 8 + Math.random() * 10,
+          rotate: Math.random() * 720,
+        }));
+        setConfetti(pieces);
+      }, []);
+
+      const getRankInfo = () => {
+        if (!rank) return { label: 'Well Played!', color: '#95a5a6', bg: 'rgba(149,165,166,0.15)' };
+        if (rank === 1) return { label: '👑 NEW RECORD!', color: '#f1c40f', bg: 'rgba(241,196,15,0.2)', glow: true };
+        if (rank <= 3) return { label: '🥈 TOP 3 — Amazing!', color: '#e67e22', bg: 'rgba(230,126,34,0.18)' };
+        if (rank <= 10) return { label: '⭐ Top 10 — Great Job!', color: '#27ae60', bg: 'rgba(39,174,96,0.15)' };
+        return { label: `Rank #${rank}`, color: '#7f8c8d', bg: 'rgba(127,140,141,0.12)' };
+      };
+      const rankInfo = getRankInfo();
+
+      const today = new Date();
+      const dateStr = `${String(today.getDate()).padStart(2,'0')}-${String(today.getMonth()+1).padStart(2,'0')}-${today.getFullYear()}`;
+
+      const buildCertificate = async () => {
+        const W = 1080, H = 1920;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        const bgImg = new Image();
+        bgImg.crossOrigin = 'anonymous';
+        bgImg.src = './wood_bg.png';
+        await new Promise(r => { bgImg.onload = r; bgImg.onerror = r; });
+        ctx.fillStyle = '#2b1a10';
+        ctx.fillRect(0, 0, W, H);
+        try {
+          const r = Math.max(W / bgImg.width, H / bgImg.height);
+          ctx.drawImage(bgImg, (W - bgImg.width*r)/2, (H - bgImg.height*r)/2, bgImg.width*r, bgImg.height*r);
+        } catch(e) {}
+
+        const vg = ctx.createRadialGradient(W/2, H*0.4, 50, W/2, H*0.4, H*0.7);
+        vg.addColorStop(0, 'rgba(0,0,0,0.15)');
+        vg.addColorStop(1, 'rgba(0,0,0,0.75)');
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+
+        const cx = 60, cy = 180, cw = W-120, ch = H-380, cr = 48;
+        const rr = (x,y,w,h,r) => {
+          ctx.beginPath();
+          ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+          ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+        };
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20;
+        rr(cx,cy,cw,ch,cr);
+        const cardGrad = ctx.createLinearGradient(cx, cy, cx, cy+ch);
+        cardGrad.addColorStop(0, '#fdf6e3');
+        cardGrad.addColorStop(0.5, '#fef9ed');
+        cardGrad.addColorStop(1, '#f5e6c8');
+        ctx.fillStyle = cardGrad; ctx.fill();
+        ctx.restore();
+
+        rr(cx,cy,cw,ch,cr);
+        ctx.lineWidth = 10; ctx.strokeStyle = '#c8a96e'; ctx.stroke();
+        rr(cx+14,cy+14,cw-28,ch-28,cr-8);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(200,169,110,0.5)'; ctx.stroke();
+
+        const corners = [[cx+40,cy+40],[cx+cw-40,cy+40],[cx+40,cy+ch-40],[cx+cw-40,cy+ch-40]];
+        corners.forEach(([x,y]) => {
+          ctx.save();
+          ctx.fillStyle = '#c8a96e'; ctx.font = 'bold 52px serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('✦', x, y); ctx.restore();
+        });
+
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.font = '900 96px Georgia, serif';
+        const titleGrad = ctx.createLinearGradient(W/2-200, 0, W/2+200, 0);
+        titleGrad.addColorStop(0,'#8B4513'); titleGrad.addColorStop(0.5,'#c8860a'); titleGrad.addColorStop(1,'#8B4513');
+        ctx.fillStyle = titleGrad;
+        ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=8;
+        ctx.fillText('MindSharp', W/2, cy+130);
+        ctx.restore();
+
+        const bx=cx+80, by=cy+178, bw=cw-160, bh=68, br=12;
+        rr(bx,by,bw,bh,br);
+        const bannerG=ctx.createLinearGradient(bx,by,bx+bw,by);
+        bannerG.addColorStop(0,'#b8860b'); bannerG.addColorStop(0.5,'#f0c040'); bannerG.addColorStop(1,'#b8860b');
+        ctx.fillStyle=bannerG; ctx.fill();
+        ctx.save();
+        ctx.textAlign='center'; ctx.font='800 32px Segoe UI, Arial';
+        ctx.fillStyle='#5a2d00';
+        ctx.fillText('A C H I E V E M E N T', W/2, by+44);
+        ctx.restore();
+
+        if (rank) {
+          const rankColor = rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d';
+          const rankLabel = rank===1?'NEW RECORD!':rank<=3?'TOP 3 — Amazing!':rank<=10?`Top 10!`:`Rank #${rank}`;
+          ctx.save();
+          ctx.textAlign='center'; ctx.font='900 36px Segoe UI';
+          ctx.fillStyle=rankColor;
+          ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=6;
+          ctx.fillText(rankLabel, W/2, cy+298);
+          ctx.restore();
+        }
+
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.font='700 36px Segoe UI, Arial'; ctx.fillStyle='rgba(100,60,10,0.8)';
+        ctx.fillText('Congratulations!', W/2, cy+368);
+        ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle='#3d1a00';
+        ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=8;
+        ctx.fillText((user||'Guest').trim(), W/2, cy+458);
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle='rgba(180,140,80,0.4)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx+100,cy+492); ctx.lineTo(cx+cw-100,cy+492); ctx.stroke();
+        ctx.restore();
+
+        const spx=cx+70, spy=cy+524, spw=cw-140, sph=240, spr=28;
+        rr(spx,spy,spw,sph,spr);
+        ctx.save();
+        ctx.shadowColor='rgba(200,120,0,0.4)'; ctx.shadowBlur=28; ctx.shadowOffsetY=10;
+        const scoreG=ctx.createLinearGradient(spx,spy,spx+spw,spy+sph);
+        scoreG.addColorStop(0,'#e67e22'); scoreG.addColorStop(1,'#c0392b');
+        ctx.fillStyle=scoreG; ctx.fill();
+        ctx.restore();
+        rr(spx,spy,spw,sph,spr);
+        ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.stroke();
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.font='800 28px Segoe UI'; ctx.fillStyle='rgba(255,255,255,0.85)';
+        ctx.fillText('S C O R E', W/2, spy+60);
+        ctx.font='900 148px Segoe UI, Arial'; ctx.fillStyle='#fff';
+        ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=12;
+        ctx.fillText(score.toLocaleString(), W/2, spy+190);
+        ctx.restore();
+        if (comboBonus>0) {
+          ctx.save();
+          ctx.textAlign='center'; ctx.font='700 30px Segoe UI'; ctx.fillStyle='rgba(255,255,200,0.9)';
+          ctx.fillText(`🔥 +${comboBonus} Combo Bonus`, W/2, spy+228);
+          ctx.restore();
+        }
+
+        const statsY=cy+820;
+        const cols3=[
+          { label:'MOVES', value:moves, color:'#e74c3c' },
+          { label:'TIME',  value:formatTime(time), color:'#3498db' },
+          { label:'RANK',  value:rank?`#${rank}`:'-', color:rank===1?'#f1c40f':rank<=3?'#e67e22':'#27ae60' },
+        ];
+        const colW=(cw-140)/3;
+        cols3.forEach((col,i) => {
+          const colX=cx+70+i*(colW)+colW/2;
+          if(i>0){ ctx.save(); ctx.strokeStyle='rgba(180,140,80,0.35)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx+70+i*colW,statsY-30); ctx.lineTo(cx+70+i*colW,statsY+140); ctx.stroke(); ctx.restore(); }
+          ctx.save();
+          ctx.textAlign='center';
+          ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.6)';
+          ctx.fillText(col.label, colX, statsY);
+          ctx.font='900 72px Segoe UI, Arial'; ctx.fillStyle=col.color;
+          ctx.shadowColor='rgba(0,0,0,0.15)'; ctx.shadowBlur=6;
+          ctx.fillText(col.value, colX, statsY+90);
+          ctx.restore();
+        });
+
+        ctx.save();
+        ctx.strokeStyle='rgba(180,140,80,0.3)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx+100,statsY+160); ctx.lineTo(cx+cw-100,statsY+160); ctx.stroke();
+        ctx.textAlign='center'; ctx.font='600 28px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.55)';
+        ctx.fillText(`✦  ${dateStr}  ✦`, W/2, statsY+210);
+        ctx.restore();
+
+        ctx.save();
+        ctx.textAlign='center'; ctx.font='italic 700 28px Georgia, serif';
+        ctx.fillStyle='rgba(100,60,10,0.65)';
+        ctx.fillText('"Train your mind — 1 minute a day."', W/2, statsY+278);
+        ctx.restore();
+
+        ctx.save();
+        ctx.textAlign='center'; ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.5)';
+        ctx.fillText('mindsharp.co', W/2, H-100);
+        ctx.restore();
+
+        const confColors=['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
+        for(let i=0;i<60;i++){
+          ctx.save(); ctx.fillStyle=confColors[i%confColors.length]; ctx.globalAlpha=0.65;
+          ctx.fillRect(Math.random()*W, cy+Math.random()*160, 8+Math.random()*10, 4+Math.random()*6);
+          ctx.restore();
+        }
+
+        return canvas.toDataURL('image/png');
+      };
+
+      const handleShare = async () => {
+        try {
+          setSharing(true);
+          const dataUrl = await buildCertificate();
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          const file = new File([blob], 'mindsharp-certificate.png', { type:'image/png' });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files:[file] })) {
+            await navigator.share({ title:'MindSharp Certificate', text:`I scored ${score.toLocaleString()} on MindSharp! 🧠`, files:[file] });
+            return;
+          }
+          const a = document.createElement('a');
+          a.href = dataUrl; a.download = 'mindsharp-certificate.png';
+          document.body.appendChild(a); a.click(); a.remove();
+        } catch(e) { console.warn(e); }
+        finally { setSharing(false); }
+      };
+
+      const diffLabel = GRID_CONFIGS[mode]?.difficulty || mode;
+
+      return (
+        <div style={{
+          position:'fixed', inset:0, zIndex:200,
+          background:'rgba(0,0,0,0.72)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          overflowY:'auto', padding:'12px 0',
+        }}>
+          <style>{`
+            @keyframes confettiFall {
+              0%   { transform: translateY(-20px) rotate(0deg); opacity:1; }
+              100% { transform: translateY(380px) rotate(var(--rot)); opacity:0; }
+            }
+            @keyframes cardSlideUp {
+              from { transform: translateY(40px) scale(0.94); opacity:0; }
+              to   { transform: translateY(0) scale(1); opacity:1; }
+            }
+            @keyframes scorePop {
+              0%   { transform: scale(0.6); opacity:0; }
+              70%  { transform: scale(1.08); }
+              100% { transform: scale(1); opacity:1; }
+            }
+            @keyframes rankGlow {
+              0%,100% { box-shadow: 0 0 8px currentColor; }
+              50%     { box-shadow: 0 0 22px currentColor, 0 0 40px rgba(241,196,15,0.4); }
+            }
+            @keyframes shimmer {
+              0%   { background-position: -200% center; }
+              100% { background-position: 200% center; }
+            }
+          `}</style>
+
+          {confetti.map(p => (
+            <div key={p.id} style={{
+              position:'fixed',
+              left:`${p.left}%`, top:'-10px',
+              color:p.color, fontSize:p.size,
+              animation:`confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
+              '--rot':`${p.rotate}deg`,
+              pointerEvents:'none', zIndex:300, userSelect:'none',
+            }}>{p.shape}</div>
+          ))}
+
+          <div style={{
+            position:'relative',
+            width:'92%', maxWidth:360,
+            background:'linear-gradient(160deg, #fdf8ec 0%, #fef5da 50%, #f5e6c3 100%)',
+            borderRadius:24,
+            border:'3px solid #c8a96e',
+            boxShadow:'0 0 0 6px rgba(200,169,110,0.2), 0 24px 64px rgba(0,0,0,0.55)',
+            animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
+            overflow:'hidden',
+          }}>
+            <div style={{ position:'absolute', inset:8, borderRadius:18, border:'1.5px solid rgba(200,169,110,0.35)', pointerEvents:'none', zIndex:1 }}/>
+
+            {[
+              { top:14, left:14 }, { top:14, right:14 },
+              { bottom:14, left:14 }, { bottom:14, right:14 }
+            ].map((pos,i) => (
+              <div key={i} style={{ position:'absolute', ...pos, color:'#c8a96e', fontSize:18, pointerEvents:'none', zIndex:2 }}>✦</div>
+            ))}
+
+            <div style={{ padding:'20px 18px 16px', position:'relative', zIndex:3 }}>
+              <div style={{ textAlign:'center', marginBottom:8 }}>
+                <div style={{ fontSize:34, marginBottom:2 }}>🎉</div>
+                <h2 style={{
+                  margin:'0 0 4px', fontFamily:'Georgia, serif', fontSize:28, fontWeight:900,
+                  background:'linear-gradient(135deg, #7a3e00 0%, #c8860a 50%, #7a3e00 100%)',
+                  backgroundSize:'200% auto',
+                  WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+                  animation:'shimmer 3s linear infinite',
+                }}>MindSharp</h2>
+                <div style={{
+                  display:'inline-block',
+                  background:'linear-gradient(90deg, #b8860b, #f0c040, #b8860b)',
+                  borderRadius:20, padding:'2px 14px',
+                }}>
+                  <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>A C H I E V E M E N T</span>
+                </div>
+              </div>
+
+              {rank && (
+                <div style={{
+                  textAlign:'center', marginBottom:8,
+                  background:rankInfo.bg,
+                  border:`1.5px solid ${rankInfo.color}`,
+                  borderRadius:12, padding:'5px 12px',
+                  animation: rank===1 ? 'rankGlow 1.8s ease infinite' : 'none',
+                }}>
+                  <span style={{ color:rankInfo.color, fontWeight:900, fontSize:13 }}>{rankInfo.label}</span>
+                </div>
+              )}
+
+              <div style={{ textAlign:'center', marginBottom:10 }}>
+                <div style={{ color:'rgba(100,60,10,0.65)', fontSize:11, fontWeight:700 }}>Congratulations!</div>
+
+                {/* İsim yoksa küçük input göster */}
+                {needsName && !nameSaved ? (
+                  <div style={{ marginTop:6, marginBottom:2 }}>
+                    <div style={{ color:'rgba(100,60,10,0.55)', fontSize:11, marginBottom:6 }}>
+                      Save your score — enter a name:
+                    </div>
+                    <div style={{ display:'flex', gap:6 }}>
+                      <input
+                        type="text"
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                        placeholder="Your name…"
+                        maxLength={20}
+                        autoFocus
+                        style={{
+                          flex:1, padding:'8px 10px', borderRadius:9,
+                          border:'1.5px solid #c8a96e',
+                          background:'rgba(255,255,255,0.9)',
+                          fontSize:14, fontWeight:700, color:'#3d1a00',
+                          outline:'none', textAlign:'center',
+                        }}
+                      />
+                      <button onClick={handleSaveName} style={{
+                        padding:'8px 12px', borderRadius:9, border:'none',
+                        background:'linear-gradient(135deg,#f39c12,#e67e22)',
+                        color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer',
+                        flexShrink:0,
+                      }}>Save</button>
+                    </div>
+                    <div
+                      onClick={() => { setNameSaved(true); }}
+                      style={{ color:'rgba(120,80,20,0.4)', fontSize:10, marginTop:6, cursor:'pointer', textDecoration:'underline' }}
+                    >
+                      Skip for now
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ color:'#3d1a00', fontWeight:900, fontSize:19, fontFamily:'Georgia, serif' }}>
+                    {displayName}
+                  </div>
+                )}
+
+                <div style={{ color:'rgba(120,80,20,0.55)', fontSize:10, marginTop:1 }}>{diffLabel} Board</div>
+              </div>
+
+              <div style={{
+                background:'linear-gradient(135deg, #e67e22, #c0392b)',
+                borderRadius:14, padding:'10px 0 8px',
+                textAlign:'center',
+                boxShadow:'0 6px 20px rgba(200,80,20,0.38)',
+                marginBottom:10,
+                animation:'scorePop 0.5s 0.2s cubic-bezier(.22,1.2,.36,1) both',
+              }}>
+                <div style={{ color:'rgba(255,255,255,0.85)', fontSize:9, fontWeight:800, letterSpacing:2 }}>S C O R E</div>
+                <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.05, textShadow:'0 2px 8px rgba(0,0,0,0.25)' }}>
+                  {score.toLocaleString()}
+                </div>
+                {comboBonus>0 && (
+                  <div style={{ color:'rgba(255,255,200,0.9)', fontSize:10, marginTop:2, fontWeight:700 }}>
+                    🔥 +{comboBonus} Combo Bonus
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                display:'flex', justifyContent:'center',
+                background:'rgba(200,169,110,0.12)',
+                borderRadius:12, padding:'8px 0',
+                marginBottom:10,
+                border:'1px solid rgba(200,169,110,0.25)',
+              }}>
+                {[
+                  { label:'MOVES', value:moves, color:'#e74c3c' },
+                  { label:'TIME',  value:formatTime(time), color:'#2980b9' },
+                  { label:'RANK',  value:rank?`#${rank}`:'-',
+                    color:rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d' },
+                ].map((s,i) => (
+                  <React.Fragment key={s.label}>
+                    {i>0 && <div style={{ width:1, background:'rgba(200,169,110,0.4)', margin:'0 4px' }}/>}
+                    <div style={{ flex:1, textAlign:'center' }}>
+                      <div style={{ fontSize:9, color:'rgba(100,60,10,0.55)', fontWeight:700, marginBottom:1 }}>{s.label}</div>
+                      <div style={{
+                        fontSize:19, fontWeight:900, color:s.color,
+                        textShadow: s.label==='RANK'&&rank===1 ? '0 0 10px rgba(241,196,15,0.7)' : 'none',
+                      }}>{s.value}</div>
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+
+              <div style={{ textAlign:'center', color:'rgba(120,80,20,0.5)', fontSize:10, marginBottom:10, fontWeight:600 }}>
+                ✦ {dateStr} ✦
+              </div>
+
+              {/* 2x Score Ad Button */}
+              {(adAvailable || adWatched) && (
+                <button
+                  onClick={handleWatchAd}
+                  disabled={adWatched || adLoading}
+                  style={{
+                    width:'100%', padding:'11px 0', borderRadius:12, border:'none', marginBottom:7,
+                    background: adWatched
+                      ? 'linear-gradient(135deg,#27ae60,#2ecc71)'
+                      : adLoading
+                      ? 'rgba(155,89,182,0.5)'
+                      : 'linear-gradient(135deg,#8e44ad,#9b59b6)',
+                    color:'#fff', fontWeight:900, fontSize:14, cursor: adWatched ? 'default' : 'pointer',
+                    boxShadow: adWatched ? '0 3px 10px rgba(46,204,113,0.4)' : '0 3px 14px rgba(155,89,182,0.5)',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                  }}>
+                  {adWatched ? '✅ +100 Puan Kazandın!' : adLoading ? '⏳ Yükleniyor...' : '🎬 Video İzle — +100 Puan!'}
+                </button>
+              )}
+
+              <div style={{ display:'flex', gap:7, marginBottom:7 }}>
+                <button onClick={onScores} style={{
+                  flex:1, padding:'9px 0', borderRadius:11, border:'none',
+                  background:'linear-gradient(135deg,#2980b9,#3498db)',
+                  color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+                  boxShadow:'0 3px 10px rgba(52,152,219,0.35)',
+                }}>🏆 High Scores</button>
+                <button onClick={handleShare} disabled={sharing} style={{
+                  flex:1, padding:'9px 0', borderRadius:11, border:'none',
+                  background:sharing?'rgba(230,126,34,0.5)':'linear-gradient(135deg,#f39c12,#e67e22)',
+                  color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+                  boxShadow:'0 3px 10px rgba(230,126,34,0.35)',
+                }}>{sharing?'⏳ Wait...':'📤 Share'}</button>
+              </div>
+              <div style={{ display:'flex', gap:7, marginBottom:8 }}>
+                <button onClick={onMenu} style={{
+                  flex:1, padding:'9px 0', borderRadius:11,
+                  border:'2px solid #c8a96e', background:'transparent',
+                  color:'#7a5c2e', fontWeight:800, fontSize:12, cursor:'pointer',
+                }}>← Menu</button>
+                <button onClick={onReplay} style={{
+                  flex:1, padding:'9px 0', borderRadius:11, border:'none',
+                  background:'linear-gradient(135deg,#27ae60,#2ecc71)',
+                  color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+                  boxShadow:'0 3px 10px rgba(46,204,113,0.35)',
+                }}>▶ Play Again</button>
+              </div>
+
+              <div style={{ textAlign:'center', fontSize:9, color:'rgba(120,80,20,0.45)', fontStyle:'italic' }}>
+                Share your certificate to challenge friends ✨
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function useSettings() {
+      const load = (key, def) => {
+        try { const v = localStorage.getItem('ms_' + key); return v === null ? def : JSON.parse(v); }
+        catch { return def; }
+      };
+      const [sfx,       setSfxRaw]       = React.useState(() => load('sfx', true));
+      const [music,     setMusicRaw]     = React.useState(() => load('music', true));
+      const [vibration, setVibrationRaw] = React.useState(() => load('vibration', false));
+      const save = (key, val) => { try { localStorage.setItem('ms_' + key, JSON.stringify(val)); } catch {} };
+
+      const setSfx       = v => { setSfxRaw(v);       save('sfx', v); };
+      const setMusic     = v => { setMusicRaw(v);     save('music', v); };
+      const setVibration = v => { setVibrationRaw(v); save('vibration', v); };
+
+      return { sfx, setSfx, music, setMusic, vibration, setVibration };
+    }
+
+    function LegalModal({ type, onClose }) {
+      const content = {
+        privacy: {
+          title: '🔒 Privacy Policy',
+          body: `Last updated: March 1, 2026 · Mendebur Studios
+
+SUMMARY
+We collect only your chosen username and game scores to power leaderboards. We do not collect your name, email, or location. We do not sell your data.
+
+DATA WE COLLECT
+• Username — a nickname you choose voluntarily for the leaderboard
+• Game scores and statistics (moves, time, difficulty level)
+• Device type and OS (via Firebase)
+• No email, phone, or personal identity data is collected
+
+HOW WE USE DATA
+• To display your scores on global leaderboards
+• To calculate your ranking among other players
+• To improve gameplay and user experience
+• We do not sell or share your data with third parties for marketing
+
+THIRD-PARTY SERVICES
+• Firebase (Google) — score storage. Subject to Google's Privacy Policy.
+
+CHILDREN
+This app does not knowingly collect data from children under 13.
+
+DATA DELETION
+You can delete your scores directly in the app (Scores → Clear Scores) or email us to delete all your data.
+
+CONTACT
+📧 info@mindsharp.co
+🌐 mindsharp.co`
+        },
+        terms: {
+          title: '📋 Terms of Service',
+          body: `Last updated: March 1, 2026 · Mendebur Studios
+
+By using MindSharp, you agree to these terms.
+
+USE OF THE APP
+• MindSharp is provided for personal, non-commercial use
+• You must not attempt to cheat, hack, or manipulate game scores
+• We reserve the right to remove scores that appear fraudulent
+• You must be at least 13 years of age to use this Service
+
+INTELLECTUAL PROPERTY
+• All game content, design, and code © 2026 Mendebur Studios
+• You may not copy, modify, or redistribute without permission
+
+USER CONTENT
+• By submitting a username, you grant Mendebur Studios a license to display it within the Service
+
+DISCLAIMER
+• The app is provided "as is" without warranty of any kind
+• We are not liable for any data loss or damages
+
+GOVERNING LAW
+These Terms are governed by the laws of Turkey.
+
+CHANGES
+We may update these terms at any time. Continued use means acceptance.
+
+CONTACT
+📧 info@mindsharp.co
+🌐 mindsharp.co`
+        },
+        about: {
+          title: '🎮 About MindSharp',
+          // BUG FIX #5: Var olmayan "Very Hard 80 tiles (10x8)" modu kaldırıldı
+          body: `MindSharp v1.0
+© 2026 Mendebur Studios
+
+MindSharp is a memory and focus training game designed to sharpen your short-term memory, pattern recognition, and cognitive speed — in just 1 minute a day.
+
+HOW TO PLAY
+• Flip tiles to find matching pairs (same number + same color)
+• Complete the board with minimum moves and maximum speed
+• Chain consecutive matches for combo bonuses
+
+DIFFICULTY LEVELS
+• Classic  — 32 tiles (8×4)
+• Classic — 32 tiles (8×4)
+• Hard    — 56 tiles (8×7)
+
+SCORING
+Base score + combo bonuses − move penalty − time penalty
+
+DEVELOPED BY
+Mendebur Studios — Istanbul, Turkey
+www.mendeburstudios.com
+
+"Train your mind — 1 minute a day." 🧠`
+        },
+        contact: {
+          title: '✉️ Contact Us',
+          body: `We'd love to hear from you!
+
+📧 info@mindsharp.co
+
+📱 Instagram: @mindsharpgame
+🎵 TikTok: @mindsharpgame
+📘 Facebook: MindSharp
+🌐 mindsharp.co
+
+Response time: 1-3 business days
+
+Mendebur Studios
+www.mendeburstudios.com
+Istanbul, Turkey 🇹🇷`
+        },
+      };
+
+      const c = content[type];
+      if (!c) return null;
+
+      return (
+        <div style={{
+          position:'fixed', inset:0, zIndex:500,
+          background:'rgba(0,0,0,0.75)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          padding:'16px',
+        }} onClick={onClose}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width:'100%', maxWidth:360,
+            background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
+            borderRadius:20,
+            border:'2px solid #c8a96e',
+            boxShadow:'0 20px 60px rgba(0,0,0,0.5)',
+            maxHeight:'80vh',
+            display:'flex', flexDirection:'column',
+            overflow:'hidden',
+          }}>
+            <div style={{
+              padding:'14px 18px',
+              borderBottom:'1px solid rgba(200,169,110,0.3)',
+              display:'flex', justifyContent:'space-between', alignItems:'center',
+              background:'rgba(200,169,110,0.15)',
+            }}>
+              <span style={{ fontWeight:900, fontSize:15, color:'#3d1a00' }}>{c.title}</span>
+              <button onClick={onClose} style={{
+                background:'none', border:'none', fontSize:20,
+                color:'#7a5c2e', cursor:'pointer', lineHeight:1,
+              }}>✕</button>
+            </div>
+            <div style={{ overflowY:'auto', padding:'16px 18px' }}>
+              <pre style={{
+                margin:0,
+                fontFamily:"'Segoe UI', sans-serif",
+                fontSize:12, lineHeight:1.7,
+                color:'#4a2a00',
+                whiteSpace:'pre-wrap',
+                wordBreak:'break-word',
+              }}>{c.body}</pre>
+            </div>
+            <div style={{ padding:'12px 18px', borderTop:'1px solid rgba(200,169,110,0.3)' }}>
+              <button onClick={onClose} style={{
+                width:'100%', padding:'10px',
+                borderRadius:12, border:'2px solid #c8a96e',
+                background:'transparent', color:'#7a5c2e',
+                fontWeight:800, fontSize:13, cursor:'pointer',
+              }}>Close</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function SettingsModal({ onClose, settings }) {
+      const [legalType, setLegalType] = React.useState(null);
+
+      const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
+      const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const showRateAppStore  = false;
+      const showRatePlayStore = false;
+      const showLinkAppStore  = false;
+      const showLinkPlayStore = false;
+
+      const handleShare = async () => {
+        const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharp.co';
+        if (navigator.share) {
+          try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
+        }
+        try { await navigator.clipboard.writeText(text); alert('Link copied! Share it with friends 🎉'); } catch {}
+      };
+
+      const Toggle = ({ value, onChange }) => (
+        <div onClick={() => onChange(!value)} style={{
+          width:44, height:24, borderRadius:12,
+          background: value ? 'linear-gradient(135deg,#27ae60,#2ecc71)' : 'rgba(0,0,0,0.2)',
+          position:'relative', cursor:'pointer',
+          transition:'background 0.25s',
+          border: value ? 'none' : '1px solid rgba(255,255,255,0.2)',
+          flexShrink:0,
+        }}>
+          <div style={{
+            position:'absolute',
+            top:2, left: value ? 22 : 2,
+            width:20, height:20, borderRadius:'50%',
+            background:'#fff',
+            boxShadow:'0 2px 4px rgba(0,0,0,0.3)',
+            transition:'left 0.25s',
+          }}/>
+        </div>
+      );
+
+      const Row = ({ icon, label, right }) => (
+        <div style={{
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'11px 14px',
+          borderBottom:'1px solid rgba(200,169,110,0.15)',
+        }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
+            <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
+          </div>
+          {right}
+        </div>
+      );
+
+      const LinkRow = ({ icon, label, onClick }) => (
+        <div onClick={onClick} style={{
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'11px 14px',
+          borderBottom:'1px solid rgba(200,169,110,0.15)',
+          cursor:'pointer',
+        }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:18, width:24, textAlign:'center' }}>{icon}</span>
+            <span style={{ fontSize:13, fontWeight:600, color:'#3d1a00' }}>{label}</span>
+          </div>
+          <span style={{ color:'#c8a96e', fontSize:14 }}>›</span>
+        </div>
+      );
+
+      const SectionHeader = ({ label }) => (
+        <div style={{
+          padding:'8px 14px 4px',
+          fontSize:10, fontWeight:800,
+          color:'rgba(100,60,10,0.5)',
+          letterSpacing:1.5,
+          textTransform:'uppercase',
+        }}>{label}</div>
+      );
+
+      return (
+        <>
+          <div style={{
+            position:'fixed', inset:0, zIndex:400,
+            background:'rgba(0,0,0,0.72)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            padding:'16px',
+          }} onClick={onClose}>
+            <div onClick={e => e.stopPropagation()} style={{
+              width:'100%', maxWidth:360,
+              background:'linear-gradient(160deg,#fdf8ec,#f5e6c3)',
+              borderRadius:22,
+              border:'2px solid #c8a96e',
+              boxShadow:'0 20px 60px rgba(0,0,0,0.55)',
+              overflow:'hidden',
+              animation:'cardSlideUp 0.35s cubic-bezier(.22,1.2,.36,1) both',
+              maxHeight:'88vh',
+              display:'flex', flexDirection:'column',
+            }}>
+              <div style={{
+                padding:'14px 18px',
+                background:'linear-gradient(135deg, rgba(200,169,110,0.25), rgba(200,169,110,0.1))',
+                borderBottom:'1px solid rgba(200,169,110,0.3)',
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:20 }}>⚙️</span>
+                  <span style={{ fontWeight:900, fontSize:17, color:'#3d1a00', fontFamily:'Georgia,serif' }}>Settings</span>
+                </div>
+                <button onClick={onClose} style={{
+                  background:'rgba(0,0,0,0.1)', border:'none',
+                  width:28, height:28, borderRadius:'50%',
+                  color:'#7a5c2e', fontSize:14, cursor:'pointer',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                }}>✕</button>
+              </div>
+
+              <div style={{ overflowY:'auto', flex:1 }}>
+                <SectionHeader label="Sound" />
+                <Row icon="🔊" label="Sound Effects"
+                  right={<Toggle value={settings.sfx} onChange={settings.setSfx} />} />
+                <Row icon="🎵" label="Music"
+                  right={<Toggle value={settings.music} onChange={settings.setMusic} />} />
+                <Row icon="📳" label="Vibration"
+                  right={<Toggle value={settings.vibration} onChange={settings.setVibration} />} />
+
+                <SectionHeader label="Social" />
+                <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
+                <div style={{ display:'flex', justifyContent:'center', gap:20, padding:'12px 0 8px' }}>
+                  <a href="https://instagram.com/mindsharpgame" target="_blank" rel="noopener noreferrer" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, textDecoration:'none' }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    </div>
+                    <span style={{ fontSize:10, color:'rgba(255,224,130,0.8)', fontWeight:600 }}>Instagram</span>
+                  </a>
+                  <a href="https://tiktok.com/@mindsharpgame" target="_blank" rel="noopener noreferrer" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, textDecoration:'none' }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'#010101', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.17 8.17 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+                    </div>
+                    <span style={{ fontSize:10, color:'rgba(255,224,130,0.8)', fontWeight:600 }}>TikTok</span>
+                  </a>
+                  <a href="https://www.facebook.com/profile.php?id=61583919300003" target="_blank" rel="noopener noreferrer" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, textDecoration:'none' }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'#1877F2', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </div>
+                    <span style={{ fontSize:10, color:'rgba(255,224,130,0.8)', fontWeight:600 }}>Facebook</span>
+                  </a>
+                </div>
+                {showRateAppStore  && <LinkRow icon="⭐" label="Rate on App Store"   onClick={() => window.open(APP_STORE_URL,  '_blank')} />}
+                {showRatePlayStore && <LinkRow icon="⭐" label="Rate on Play Store"  onClick={() => window.open(PLAY_STORE_URL, '_blank')} />}
+                {showLinkAppStore  && <LinkRow icon="🍎" label="App Store"  onClick={() => window.open(APP_STORE_URL,  '_blank')} />}
+                {showLinkPlayStore && <LinkRow icon="🤖" label="Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />}
+
+                <SectionHeader label="Info" />
+                <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
+                <LinkRow icon="✉️" label="Contact Us"          onClick={() => setLegalType('contact')} />
+                <LinkRow icon="🔒" label="Privacy Policy"      onClick={() => setLegalType('privacy')} />
+                <LinkRow icon="📋" label="Terms of Service"    onClick={() => setLegalType('terms')} />
+
+                <div style={{
+                  textAlign:'center', padding:'14px 0 10px',
+                  fontSize:11, color:'rgba(100,60,10,0.4)', fontWeight:600,
+                }}>
+                  MindSharp v1.0 · © 2026 Mendebur Studios
+                </div>
+                {/* Install Banner in Settings */}
+                {(() => {
+                  const _standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                  const _ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+                  const _safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                  const _dismissed = (() => { try { return !!localStorage.getItem('ms_install_dismissed'); } catch { return false; } })();
+                  const _installed = (() => { try { return !!localStorage.getItem('ms_pwa_installed'); } catch { return false; } })();
+                  if (_standalone || _dismissed || _installed) return null;
+                  if (!_ios && !_safari) return null;
+                  const ShareIcon = () => (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5ac8fa" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+                      <polyline points="16 6 12 2 8 6"/>
+                      <line x1="12" y1="2" x2="12" y2="15"/>
+                      <path d="M8 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/>
+                    </svg>
+                  );
+                  const AddIcon = () => (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5ac8fa" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+                      <rect x="3" y="3" width="18" height="18" rx="3.5"/>
+                      <line x1="12" y1="8" x2="12" y2="16"/>
+                      <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                  );
+                  const sic = 'rgba(255,255,255,0.4)';
+                  return (
+                    <div style={{ marginTop:4, boxSizing:'border-box', background:'rgba(15,15,22,0.95)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:13, padding:'12px 14px 13px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:11 }}>
+                        <span style={{ fontSize:17 }}>📲</span>
+                        <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>Install App</span>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7 }}>
+                        <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>1.</span>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Tap</span>
+                        <ShareIcon/>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Share</span>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                        <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>2.</span>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Tap</span>
+                        <AddIcon/>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Add to Home Screen</span>
+                        <span style={{ color:'rgba(255,255,255,0.18)', fontSize:11 }}>›</span>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Add</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {legalType && (
+            <LegalModal type={legalType} onClose={() => setLegalType(null)} />
+          )}
+        </>
+      );
+    }
+
+    function App() {
+      const [screen, setScreen]     = useState('menu');
+      const [showHint, setShowHint] = useState(false);
+      const [mode, setMode]         = useState('8x4');
+
+      // Onboarding — tek seferlik
+      const [showOnboarding, setShowOnboarding] = useState(() => {
+        try { return !localStorage.getItem('ms_onboarded'); } catch { return false; }
+      });
+      const [showInstallBanner, setShowInstallBanner] = useState(true);
+      const [scores, setScores]     = useState([]);
+      const [rank, setRank]         = useState(null);
+      const scoresRef               = useRef([]);
+
+      useEffect(() => { scoresRef.current = scores; }, [scores]);
+
+      const [tiles, setTiles]         = useState([]);
+      const [flipped, setFlipped]     = useState([]);
+      const [moves, setMoves]         = useState(0);
+      const [matched, setMatched]     = useState(0);
+      const [time, setTime]           = useState(0);
+      const [running, setRunning]     = useState(false);
+      const [won, setWon]             = useState(false);
+      const [shake, setShake]         = useState(null);
+      const [matchAnim, setMatchAnim] = useState([]);
+      const [score, setScore]         = useState(0);
+      const [comboBonus, setComboBonus] = useState(0);
+      const [combo, setCombo]         = useState(0);
+      const [sortBy, setSortBy]       = useState('score');
+      const [scoreCategory, setScoreCategory] = useState('8x4');
+      const [user, setUser]           = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
+      const [tempUser, setTempUser]   = useState('');
+      const [scoreDocId, setScoreDocId] = useState(null);
+      const [dailyDocId, setDailyDocId] = useState(null);
+      const [toast, setToast]         = useState(null);
+      const [showExitConfirm, setShowExitConfirm] = useState(false);
+      const [isDailyMode, setIsDailyMode]         = useState(false);
+      const [dailyModeKey, setDailyModeKey]       = useState('8x4');
+      const [showDailyModal, setShowDailyModal]   = useState(false);
+      const [dailyResult, setDailyResult]         = useState(null);
+      const [dailyStreak, setDailyStreak]         = useState(() => loadDailyStreak());
+      const [dailyDoneMap, setDailyDoneMap] = useState(() => {
+        const map = {};
+        ['8x4','8x7'].forEach(m => { map[m] = getDailyDoneForMode(m); });
+        return map;
+      });
+      const todayDoneForMode = (m) => !!dailyDoneMap[m];
+      const [dailyRank, setDailyRank]             = useState(null);
+      const [dailyTotal, setDailyTotal]           = useState(0);
+      const [dailyPersonalBest, setDailyPersonalBest] = useState(null);
+      const settings   = useSettings();
+      const [showSettings, setShowSettings] = React.useState(false);
+
+      const comboBonusRef = useRef(0);
+      const comboRef      = useRef(0);
+      const lockRef       = useRef(false);
+      const isDailyRef    = useRef(false);
+      const play          = useSound();
+
+      // Background music — Web Audio API (ayrı thread, mobil performansını etkilemez)
+      const bgAudioCtxRef = useRef(null);
+      const bgSourceRef   = useRef(null);
+      const bgBufferRef   = useRef(null);
+      const bgLoadedRef   = useRef(false);
+      const bgPlayingRef  = useRef(false);
+      const musicEnabledRef = useRef(settings.music);
+      useEffect(() => { musicEnabledRef.current = settings.music; }, [settings.music]);
+
+      const getAudioCtx = () => {
+        if (!bgAudioCtxRef.current) {
+          bgAudioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return bgAudioCtxRef.current;
+      };
+
+      const startBgMusic = () => {
+        if (bgPlayingRef.current) return;
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+        if (!bgBufferRef.current) return;
+        const source = ctx.createBufferSource();
+        source.buffer = bgBufferRef.current;
+        source.loop = true;
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 0.18;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+        bgSourceRef.current = source;
+        bgPlayingRef.current = true;
+      };
+
+      const stopBgMusic = () => {
+        if (!bgPlayingRef.current) return;
+        try { bgSourceRef.current && bgSourceRef.current.stop(); } catch(e) {}
+        bgSourceRef.current = null;
+        bgPlayingRef.current = false;
+      };
+
+      // Load buffer once
+      useEffect(() => {
+        if (bgLoadedRef.current) return;
+        bgLoadedRef.current = true;
+        fetch('./music.mp3')
+          .then(r => r.arrayBuffer())
+          .then(ab => {
+            const ctx = getAudioCtx();
+            return ctx.decodeAudioData(ab);
+          })
+          .then(buffer => {
+            bgBufferRef.current = buffer;
+            if (musicEnabledRef.current) startBgMusic();
+          })
+          .catch(() => {});
+      }, []);
+
+      // Play/pause on toggle
+      useEffect(() => {
+        if (!bgBufferRef.current) return;
+        if (settings.music) startBgMusic();
+        else stopBgMusic();
+      }, [settings.music]);
+
+      // On first interaction: resume AudioContext (iOS requires it) and start if enabled
+      useEffect(() => {
+        const tryStart = () => {
+          const ctx = bgAudioCtxRef.current;
+          if (ctx && ctx.state === 'suspended') ctx.resume();
+          if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) {
+            startBgMusic();
+          }
+          document.removeEventListener('pointerdown', tryStart);
+        };
+        document.addEventListener('pointerdown', tryStart);
+        return () => document.removeEventListener('pointerdown', tryStart);
+      }, []);
+
+      useEffect(() => {
+        if (screen !== 'game') return;
+        setShowHint(true);
+        const t = setTimeout(() => setShowHint(false), 5000);
+        return () => clearTimeout(t);
+      }, [screen]);
+
+      // BUG FIX #9: Tek bir realtime listener yeterli, ayrıca fetchScoresFromCloud kaldırıldı
+      useEffect(() => {
+        if (!db) return;
+        const unsub = db
+          .collection('scores')
+          .orderBy('score', 'desc')
+          .limit(500)
+          .onSnapshot(
+            (snap) => {
+              const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+              setScores(list);
+            },
+            (err) => console.log('Firestore read error:', err)
+          );
+        return () => unsub();
+      }, []);
+
+      const boardRef = useRef(null);
+      const [boardWidth, setBoardWidth] = useState(330);
+
+      useEffect(() => {
+        if (screen !== 'game') return;
+        const el = boardRef.current;
+        if (!el) return;
+        const update = () => setBoardWidth(el.clientWidth || 330);
+        update();
+        let ro;
+        try {
+          ro = new ResizeObserver(update);
+          ro.observe(el);
+        } catch (e) {
+          window.addEventListener('resize', update);
+        }
+        return () => {
+          if (ro) ro.disconnect();
+          window.removeEventListener('resize', update);
+        };
+      }, [screen, mode]);
+
+      useEffect(() => {
+        if (!running) return;
+        const id = setInterval(() => setTime(t => t + 1), 1000);
+        return () => clearInterval(id);
+      }, [running]);
+
+      const showToast = useCallback((msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 2400);
+      }, []);
+
+      const startDailyChallenge = useCallback((m) => {
+        const gm = m || mode;
+        setTiles(generateDailyTiles(gm));
+        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+        setRunning(false); setWon(false); lockRef.current = false;
+        setMode(gm); setScreen('game');
+        trackEvent('game_start', { mode: gm, type: 'daily' });
+        setScore(0); setComboBonus(0); setCombo(0);
+        setScoreDocId(null);
+        comboBonusRef.current = 0; comboRef.current = 0;
+        setIsDailyMode(true);
+        isDailyRef.current = true;
+        setDailyModeKey(gm);
+      }, [mode]);
+
+      const startGame = useCallback((m) => {
+        const cfg = GRID_CONFIGS[m];
+        setTiles(generateTiles(cfg.pairs, cfg.maxNum));
+        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+        setRunning(false); setWon(false); lockRef.current = false;
+        setMode(m); setScreen('game');
+        trackEvent('game_start', { mode: m, type: 'regular' });
+        setScore(0); setComboBonus(0); setCombo(0);
+        setScoreDocId(null);
+        comboBonusRef.current = 0; comboRef.current = 0;
+        setIsDailyMode(false);
+        isDailyRef.current = false;
+      }, []);
+
+      const handleTile = useCallback((id) => {
+        if (lockRef.current) return;
+        if (!running) setRunning(true);
+
+        // BUG FIX #1: SFX kontrolü tek yerde, doğru şekilde
+        if (settings.sfx) play('flip');
+
+        setTiles(prev => prev.map(t => t.id === id ? { ...t, flipped: true } : t));
+        setFlipped(prev => {
+          const next = [...prev, id];
+          if (next.length === 2) {
+            lockRef.current = true;
+            setMoves(m => m + 1);
+            setTimeout(() => {
+              setTiles(cur => {
+                const [a, b] = next.map(fid => cur.find(t => t.id === fid));
+                if (a && b && a.number === b.number && a.color === b.color) {
+                  const newCombo = comboRef.current + 1;
+                  comboRef.current = newCombo;
+                  setCombo(newCombo);
+
+                  let bonusPts = 0;
+                  // BUG FIX #1 & #2: if/else zinciri düzeltildi, ses tek çağrılıyor
+                  if (newCombo >= 3) {
+                    bonusPts = 60;
+                    if (settings.sfx) play('combo3');
+                  } else if (newCombo === 2) {
+                    bonusPts = 25;
+                    if (settings.sfx) play('combo');
+                  } else {
+                    if (settings.sfx) play('match');
+                  }
+
+                  if (settings.vibration && navigator.vibrate) navigator.vibrate(40);
+                  comboBonusRef.current += bonusPts;
+                  setComboBonus(b => b + bonusPts);
+                  setMatchAnim([a.id, b.id]);
+                  setTimeout(() => setMatchAnim([]), 600);
+
+                  const newTiles = cur.map(t => next.includes(t.id) ? { ...t, matched: true, flipped: false } : t);
+                  const newMatchedCount = newTiles.filter(t => t.matched).length / 2;
+                  setMatched(newMatchedCount);
+
+                  const activeMode = isDailyRef.current ? dailyModeKey : mode;
+                  const cfg = GRID_CONFIGS[activeMode] || GRID_CONFIGS[mode];
+                  if (newMatchedCount === cfg.pairs) {
+                    setRunning(false);
+                    if (!isDailyRef.current) {
+                      setWon(true);
+                    }
+                    if (settings.sfx) play('win');
+
+                    setMoves((mv) => {
+                      setTime((tm) => {
+                        // BUG FIX #3: moves zaten mv (setMoves'dan gelen güncel değer),
+                        // +1 eklemiyoruz çünkü setMoves(m => m+1) zaten çağrıldı
+                        const finalScore = calcScore({
+                          pairs: cfg.pairs,
+                          moves: mv,
+                          time: tm,
+                          comboBonus: comboBonusRef.current,
+                        });
+                        setScore(finalScore);
+
+                        const myEntry = {
+                          user: user || 'Guest',
+                          mode,
+                          moves: mv,
+                          time: tm,
+                          score: finalScore,
+                        };
+                        const sameMode = (scoresRef.current || []).filter(s => s.mode === mode);
+                        const merged = [...sameMode, myEntry].sort((a,b) => (b.score||0) - (a.score||0));
+                        const myRank = merged.findIndex(s =>
+                          s.user === myEntry.user &&
+                          s.score === myEntry.score &&
+                          s.time === myEntry.time &&
+                          s.moves === myEntry.moves
+                        ) + 1;
+                        setRank(myRank);
+
+                        if (isDailyRef.current) {
+                          const result = { moves: mv, time: tm, score: finalScore, gridMode: dailyModeKey };
+                          saveDailyResult(result, dailyModeKey);
+                          setDailyDoneMap(prev => ({ ...prev, [dailyModeKey]: true }));
+                          const newStreak = updateStreak();
+                          setDailyStreak(newStreak);
+                          setDailyResult(result);
+                          submitDailyScore({ user: user || 'Guest', moves: mv, time: tm, score: finalScore, gridMode: dailyModeKey })
+                            .then(docId => { if (docId) setDailyDocId(docId); });
+                          (async () => {
+                            try {
+                              if (db) {
+                                const dateKey = getDailyDateKey();
+                                const snap = await db.collection('daily_scores')
+                                  .where('dateKey', '==', dateKey)
+                                  .where('gridMode', '==', dailyModeKey)
+                                  .get();
+                                const allScores = snap.docs.map(d => d.data().score || 0).sort((a,b) => b - a);
+                                const total = allScores.length;
+                                const rank = allScores.findIndex(s => s <= finalScore) + 1 || total;
+                                setDailyRank(rank);
+                                setDailyTotal(total);
+                                try {
+                                  const stats = JSON.parse(localStorage.getItem('ms_stats') || '{}');
+                                  const pb = stats.bestScores && stats.bestScores[dailyModeKey];
+                                  setDailyPersonalBest(pb || 0);
+                                } catch {}
+                              }
+                            } catch(e) {}
+                            setTimeout(() => { setWon(false); setScreen('menu'); setShowDailyModal(true); }, 800);
+                          })();
+                        } else {
+                          submitScoreToCloud({
+                            user: user || "Guest",
+                            mode,
+                            moves: mv,
+                            time: tm,
+                            score: finalScore,
+                          }).then(docId => {
+                            if (docId) setScoreDocId(docId);
+                          });
+                        }
+
+                        // İstatistikleri kaydet
+                        recordGameStats({
+                          mode,
+                          moves: mv,
+                          time: tm,
+                          score: finalScore,
+                          comboBonus: comboBonusRef.current,
+                        });
+
+                        // BUG FIX #6: Firebase'den kesin rank al (race condition azaltıldı)
+                        setTimeout(async () => {
+                          if (!db) return;
+                          try {
+                            const snap = await db
+                              .collection("scores")
+                              .where("mode", "==", mode)
+                              .orderBy("score", "desc")
+                              .get();
+                            const scoresList = snap.docs.map(d => d.data());
+                            const position = scoresList.findIndex(s =>
+                              s.score === finalScore && s.user === (user || 'Guest')
+                            );
+                            if (position >= 0) setRank(position + 1);
+                          } catch(e) { console.warn(e); }
+                        }, 1200);
+
+                        return tm;
+                      });
+                      return mv;
+                    });
+                  }
+                  lockRef.current = false;
+                  return newTiles;
+                } else {
+                  comboRef.current = 0;
+                  setCombo(0);
+                  // BUG FIX #1: SFX kontrolü doğru
+                  if (settings.sfx) play('fail');
+                  if (settings.vibration && navigator.vibrate) navigator.vibrate([30, 20, 30]);
+                  setShake(next);
+                  setTimeout(() => setShake(null), 400);
+                  const reset = cur.map(t => next.includes(t.id) ? { ...t, flipped: false } : t);
+                  lockRef.current = false;
+                  return reset;
+                }
+              });
+              setFlipped([]);
+            }, 900);
+          }
+          return next;
+        });
+      }, [running, mode, play, user, settings.sfx, settings.vibration]);
+
+      const cfg        = GRID_CONFIGS[mode];
+      const totalPairs = cfg ? cfg.pairs : 0;
+      const GAP        = (typeof window !== 'undefined' && window.innerWidth < 380) ? 6 : 5;
+      const BOARD_PAD  = 8;
+      const innerW     = Math.max(0, boardWidth - BOARD_PAD * 2);
+      const tileW      = Math.max(22, Math.floor((innerW - GAP * (cfg.cols - 1)) / cfg.cols));
+
+      const woodBg = {
+        backgroundImage: "url('/wood_bg.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#2b1a10',
+      };
+
+      return (
+        <div style={{ minHeight: '100vh', width: '100%', maxWidth: 430, margin: '0 auto', ...woodBg,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          fontFamily: "'Segoe UI', sans-serif", userSelect: 'none', position: 'relative', overflow: 'hidden' }}>
+
+          {/* Floating Music Button */}
+          <button
+            onClick={() => settings.setMusic(!settings.music)}
+            title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}
+            style={{
+              position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 12, zIndex: 9999,
+              width: 32, height: 32, borderRadius: '50%',
+              background: settings.music ? 'rgba(255,180,0,0.3)' : 'rgba(0,0,0,0.5)',
+              border: settings.music ? '1.5px solid rgba(255,210,0,0.8)' : '1.5px solid rgba(255,255,255,0.25)',
+              color: settings.music ? '#ffe066' : 'rgba(255,255,255,0.55)',
+              fontSize: 15, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(4px)',
+              transition: 'all 0.2s ease',
+              boxShadow: settings.music ? '0 0 10px rgba(255,180,0,0.4)' : 'none',
+            }}>
+            {settings.music ? '🎵' : '🔇'}
+          </button>
+          <style>{`
+            .contentWrap { padding: calc(env(safe-area-inset-top, 0px) + 50px) 46px 40px; }
+            @media (max-width: 420px) {
+              .contentWrap { padding: calc(env(safe-area-inset-top, 0px) + 44px) 18px 32px; }
+            }
+            /* BUG FIX #4 CSS: "f\nrom" → "from" düzeltildi */
+            @keyframes popIn {
+              from { transform: scale(0.5); opacity: 0; }
+              to   { transform: scale(1);   opacity: 1; }
+            }
+            @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+            @keyframes matchPop { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
+            @keyframes comboBanner { 0%{transform:scaleX(0);opacity:0} 20%{transform:scaleX(1);opacity:1} 80%{opacity:1} 100%{opacity:0} }
+            @keyframes cardSlideUp {
+              from { transform: translateY(40px) scale(0.94); opacity:0; }
+              to   { transform: translateY(0) scale(1); opacity:1; }
+            }
+            .shake-tile { animation: shake 0.35s ease; }
+            .match-tile { animation: matchPop 0.5s ease; }
+          `}</style>
+
+          <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+            background: 'radial-gradient(circle at 50% 30%, rgba(0,0,0,0.15), rgba(0,0,0,0.55))' }} />
+
+          <div className="contentWrap" style={{ position: 'relative', zIndex: 5, width: '100%', minHeight: '100vh',
+            boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+
+
+            {/* MENU */}
+            {screen === 'menu' && (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width:'100%', position:'relative', display:'flex', justifyContent:'center', alignItems:'center', marginBottom:6 }}>
+                  <h1 style={{ margin: 0, fontFamily: "'Georgia', serif", fontSize: 44, fontWeight: 900,
+                    background: 'linear-gradient(160deg, #fff9c4 0%, #ffe066 40%, #ffb300 70%, #ff8f00 100%)',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.8))', textAlign: 'center' }}>MindSharp</h1>
+                  <button onClick={() => setShowSettings(true)} style={{
+                    position:'absolute', right:0,
+                    background:'rgba(0,0,0,0.35)',
+                    border:'1px solid rgba(255,255,255,0.2)',
+                    borderRadius:10, width:36, height:36,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    cursor:'pointer', fontSize:18,
+                  }}>⚙️</button>
+                </div>
+                <p style={{ color: '#fff', fontSize: 12, margin: '0 0 20px',
+                  textShadow: '0 1px 6px rgba(0,0,0,0.9)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
+                  background: 'rgba(0,0,0,0.35)', padding: '3px 14px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)' }}>
+                  Memory and Focus Workout
+                </p>
+
+                {/* Preview Tiles */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 10, marginBottom: 22, height: 76 }}>
+                  {PREVIEW_TILES.map((pt, idx) => {
+                    const tw = 44, th = 63, ds = 13;
+                    return (
+                      <div key={idx} style={{ width: tw, height: th, borderRadius: 7,
+                        background: 'linear-gradient(160deg, #FDFAF0 60%, #EDE5C8 100%)',
+                        border: '1.5px solid #c8b98a',
+                        boxShadow: '0 5px 12px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.9)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        justifyContent: 'flex-start', paddingTop: 5, boxSizing: 'border-box',
+                        transform: `rotate(${pt.rot}deg) translateY(${pt.y}px)`, flexShrink: 0 }}>
+                        <span style={{ color: pt.color, fontWeight: 900, fontSize: 28, fontFamily: 'Georgia, serif', lineHeight: 1,
+                          textShadow: '0 2px 4px rgba(0,0,0,0.2)', WebkitTextStroke: '0.5px rgba(0,0,0,0.15)' }}>{pt.number}</span>
+                        <div style={{ flex: 1 }} />
+                        <div style={{ width: ds, height: ds, borderRadius: '50%',
+                          background: 'radial-gradient(circle at 40% 35%, #d8cfa8, #b8a870)',
+                          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.35)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+                          <span style={{ color: pt.color, fontSize: 7, lineHeight: 1 }}>♥</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Username section */}
+                {user ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: '8px 12px',
+                    border: '1px solid rgba(200,169,110,0.3)', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap', minWidth: 0 }}>
+                      <span style={{ color: '#ffe082', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>👤 {user}</span>
+                      {(() => {
+                        const s = loadStats(); const streak = getStreakCount(s.streak || []);
+                        return streak > 0 ? (
+                          <span style={{
+                            color: 'rgba(255,224,130,0.6)', fontSize: 11, fontWeight: 700,
+                            background: 'rgba(255,150,0,0.15)', borderRadius: 6,
+                            padding: '2px 7px', whiteSpace: 'nowrap',
+                          }}>🔥 {streak} day streak</span>
+                        ) : null;
+                      })()}
+                    </div>
+                    <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); } catch {} }}
+                      style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6,
+                        color: 'rgba(255,255,255,0.45)', fontSize: 11, cursor: 'pointer',
+                        padding: '3px 8px', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 8 }}>Change</button>
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ color: 'rgba(255,224,130,0.6)', fontSize: 11, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>
+                      Enter your name for the leaderboard
+                    </div>
+                    <div style={{ display: 'flex', gap: 7 }}>
+                      <input
+                        type="text"
+                        value={tempUser}
+                        onChange={e => setTempUser(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && tempUser.trim()) {
+                            const n = tempUser.trim();
+                            setUser(n);
+                            try { localStorage.setItem('memotiles_user', n); } catch {}
+                            setTempUser('');
+                            showToast('✓ Name saved!');
+                          }
+                        }}
+                        placeholder="Your name…"
+                        maxLength={20}
+                        className="ms-username-input"
+                      />
+                      <button
+                        onClick={() => {
+                          const n = tempUser.trim();
+                          if (!n) return;
+                          setUser(n);
+                          try { localStorage.setItem('memotiles_user', n); } catch {}
+                          setTempUser('');
+                          showToast('✓ Name saved!');
+                        }}
+                        style={{
+                          padding: '0 16px', borderRadius: 11, border: 'none',
+                          background: tempUser.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
+                          color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+                          flexShrink: 0, transition: 'background 0.2s',
+                        }}
+                      >Save</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Board seçimi — her zaman görünür */}
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 16, padding: 15, border: '1px solid rgba(255,255,255,0.15)' }}>
+                    <p style={{ color: '#ffe082', fontWeight: 800, margin: '0 0 10px', textAlign: 'center', fontSize: 14 }}>Select Board</p>
+                    {Object.entries(GRID_CONFIGS).map(([key, val]) => (
+                      <button key={key} onClick={() => setMode(key)} style={{
+                        width: '100%', padding: '12px 14px', marginBottom: 7, borderRadius: 10,
+                        border: `2px solid ${mode === key ? '#ffb300' : 'rgba(255,255,255,0.2)'}`,
+                        background: mode === key ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
+                        color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        boxShadow: mode === key ? '0 4px 14px rgba(243,156,18,0.4)' : 'none',
+                      }}>
+                        <span>{val.label}</span>
+                        <span style={{ fontSize: 11, background: 'rgba(0,0,0,0.25)', borderRadius: 6, padding: '2px 8px' }}>{val.difficulty}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {/* Daily Challenge Button — reacts to selected board mode */}
+                  {(() => {
+                    const doneForMode = todayDoneForMode(mode);
+                    return (
+                      <button onClick={() => {
+                        if (doneForMode) {
+                          const r = getDailyResult(mode);
+                          if (r) {
+                            setDailyResult(r);
+                            setDailyModeKey(mode);
+                            (async () => {
+                              try {
+                                if (db) {
+                                  const snap = await db.collection('daily_scores')
+                                    .where('dateKey','==',getDailyDateKey())
+                                    .where('gridMode','==',mode)
+                                    .get();
+                                  const all = snap.docs.map(d => d.data().score || 0).sort((a,b)=>b-a);
+                                  setDailyTotal(all.length);
+                                  setDailyRank(all.findIndex(s => s <= r.score) + 1 || all.length);
+                                }
+                              } catch {}
+                              setShowDailyModal(true);
+                            })();
+                          }
+                        } else {
+                          startDailyChallenge(mode);
+                        }
+                      }} style={{
+                        width:'100%', padding:'14px 15px', borderRadius:14,
+                        background: doneForMode
+                          ? 'linear-gradient(135deg,#b35a00,#e67e22)'
+                          : 'linear-gradient(135deg,#f39c12,#e67e22)',
+                        border: doneForMode ? 'none' : '2px solid rgba(255,220,80,0.5)',
+                        cursor:'pointer',
+                        animation: doneForMode ? 'none' : 'dailyGlow 2s ease-in-out infinite',
+                        display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                        position:'relative',
+                      }}>
+                        <span style={{ fontSize:18 }}>{doneForMode ? '✅' : '🎯'}</span>
+                        <span style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:1 }}>
+                          <span style={{ color:'#fff', fontWeight:800, fontSize:17, lineHeight:1.2 }}>Daily Challenge</span>
+                          {!doneForMode && (
+                            <span style={{ color:'rgba(255,255,255,0.7)', fontSize:10, fontStyle:'italic', fontWeight:400, lineHeight:1 }}>once a day</span>
+                          )}
+                        </span>
+                        {dailyStreak.count > 0 && (
+                          <span style={{ fontSize:12, background:'rgba(0,0,0,0.2)',
+                            padding:'2px 8px', borderRadius:20,
+                            color:'#fff', fontWeight:700, marginLeft:'auto', flexShrink:0 }}>
+                            {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()}
+
+                  <button onClick={() => startGame(mode)} style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none',
+                    background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
+                    boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
+
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={() => setScreen('scores')} style={{ flex:1, padding: '12px', borderRadius: 14,
+                      border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
+                      color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>🏆 Scores</button>
+                    <button onClick={() => setScreen('profile')} style={{ flex:1, padding: '12px', borderRadius: 14,
+                      border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
+                      color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>👤 Profile</button>
+                  </div>
+                  {showInstallBanner && (
+                    <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* PROFILE */}
+            {screen === 'profile' && (
+              <div style={{ width:'100%', display:'flex', flexDirection:'column' }}>
+                <ProfileScreen
+                  user={user}
+                  scores={scores}
+                  onBack={() => setScreen('menu')}
+                />
+                {showInstallBanner && (
+                  <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+                )}
+              </div>
+            )}
+
+            {/* DAILY SCORES */}
+            {screen === 'daily_scores' && (
+              <div style={{ width:'100%', display:'flex', flexDirection:'column' }}>
+                <DailyScoresScreen
+                  onBack={() => setScreen('menu')}
+                  dateKey={getDailyDateKey()}
+                  gridMode={dailyModeKey}
+                  myScore={dailyResult ? dailyResult.score : 0}
+                />
+                {showInstallBanner && (
+                  <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+                )}
+              </div>
+            )}
+
+            {/* SCORES */}
+            {screen === 'scores' && (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <button onClick={() => setScreen('menu')} style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.2)',
+                    color: '#ffe082', borderRadius: 10, padding: '7px 13px', cursor: 'pointer', fontSize: 16 }}>←</button>
+                  <h2 style={{ color: '#ffe082', fontFamily: 'Georgia,serif', margin: 0, fontSize: 20,
+                    textShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>🏆 High Scores</h2>
+                </div>
+                <div style={{ background: 'rgba(0,0,0,0.5)', borderRadius: 16, padding: '14px 10px',
+                  border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)' }}>
+                  <ScoreBoard
+                    scores={scores}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    activeCategory={scoreCategory}
+                    onCategoryChange={setScoreCategory}
+                    // BUG FIX #4: Firebase'den de siliniyor artık
+                    onClearCategory={async (cat) => {
+                      await clearScoresFromCloud(cat);
+                      setScores(prev => prev.filter(s => s.mode !== cat));
+                    }}
+                  />
+                </div>
+              {showInstallBanner && (
+                <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+              )}
+              </div>
+            )}
+
+            {/* GAME */}
+            {screen === 'game' && (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', borderRadius: 10 }}>
+                  <button onClick={() => { if (running || moves > 0) setShowExitConfirm(true); else { setRunning(false); setScreen('menu'); } }}
+                    style={{ background: 'none', border: 'none', color: '#ffe082', fontSize: 20, cursor: 'pointer', padding: '0 4px' }}>←</button>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#ffe082', fontWeight: 900, fontSize: 16 }}>{score.toLocaleString()}</div>
+                      <div style={{ color: '#c8a96e', fontSize: 9, letterSpacing: 0.5 }}>SCORE</div>
+                    </div>
+                    <div style={{ width: 1, background: '#7a5c2e' }} />
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#f5d78e', fontWeight: 800, fontSize: 16 }}>{moves}</div>
+                      <div style={{ color: '#c8a96e', fontSize: 9 }}>MOVES</div>
+                    </div>
+                    <div style={{ width: 1, background: '#7a5c2e' }} />
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#f5d78e', fontWeight: 800, fontSize: 16 }}>{formatTime(time)}</div>
+                      <div style={{ color: '#c8a96e', fontSize: 9 }}>TIME</div>
+                    </div>
+                    <div style={{ width: 1, background: '#7a5c2e' }} />
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#f5d78e', fontWeight: 800, fontSize: 16 }}>{matched}/{totalPairs}</div>
+                      <div style={{ color: '#c8a96e', fontSize: 9 }}>PAIRS</div>
+                    </div>
+                  </div>
+                  <button onClick={() => startGame(mode)}
+                    style={{ background: 'none', border: 'none', color: '#ffe082', fontSize: 20, cursor: 'pointer', padding: '0 4px' }}>↺</button>
+                </div>
+
+                {/* Progress bar */}
+                <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
+                  <div style={{ height: '100%', background: 'linear-gradient(90deg,#27ae60,#2ecc71)',
+                    width: `${(matched/totalPairs)*100}%`, transition: 'width 0.4s ease', borderRadius: 2 }} />
+                </div>
+
+                {/* Combo banner */}
+                {combo >= 2 && (
+                  <div style={{ width: '100%', padding: '4px 0', textAlign: 'center',
+                    background: combo >= 3 ? 'linear-gradient(90deg,rgba(243,156,18,0.9),rgba(230,126,34,0.9))' : 'linear-gradient(90deg,rgba(39,174,96,0.85),rgba(46,204,113,0.85))',
+                    color: '#fff', fontWeight: 900, fontSize: combo >= 3 ? 14 : 12, letterSpacing: 1,
+                    animation: 'comboBanner 0.4s ease' }}>
+                    {combo >= 3 ? `🔥 COMBO x${combo} — AMAZING!` : `⚡ Combo x${combo}!`}
+                  </div>
+                )}
+
+                {/* Hint */}
+                <div className={"ms-hint" + (showHint ? "" : " hide")}>
+                  Match all pairs with minimum moves and maximum speed.
+                </div>
+
+                {/* Board */}
+                <div ref={boardRef} style={{ padding: '8px', width: '100%', maxWidth: '100%',
+                  boxSizing: 'border-box', overflow: 'hidden',
+                  boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)', borderRadius: 12, border: '2px solid rgba(90,54,32,0.6)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cfg.cols}, ${tileW}px)`, gap: `${GAP}px`, justifyContent: 'center' }}>
+                    {tiles.map(tile => (
+                      <div key={tile.id} className={(shake && shake.includes(tile.id) ? 'shake-tile ' : '') + (matchAnim.includes(tile.id) ? 'match-tile' : '')}>
+                        <Tile tile={tile} onClick={handleTile} size={tileW} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {won && (
+            <WinModal
+              moves={moves}
+              time={time}
+              mode={mode}
+              score={score}
+              comboBonus={comboBonus}
+              rank={rank}
+              user={user}
+              scoreDocId={scoreDocId}
+              onReplay={() => startGame(mode)}
+              onMenu={() => { setWon(false); setScreen('menu'); }}
+              onScores={() => { setWon(false); setScreen('scores'); }}
+              onSaveName={(name) => {
+                setUser(name);
+                try { localStorage.setItem('memotiles_user', name); } catch {}
+                showToast('✓ Name saved!');
+              }}
+              onScoreDoubled={() => {
+                const boosted = score + 100;
+                setScore(boosted);
+                submitScoreToCloud({
+                  user: user || 'Guest',
+                  mode,
+                  moves,
+                  time,
+                  score: boosted,
+                }).then(docId => { if (docId) setScoreDocId(docId); });
+                showToast('🎬 +100 bonus puan!');
+              }}
+            />
+          )}
+          {showSettings && (
+            <SettingsModal
+              onClose={() => setShowSettings(false)}
+              settings={settings}
+            />
+          )}
+
+          {showDailyModal && dailyResult && (
+            <DailyCompleteModal
+              result={dailyResult}
+              streak={dailyStreak}
+              alreadyDone={todayDoneForMode(dailyModeKey) && screen === 'menu'}
+              user={user}
+              dailyRank={dailyRank}
+              dailyTotal={dailyTotal}
+              personalBest={dailyPersonalBest}
+              onSaveName={(name) => {
+                setUser(name);
+                try { localStorage.setItem('memotiles_user', name); } catch {}
+                if (dailyDocId && db) {
+                  db.collection('daily_scores').doc(dailyDocId).update({ user: name }).catch(function(){});
+                }
+              }}
+              onLeaderboard={() => { setShowDailyModal(false); setScreen('daily_scores'); }}
+              onMenu={() => { setShowDailyModal(false); setScreen('menu'); }}
+              onShare={() => {
+                const fmtT = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+                const today = new Date();
+                const dateLabel = today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+                const fire = dailyStreak.count >= 7 ? '🔥' : dailyStreak.count >= 3 ? '⚡' : '✨';
+                const rankTxt = dailyRank ? ' | #' + dailyRank + ' today' : '';
+                const text = [
+                  '🎯 MindSharp Daily Challenge',
+                  dateLabel,
+                  '\u23f1 ' + fmtT(dailyResult.time) + '  \u{1F0CF} ' + dailyResult.moves + ' moves  \u{1F3C6} ' + dailyResult.score.toLocaleString() + ' pts' + rankTxt,
+                  fire + ' ' + dailyStreak.count + ' day streak!',
+                  'mindsharp.co'
+                ].join('\n');
+                if (navigator.share) navigator.share({ text: text }).catch(function(){});
+                else navigator.clipboard.writeText(text).catch(function(){});
+              }}
+            />
+          )}
+
+          {showExitConfirm && (
+            <ConfirmDialog
+              title="Quit Game?"
+              message="Your current progress will be lost. Are you sure you want to return to the menu?"
+              confirmLabel="Quit"
+              onConfirm={() => { setShowExitConfirm(false); setRunning(false); setWon(false); setScreen('menu'); }}
+              onCancel={() => setShowExitConfirm(false)}
+            />
+          )}
+
+          {toast && <div className="ms-toast">{toast}</div>}
+
+          {showOnboarding && (
+            <OnboardingModal
+              onDone={() => setShowOnboarding(false)}
+              playSound={play}
+              sfxEnabled={settings.sfx}
+            />
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    // Hide loader after React paints first frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const loader = document.getElementById('ms-loader');
+        if (loader) loader.style.display = 'none';
+      });
+    });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('[SW] Registered'))
+        .catch(err => console.warn('[SW] Failed:', err));
+    }
+  </script>
+  <script>
+    // Capture Android install prompt globally — before React mounts
+    window.__installPromptEvent = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.__installPromptEvent = e;
+      console.log('[PWA] Install prompt captured');
+      // Notify React if it's already mounted
+      if (window.__onInstallPromptReady) window.__onInstallPromptReady();
+    });
+    window.addEventListener('appinstalled', function() {
+      window.__installPromptEvent = null;
+      try { localStorage.setItem('ms_pwa_installed', '1'); } catch {}
+      console.log('[PWA] App installed');
+      if (window.__onAppInstalled) window.__onAppInstalled();
+    });
+  </script>
+</body>
+</html>
