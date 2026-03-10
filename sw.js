@@ -1,17 +1,21 @@
 // ============================================================
-// MindSharp Service Worker v2
+// MindSharp Service Worker
+// Tüm kritik dosyaları önbelleğe alır — offline çalışmayı sağlar
 // ============================================================
+
 const CACHE_NAME = 'mindsharp-v2';
 
+// Önbelleğe alınacak dosyalar
 const ASSETS = [
   './',
   './index.html',
-  './music.mp3',
   './wood_bg.png',
+  './music.mp3',
   './manifest.json',
   './favicon.ico',
   './icon-192.png',
   './icon-512.png',
+  // CDN kütüphaneleri — ilk açılışta önbelleğe alınır
   'https://unpkg.com/react@18/umd/react.development.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.development.js',
   'https://unpkg.com/@babel/standalone/babel.min.js',
@@ -19,10 +23,12 @@ const ASSETS = [
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js',
 ];
 
+// ── INSTALL: tüm dosyaları önbelleğe al ─────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching assets...');
+      // Her dosyayı tek tek dene — biri başarısız olsa diğerleri etkilenmesin
       return Promise.allSettled(
         ASSETS.map((url) =>
           cache.add(url).catch((err) =>
@@ -37,6 +43,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// ── ACTIVATE: eski cache'leri temizle ───────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -55,19 +62,25 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// ── FETCH: önce cache, sonra network ────────────────────────
 self.addEventListener('fetch', (event) => {
+  // Firebase / Google API isteklerini ATLAT — her zaman network'ten al
   if (
     event.request.url.includes('firestore.googleapis.com') ||
     event.request.url.includes('firebase') ||
-    event.request.url.includes('googleapis.com')
+    event.request.url.includes('googleapis.com') ||
+    event.request.url.includes('googletagmanager.com') ||
+    event.request.url.includes('google-analytics.com')
   ) {
     return;
   }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
+
       return fetch(event.request)
         .then((networkResponse) => {
           if (
