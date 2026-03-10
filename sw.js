@@ -1,21 +1,17 @@
 // ============================================================
-// MindSharp Service Worker
-// Tüm kritik dosyaları önbelleğe alır — offline çalışmayı sağlar
+// MindSharp Service Worker v2
 // ============================================================
+const CACHE_NAME = 'mindsharp-v2';
 
-const CACHE_NAME = 'mindsharp-v1';
-
-// Önbelleğe alınacak dosyalar
-// Projenizde farklı dosya ismi varsa buraya ekleyin
 const ASSETS = [
   './',
   './index.html',
+  './music.mp3',
   './wood_bg.png',
   './manifest.json',
   './favicon.ico',
   './icon-192.png',
   './icon-512.png',
-  // CDN kütüphaneleri — ilk açılışta önbelleğe alınır
   'https://unpkg.com/react@18/umd/react.development.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.development.js',
   'https://unpkg.com/@babel/standalone/babel.min.js',
@@ -23,12 +19,10 @@ const ASSETS = [
   'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js',
 ];
 
-// ── INSTALL: tüm dosyaları önbelleğe al ─────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching assets...');
-      // Her dosyayı tek tek dene — biri başarısız olsa diğerleri etkilenmesin
       return Promise.allSettled(
         ASSETS.map((url) =>
           cache.add(url).catch((err) =>
@@ -38,12 +32,11 @@ self.addEventListener('install', (event) => {
       );
     }).then(() => {
       console.log('[SW] Install complete');
-      return self.skipWaiting(); // Hemen aktif ol, sayfayı yenilemeyi bekleme
+      return self.skipWaiting();
     })
   );
 });
 
-// ── ACTIVATE: eski cache'leri temizle ───────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -57,34 +50,26 @@ self.addEventListener('activate', (event) => {
       )
     ).then(() => {
       console.log('[SW] Activate complete');
-      return self.clients.claim(); // Açık sekmeleri hemen devral
+      return self.clients.claim();
     })
   );
 });
 
-// ── FETCH: önce cache, sonra network ────────────────────────
 self.addEventListener('fetch', (event) => {
-  // Firebase Firestore isteklerini ATLAT — her zaman network'ten al
-  // (skor kaydı ve leaderboard gerçek zamanlı çalışsın)
   if (
     event.request.url.includes('firestore.googleapis.com') ||
     event.request.url.includes('firebase') ||
     event.request.url.includes('googleapis.com')
   ) {
-    return; // Service Worker müdahale etmez, direkt network
+    return;
   }
-
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Cache'de varsa: cache'den dön
       if (cachedResponse) {
         return cachedResponse;
       }
-
-      // Cache'de yoksa: network'ten al ve cache'e ekle
       return fetch(event.request)
         .then((networkResponse) => {
-          // Sadece geçerli GET isteklerini cache'e ekle
           if (
             networkResponse &&
             networkResponse.status === 200 &&
@@ -98,8 +83,6 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // Network de yoksa ve cache'de de yoksa:
-          // index.html'i fallback olarak dön (SPA için)
           if (event.request.destination === 'document') {
             return caches.match('./index.html');
           }
