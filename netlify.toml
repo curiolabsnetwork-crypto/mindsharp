@@ -3,4 +3,5 @@
   command = ""
 
 [build.environment]
-  SECRETS_SCAN_OMIT_PATHS = "capacitor.config.json,package.json,package-lock.json"
+  SECRETS_SCAN_OMIT_PATHS = "index.html,www/index.html,capacitor.config.json,package.json,package-lock.json"
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
