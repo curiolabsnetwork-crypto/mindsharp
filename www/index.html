@@ -1035,8 +1035,8 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: 'Classic',         difficulty: 'Classic' },
-      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: 'Hard',            difficulty: 'Hard'    },
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: 'Classic',         difficulty: 'Classic', tileCount: 32 },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: 'Hard',            difficulty: 'Hard',    tileCount: 56 },
     };
     const PREVIEW_TILES = [
       { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -2352,7 +2352,6 @@ CONTACT
         },
         about: {
           title: '🎮 About MindSharp',
-          // BUG FIX #5: Var olmayan "Very Hard 80 tiles (10x8)" modu kaldırıldı
           body: `MindSharp v1.0
 © 2026 Mendebur Studios
 
@@ -2901,7 +2900,6 @@ Istanbul, Turkey 🇹🇷`
         if (lockRef.current) return;
         if (!running) setRunning(true);
 
-        // BUG FIX #1: SFX kontrolü tek yerde, doğru şekilde
         if (settings.sfx) play('flip');
 
         setTiles(prev => prev.map(t => t.id === id ? { ...t, flipped: true } : t));
@@ -2919,7 +2917,6 @@ Istanbul, Turkey 🇹🇷`
                   setCombo(newCombo);
 
                   let bonusPts = 0;
-                  // BUG FIX #1 & #2: if/else zinciri düzeltildi, ses tek çağrılıyor
                   if (newCombo >= 3) {
                     bonusPts = 60;
                     if (settings.sfx) play('combo3');
@@ -2951,8 +2948,6 @@ Istanbul, Turkey 🇹🇷`
 
                     setMoves((mv) => {
                       setTime((tm) => {
-                        // BUG FIX #3: moves zaten mv (setMoves'dan gelen güncel değer),
-                        // +1 eklemiyoruz çünkü setMoves(m => m+1) zaten çağrıldı
                         const finalScore = calcScore({
                           pairs: cfg.pairs,
                           moves: mv,
@@ -3021,7 +3016,6 @@ Istanbul, Turkey 🇹🇷`
                           });
                         }
 
-                        // İstatistikleri kaydet
                         recordGameStats({
                           mode,
                           moves: mv,
@@ -3030,7 +3024,6 @@ Istanbul, Turkey 🇹🇷`
                           comboBonus: comboBonusRef.current,
                         });
 
-                        // BUG FIX #6: Firebase'den kesin rank al (race condition azaltıldı)
                         setTimeout(async () => {
                           if (!db) return;
                           try {
@@ -3057,7 +3050,6 @@ Istanbul, Turkey 🇹🇷`
                 } else {
                   comboRef.current = 0;
                   setCombo(0);
-                  // BUG FIX #1: SFX kontrolü doğru
                   if (settings.sfx) play('fail');
                   if (settings.vibration && navigator.vibrate) navigator.vibrate([30, 20, 30]);
                   setShake(next);
@@ -3117,7 +3109,6 @@ Istanbul, Turkey 🇹🇷`
             @media (max-width: 420px) {
               .contentWrap { padding: calc(env(safe-area-inset-top, 0px) + 44px) 18px 32px; }
             }
-            /* BUG FIX #4 CSS: "f\nrom" → "from" düzeltildi */
             @keyframes popIn {
               from { transform: scale(0.5); opacity: 0; }
               to   { transform: scale(1);   opacity: 1; }
@@ -3256,20 +3247,26 @@ Istanbul, Turkey 🇹🇷`
                   </div>
                 )}
 
-                {/* Board seçimi — her zaman görünür */}
+                {/* Board seçimi — UPDATED: steel blue selected + tile count */}
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 16, padding: 15, border: '1px solid rgba(255,255,255,0.15)' }}>
                     <p style={{ color: '#ffe082', fontWeight: 800, margin: '0 0 10px', textAlign: 'center', fontSize: 14 }}>Select Board</p>
                     {Object.entries(GRID_CONFIGS).map(([key, val]) => (
                       <button key={key} onClick={() => setMode(key)} style={{
                         width: '100%', padding: '12px 14px', marginBottom: 7, borderRadius: 10,
-                        border: `2px solid ${mode === key ? '#ffb300' : 'rgba(255,255,255,0.2)'}`,
-                        background: mode === key ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
+                        border: `2px solid ${mode === key ? '#5B9BD5' : 'rgba(255,255,255,0.2)'}`,
+                        background: mode === key ? 'linear-gradient(135deg,#4682B4,#5B9BD5)' : 'rgba(255,255,255,0.1)',
                         color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        boxShadow: mode === key ? '0 4px 14px rgba(243,156,18,0.4)' : 'none',
+                        boxShadow: mode === key ? '0 4px 14px rgba(70,130,180,0.45)' : 'none',
                       }}>
                         <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: 0.5 }}>{val.label}</span>
+                        <span style={{
+                          fontSize: 12, fontWeight: 700,
+                          color: mode === key ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.5)',
+                          background: mode === key ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)',
+                          padding: '3px 10px', borderRadius: 6,
+                        }}>{val.tileCount} Tiles</span>
                       </button>
                     ))}
                   </div>
@@ -3395,7 +3392,6 @@ Istanbul, Turkey 🇹🇷`
                     onSortChange={setSortBy}
                     activeCategory={scoreCategory}
                     onCategoryChange={setScoreCategory}
-                    // BUG FIX #4: Firebase'den de siliniyor artık
                     onClearCategory={async (cat) => {
                       await clearScoresFromCloud(cat);
                       setScores(prev => prev.filter(s => s.mode !== cat));
