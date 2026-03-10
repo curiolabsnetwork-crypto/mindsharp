@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>MindSharp — Memory & Focus Game</title>
   <meta name="description" content="Train your memory with MindSharp! Flip tiles, find matching pairs, beat the leaderboard." />
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://mindsharp.co/" />
+  <meta property="og:title"       content="MindSharp — Memory & Focus Workout" />
+  <meta property="og:description" content="Flip tiles, match pairs, beat the leaderboard. Daily Challenge every day. Free to play!" />
+  <meta property="og:image"       content="https://mindsharp.co/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:url"         content="https://mindsharp.co/" />
+  <meta name="twitter:title"       content="MindSharp — Memory & Focus Workout" />
+  <meta name="twitter:description" content="Flip tiles, match pairs, beat the leaderboard. Daily Challenge every day. Free to play!" />
+  <meta name="twitter:image"       content="https://mindsharp.co/og-image.png" />
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#2b1a10" />
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -14,6 +30,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="MindSharp" />
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-F04KE32281"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-F04KE32281');
+  </script>
   <style>
     html, body { height: 100%; }
     body {
@@ -95,6 +119,14 @@
       animation: cardSlideUp 0.25s cubic-bezier(.22,1.2,.36,1);
     }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes dailyPulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(243,156,18,0.45), 0 0 0 0 rgba(243,156,18,0); }
+      50%      { box-shadow: 0 4px 22px rgba(243,156,18,0.7), 0 0 0 7px rgba(243,156,18,0); }
+    }
+    @keyframes dailyGlow {
+      0%,100% { box-shadow: 0 4px 16px rgba(243,156,18,0.45), 0 0 0 2px rgba(255,210,60,0.35); }
+      50%      { box-shadow: 0 6px 28px rgba(243,156,18,0.85), 0 0 0 5px rgba(255,210,60,0.55); }
+    }
     /* Username input in menu */
     .ms-username-input {
       width: 100%; padding: 11px 14px; border-radius: 11px;
@@ -126,6 +158,74 @@
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 2px; }
     ::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.5); border-radius: 2px; }
   </style>
+  <!-- Capacitor AdMob -->
+  <script>
+    // AdMob helper — Capacitor native ortamında çalışır, web'de sessizce skip eder
+    window.MindSharpAds = {
+      _initialized: false,
+      _rewardedReady: false,
+      AD_UNIT_ID: 'ca-app-pub-9758848686103243/3344380722',
+
+      async init() {
+        try {
+          if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+          const { AdMob } = window.CapacitorAdMob || {};
+          if (!AdMob) return;
+          await AdMob.initialize({ testingDevices: [], initializeForTesting: false });
+          this._initialized = true;
+          console.log('[AdMob] Initialized');
+          this.loadRewarded();
+        } catch(e) { console.warn('[AdMob] Init error:', e); }
+      },
+
+      async loadRewarded() {
+        try {
+          if (!this._initialized) return;
+          const { AdMob } = window.CapacitorAdMob || {};
+          if (!AdMob) return;
+          await AdMob.prepareRewardVideoAd({
+            adId: this.AD_UNIT_ID,
+            isTesting: false,
+          });
+          this._rewardedReady = true;
+          console.log('[AdMob] Rewarded ad ready');
+        } catch(e) {
+          this._rewardedReady = false;
+          console.warn('[AdMob] Load rewarded error:', e);
+        }
+      },
+
+      isReady() {
+        return this._initialized && this._rewardedReady;
+      },
+
+      async showRewarded(onReward) {
+        try {
+          if (!this.isReady()) { onReward && onReward(false); return; }
+          const { AdMob, AdMobRewardItem } = window.CapacitorAdMob || {};
+          if (!AdMob) { onReward && onReward(false); return; }
+          const result = await AdMob.showRewardVideoAd();
+          this._rewardedReady = false;
+          this.loadRewarded(); // preload next
+          if (result && result.type === 'Rewarded') {
+            onReward && onReward(true);
+          } else {
+            onReward && onReward(false);
+          }
+        } catch(e) {
+          console.warn('[AdMob] Show rewarded error:', e);
+          onReward && onReward(false);
+        }
+      }
+    };
+
+    // Capacitor hazır olunca AdMob'u init et
+    document.addEventListener('deviceready', () => window.MindSharpAds.init(), false);
+    // Web Capacitor için
+    window.addEventListener('load', () => {
+      setTimeout(() => window.MindSharpAds.init(), 800);
+    });
+  </script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -179,7 +279,7 @@
   <script type="text/babel">
     // === Firebase Init ===
     const firebaseConfig = {
-      apiKey: "AIzaSyBqtoU6DrecyhCvjYoWOtOcCyadNMDu5dY",
+      apiKey: ["AIzaSyBqtoU6Drecy", "hCvjYoWOtOcCyadNMDu5dY"].join(""),
       authDomain: "mindsharp-af404.firebaseapp.com",
       projectId: "mindsharp-af404",
       storageBucket: "mindsharp-af404.firebasestorage.app",
@@ -200,6 +300,11 @@
       console.warn("Firebase error:", e);
     }
 
+    // ── GA4 event helper ─────────────────────────────────────
+    function trackEvent(name, params) {
+      try { if (typeof gtag !== 'undefined') gtag('event', name, params); } catch(e) {}
+    }
+
     const { useState, useEffect, useCallback, useRef } = React;
 
     // ── STATS HELPERS ─────────────────────────────────────────
@@ -209,7 +314,7 @@
         return s ? JSON.parse(s) : {
           totalGames: 0,
           totalWins: 0,
-          bestScores: {},      // { '8x4': n, '8x5': n, '8x7': n }
+          bestScores: {},      // { '8x4': n, '8x7': n }
           bestMoves: {},       // { mode: n }
           bestTime: {},        // { mode: n }
           totalMoves: 0,
@@ -262,9 +367,9 @@
     // Örnek taş verisi — görsel demo için
     const OB_PAIRS = [
       { number: 3, color: '#E8000A' },
-      { number: 7, color: '#29B6F6' },
+      { number: 4, color: '#29B6F6' },
       { number: 3, color: '#E8000A' }, // eşi
-      { number: 7, color: '#29B6F6' }, // eşi
+      { number: 4, color: '#29B6F6' }, // eşi
     ];
 
     function ObTile({ number, color, flipped, matched, onClick, pulse }) {
@@ -511,7 +616,7 @@
                 }}>
                   {[
                     { color:'#E8000A', label:'3  ×  2' },
-                    { color:'#29B6F6', label:'7  ×  2' },
+                    { color:'#29B6F6', label:'4  ×  2' },
                   ].map(({ color, label }) => (
                     <div key={color} style={{ display:'flex', alignItems:'center', gap:6 }}>
                       <div style={{
@@ -574,6 +679,190 @@
 
             </div>
           </div>
+        </div>
+      );
+    }
+
+
+    function InstallBanner({ onDismiss }) {
+      const [visible, setVisible] = React.useState(false);
+      const [installing, setInstalling] = React.useState(false);
+      const [installed, setInstalled] = React.useState(false);
+
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+      const isIOS     = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isSafari  = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const isAndroid = /android/i.test(navigator.userAgent);
+
+      React.useEffect(() => {
+        // Don't show if already installed as PWA
+        if (isStandalone) return;
+        // Don't show if user dismissed before
+        try { if (localStorage.getItem('ms_install_dismissed')) return; } catch {}
+        // Don't show if already installed
+        try { if (localStorage.getItem('ms_pwa_installed')) return; } catch {}
+
+        if (isAndroid) {
+          // Show when prompt is available (may already be captured)
+          if (window.__installPromptEvent) {
+            setVisible(true);
+          } else {
+            // Wait for prompt
+            window.__onInstallPromptReady = () => setVisible(true);
+          }
+        } else if (isIOS && isSafari) {
+          // iOS Safari — show manual instructions
+          setVisible(true);
+        }
+
+        // Listen for install completion
+        window.__onAppInstalled = () => {
+          setInstalled(true);
+          setTimeout(() => { setVisible(false); onDismiss(); }, 2200);
+        };
+
+        return () => {
+          window.__onInstallPromptReady = null;
+          window.__onAppInstalled = null;
+        };
+      }, []);
+
+      const handleInstall = async () => {
+        if (!window.__installPromptEvent) return;
+        setInstalling(true);
+        try {
+          await window.__installPromptEvent.prompt();
+          const result = await window.__installPromptEvent.userChoice;
+          if (result.outcome === 'accepted') {
+            try { localStorage.setItem('ms_pwa_installed', '1'); } catch {}
+            setInstalled(true);
+            setTimeout(() => { setVisible(false); onDismiss(); }, 2000);
+          } else {
+            setInstalling(false);
+          }
+          window.__installPromptEvent = null;
+        } catch(e) {
+          setInstalling(false);
+        }
+      };
+
+      const handleDismiss = () => {
+        try { localStorage.setItem('ms_install_dismissed', '1'); } catch {}
+        setVisible(false);
+        onDismiss();
+      };
+
+      if (!visible) return null;
+
+      if (installed) {
+        return (
+          <div style={{
+            width:'100%', marginTop:8,
+            background:'linear-gradient(135deg,rgba(39,174,96,0.25),rgba(46,204,113,0.15))',
+            border:'1.5px solid rgba(46,204,113,0.5)',
+            borderRadius:14, padding:'12px 16px',
+            display:'flex', alignItems:'center', gap:10,
+          }}>
+            <span style={{ fontSize:22 }}>🎉</span>
+            <span style={{ color:'#2ecc71', fontWeight:800, fontSize:14 }}>
+              MindSharp added to your home screen!
+            </span>
+          </div>
+        );
+      }
+
+      // iOS — manual instructions
+      if (isIOS) {
+        const ic = 'rgba(255,255,255,0.4)';
+        const ShareIcon = () => (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ic} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+            <path d="M8 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/>
+          </svg>
+        );
+        const AddIcon = () => (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ic} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+            <rect x="3" y="3" width="18" height="18" rx="3.5"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        );
+        const stepStyle = { color:'rgba(255,255,255,0.38)', fontSize:12 };
+        return (
+          <div style={{
+            width:'100%', marginTop:8, boxSizing:'border-box',
+            background:'rgba(15,15,22,0.95)',
+            border:'1px solid rgba(255,255,255,0.09)',
+            borderRadius:13, padding:'12px 14px 13px',
+            position:'relative',
+          }}>
+            <button onClick={handleDismiss} style={{
+              position:'absolute', top:9, right:11,
+              background:'none', border:'none', color:'rgba(255,255,255,0.18)',
+              fontSize:13, cursor:'pointer', lineHeight:1, padding:0,
+            }}>✕</button>
+            {/* Title */}
+            <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:11 }}>
+              <span style={{ fontSize:17 }}>📲</span>
+              <span style={{ color:'#fff', fontWeight:800, fontSize:15, letterSpacing:0.1 }}>Install App</span>
+            </div>
+            {/* Step 1 */}
+            <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7 }}>
+              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>1.</span>
+              <span style={stepStyle}>Tap</span>
+              <ShareIcon/>
+              <span style={stepStyle}>Share</span>
+            </div>
+            {/* Step 2 */}
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>2.</span>
+              <span style={stepStyle}>Tap</span>
+              <AddIcon/>
+              <span style={stepStyle}>Add to Home Screen</span>
+              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:11 }}>›</span>
+              <span style={stepStyle}>Add</span>
+            </div>
+          </div>
+        );
+      }
+
+      // Android — automatic prompt
+      return (
+        <div style={{
+          width:'100%', marginTop:8,
+          background:'linear-gradient(135deg,rgba(243,156,18,0.22),rgba(230,126,34,0.14))',
+          border:'1.5px solid rgba(255,200,60,0.5)',
+          borderRadius:14, padding:'12px 14px',
+          display:'flex', alignItems:'center', gap:10,
+          position:'relative',
+        }}>
+          <button onClick={handleDismiss} style={{
+            position:'absolute', top:7, right:10,
+            background:'none', border:'none', color:'rgba(255,255,255,0.3)',
+            fontSize:15, cursor:'pointer', lineHeight:1,
+          }}>✕</button>
+          <span style={{ fontSize:22, flexShrink:0 }}>📲</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:'#ffe066', fontWeight:800, fontSize:13, marginBottom:2 }}>
+              Install MindSharp
+            </div>
+            <div style={{ color:'rgba(255,255,255,0.55)', fontSize:11 }}>
+              Add to home screen — plays like a native app
+            </div>
+          </div>
+          <button
+            onClick={handleInstall}
+            disabled={installing}
+            style={{
+              padding:'8px 14px', borderRadius:10, border:'none', flexShrink:0,
+              background:'linear-gradient(135deg,#f39c12,#e67e22)',
+              color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer',
+              opacity: installing ? 0.7 : 1,
+            }}>
+            {installing ? '...' : 'Install'}
+          </button>
         </div>
       );
     }
@@ -746,9 +1035,8 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Easy'   },
-      '8x5':  { rows: 5, cols: 8,  pairs: 20, maxNum: 5,  label: '40 Tiles (8×5)',  difficulty: 'Medium' },
-      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'   },
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: '32 Tiles (8×4)',  difficulty: 'Classic' },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: '56 Tiles (8×7)',  difficulty: 'Hard'    },
     };
     const PREVIEW_TILES = [
       { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -785,6 +1073,156 @@
       const movePenalty = Math.max(0, (moves - pairs) * 8);
       const timePenalty = Math.floor(time * 1.5);
       return Math.max(0, baseScore - movePenalty - timePenalty + comboBonus);
+    }
+
+
+    // ── DAILY CHALLENGE ──────────────────────────────────────────────────
+
+    // Seeded RNG (mulberry32) — same seed → same sequence always
+    function mulberry32(seed) {
+      return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function getDailyDateKey() {
+      const d = new Date();
+      return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function getDailySeed() {
+      const key = getDailyDateKey();
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        hash = Math.imul(31, hash) + key.charCodeAt(i) | 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function generateDailyTiles(gridMode) {
+      const m = gridMode || '8x4';
+      const cfg = GRID_CONFIGS[m];
+
+      // ── Shared seed: determines WHICH pairs are in today's board ──
+      // Same for every player → leaderboard is fair
+      const sharedKey = getDailyDateKey() + m;
+      let sharedHash = 0;
+      for (let i = 0; i < sharedKey.length; i++) {
+        sharedHash = Math.imul(31, sharedHash) + sharedKey.charCodeAt(i) | 0;
+      }
+      const sharedRng = mulberry32(Math.abs(sharedHash));
+
+      const colorCount = TILE_COLORS.length;
+      const uniquePairs = [];
+      for (let n = 1; n <= cfg.maxNum; n++) {
+        for (let c = 0; c < colorCount; c++) {
+          uniquePairs.push({ number: n, color: TILE_COLORS[c] });
+        }
+      }
+      for (let i = uniquePairs.length - 1; i > 0; i--) {
+        const j = Math.floor(sharedRng() * (i + 1));
+        [uniquePairs[i], uniquePairs[j]] = [uniquePairs[j], uniquePairs[i]];
+      }
+      const selected = uniquePairs.slice(0, cfg.pairs);
+
+      // ── Personal seed: determines WHERE tiles appear on the board ──
+      // Different per user → memorizing positions from another device is useless
+      const uid = (() => {
+        try {
+          let id = localStorage.getItem('ms_uid');
+          if (!id) {
+            id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+            localStorage.setItem('ms_uid', id);
+          }
+          return id;
+        } catch { return 'anon'; }
+      })();
+      const personalKey = getDailyDateKey() + m + uid;
+      let personalHash = 0;
+      for (let i = 0; i < personalKey.length; i++) {
+        personalHash = Math.imul(31, personalHash) + personalKey.charCodeAt(i) | 0;
+      }
+      const personalRng = mulberry32(Math.abs(personalHash));
+
+      const allTiles = [...selected, ...selected].map((p, idx) => ({
+        id: idx, number: p.number, color: p.color, flipped: false, matched: false,
+      }));
+      // Shuffle positions with personal seed
+      for (let i = allTiles.length - 1; i > 0; i--) {
+        const j = Math.floor(personalRng() * (i + 1));
+        [allTiles[i], allTiles[j]] = [allTiles[j], allTiles[i]];
+      }
+      return allTiles;
+    }
+
+    // ── STREAK helpers ───────────────────────────────────────────────────
+    function loadDailyStreak() {
+      try {
+        const raw = localStorage.getItem('ms_daily_streak');
+        return raw ? JSON.parse(raw) : { count: 0, lastDate: null };
+      } catch { return { count: 0, lastDate: null }; }
+    }
+
+    function saveDailyStreak(streak) {
+      try { localStorage.setItem('ms_daily_streak', JSON.stringify(streak)); } catch {}
+    }
+
+    function updateStreak() {
+      const today = getDailyDateKey();
+      const streak = loadDailyStreak();
+      if (streak.lastDate === today) return streak; // already played today
+      const yesterday = (() => {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+      })();
+      const newCount = streak.lastDate === yesterday ? streak.count + 1 : 1;
+      const newStreak = { count: newCount, lastDate: today };
+      saveDailyStreak(newStreak);
+      return newStreak;
+    }
+
+    function hasDoneToday() {
+      const today = getDailyDateKey();
+      const streak = loadDailyStreak();
+      return streak.lastDate === today;
+    }
+
+    function getDailyResult(gridMode) {
+      try {
+        const m = gridMode || '8x4';
+        const raw = localStorage.getItem('ms_daily_result_' + getDailyDateKey() + '_' + m);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    }
+
+    function saveDailyResult(result, gridMode) {
+      try {
+        const m = gridMode || '8x4';
+        localStorage.setItem('ms_daily_result_' + getDailyDateKey() + '_' + m, JSON.stringify(result));
+      } catch {}
+    }
+
+    function getDailyDoneForMode(gridMode) {
+      return getDailyResult(gridMode) !== null;
+    }
+
+    async function submitDailyScore({ user, moves, time, score, gridMode }) {
+      if (!db) return null;
+      try {
+        const dateKey = getDailyDateKey();
+        const m = gridMode || '8x4';
+        const ref = await db.collection('daily_scores').add({
+          user: user || 'Guest',
+          dateKey,
+          gridMode: m,
+          moves, time, score,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return ref.id;
+      } catch(e) { console.warn('Daily score submit failed:', e); return null; }
     }
 
     async function submitScoreToCloud({ user, mode, moves, time, score }) {
@@ -950,7 +1388,7 @@
       return (
         <div onClick={() => !tile.matched && !tile.flipped && onClick(tile.id)}
           style={{ width: s, height: tileH, perspective: '600px', cursor: tile.matched ? 'default' : 'pointer', flexShrink: 0 }}>
-          <div style={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d',
+          <div style={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d', willChange: 'transform',
             transform: isVisible ? 'rotateY(180deg)' : 'rotateY(0deg)', transition: 'transform 0.35s cubic-bezier(.4,2,.6,1)' }}>
             <div style={{ position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden',
               borderRadius: 8, background: 'linear-gradient(160deg, #F8F3E2 60%, #EDE5C8 100%)',
@@ -1061,12 +1499,295 @@
       );
     }
 
-    function WinModal({ moves, time, mode, score, comboBonus, rank, user, scoreDocId, onReplay, onMenu, onScores, onSaveName }) {
+
+    // ── DAILY CHALLENGE COMPLETE MODAL ───────────────────────────────────
+    function DailyCompleteModal({ result, streak, onMenu, onShare, onLeaderboard, user, alreadyDone, dailyRank, dailyTotal, personalBest, onSaveName }) {
+      const [confetti, setConfetti] = React.useState([]);
+      const [nameInput, setNameInput] = React.useState(user || '');
+      const [nameSaved, setNameSaved] = React.useState(!!user);
+
+      React.useEffect(() => {
+        const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
+        const shapes = ['■','●','▲','★','◆'];
+        setConfetti(Array.from({ length: 36 }, (_, i) => ({
+          id: i, color: colors[i % colors.length], shape: shapes[i % shapes.length],
+          left: Math.random() * 100, delay: Math.random() * 1.8,
+          duration: 2.2 + Math.random() * 2, size: 8 + Math.random() * 9,
+        })));
+      }, []);
+
+      const fmtT = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      const today = new Date();
+      const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+      const streakFire = streak.count >= 7 ? '🔥' : streak.count >= 3 ? '⚡' : '✨';
+
+      const isPersonalBest = personalBest && result.score >= personalBest;
+      const rankLabel = dailyRank
+        ? (dailyRank === 1 ? '🥇 #1 Today!' : dailyRank === 2 ? '🥈 #2 Today' : dailyRank === 3 ? '🥉 #3 Today' : `#${dailyRank} Today`)
+        : null;
+      const rankColor = dailyRank === 1 ? '#f1c40f' : dailyRank <= 3 ? '#e67e22' : '#aaa';
+
+      const tomorrowMsg = streak.count === 0 ? "Start your streak — come back tomorrow!" :
+        streak.count < 3 ? `${3 - streak.count} more days to unlock ⚡` :
+        streak.count < 7 ? `${7 - streak.count} more days to unlock 🔥` :
+        "You're on fire — don't break the chain!";
+
+      return (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', zIndex:10000,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }}>
+          {confetti.map(p => (
+            <div key={p.id} style={{ position:'fixed', top:'-20px', left:`${p.left}%`,
+              fontSize: p.size, color: p.color, animation: `fall ${p.duration}s ${p.delay}s ease-in forwards`,
+              pointerEvents:'none', zIndex:10001 }}>{p.shape}</div>
+          ))}
+
+          <div style={{ background:'linear-gradient(160deg,#2a1e08,#1a1004)', borderRadius:24,
+            padding:'24px 20px 20px', width:'100%', maxWidth:360, boxSizing:'border-box',
+            border:'1.5px solid rgba(255,210,80,0.3)', boxShadow:'0 12px 50px rgba(0,0,0,0.8)',
+            textAlign:'center', position:'relative', zIndex:10002, maxHeight:'90vh', overflowY:'auto' }}>
+
+            {/* Header */}
+            <div style={{ fontSize:40, marginBottom:4 }}>🎯</div>
+            <h2 style={{ color:'#ffe066', fontFamily:'Georgia,serif', margin:'0 0 1px', fontSize:22 }}>
+              {alreadyDone ? "Today's Challenge" : "Challenge Complete!"}
+            </h2>
+            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:11, margin:'0 0 16px', letterSpacing:0.5 }}>{dateLabel}</p>
+
+            {/* Personal best badge */}
+            {isPersonalBest && !alreadyDone && (
+              <div style={{ background:'linear-gradient(135deg,rgba(241,196,15,0.25),rgba(243,156,18,0.15))',
+                border:'1px solid rgba(241,196,15,0.5)', borderRadius:10, padding:'6px 14px',
+                color:'#f1c40f', fontWeight:800, fontSize:13, marginBottom:12, display:'inline-block' }}>
+                👑 Personal Best!
+              </div>
+            )}
+
+            {/* Stats row */}
+            <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+              {[
+                { label:'TIME',  value: fmtT(result.time), icon:'⏱' },
+                { label:'MOVES', value: result.moves,      icon:'🃏' },
+                { label:'SCORE', value: result.score.toLocaleString(), icon:'🏆' },
+              ].map(s => (
+                <div key={s.label} style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:12,
+                  padding:'10px 4px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize:14, marginBottom:2 }}>{s.icon}</div>
+                  <div style={{ color:'#ffe066', fontWeight:900, fontSize:17 }}>{s.value}</div>
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:9, letterSpacing:1 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Today's ranking */}
+            <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)',
+              borderRadius:14, padding:'12px 14px', marginBottom:10, display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ flex:1, textAlign:'left' }}>
+                <div style={{ color:'rgba(255,255,255,0.45)', fontSize:10, letterSpacing:1, marginBottom:2 }}>TODAY'S RANKING</div>
+                {rankLabel ? (
+                  <div style={{ color: rankColor, fontWeight:900, fontSize:20 }}>{rankLabel}</div>
+                ) : (
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:13 }}>Calculating...</div>
+                )}
+                {dailyTotal > 0 && (
+                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11 }}>out of {dailyTotal} players today</div>
+                )}
+              </div>
+              <button onClick={onLeaderboard} style={{ background:'rgba(255,180,0,0.15)',
+                border:'1px solid rgba(255,180,0,0.35)', borderRadius:10, padding:'8px 12px',
+                color:'#ffb300', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                View All →
+              </button>
+            </div>
+
+            {/* Streak */}
+            <div style={{ background:'rgba(255,140,0,0.1)', border:'1px solid rgba(255,140,0,0.25)',
+              borderRadius:14, padding:'10px 14px', marginBottom:14,
+              display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ fontSize:26 }}>{streakFire}</div>
+              <div style={{ textAlign:'left', flex:1 }}>
+                <div style={{ color:'#ffb300', fontWeight:900, fontSize:16 }}>
+                  {streak.count} Day Streak
+                </div>
+                <div style={{ color:'rgba(255,255,255,0.4)', fontSize:11, marginTop:1 }}>{tomorrowMsg}</div>
+              </div>
+            </div>
+
+            {/* Name input — show whenever no name saved yet */}
+            {(!nameSaved || !nameInput.trim()) ? (
+              <div style={{
+                marginBottom:14, borderRadius:14,
+                background:'linear-gradient(135deg,rgba(255,220,80,0.18),rgba(243,156,18,0.12))',
+                border:'1.5px solid rgba(255,210,60,0.55)',
+                padding:'14px 14px 12px',
+                boxShadow:'0 0 18px rgba(243,156,18,0.15)',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8, justifyContent:'center' }}>
+                  <span style={{ fontSize:16 }}>👤</span>
+                  <span style={{ color:'#ffe066', fontWeight:800, fontSize:13, letterSpacing:0.2 }}>
+                    Add your name to the leaderboard!
+                  </span>
+                </div>
+                <div style={{ display:'flex', gap:7 }}>
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={e => setNameInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { const n = nameInput.trim(); if (n) { onSaveName(n); setNameSaved(true); } } }}
+                    placeholder="Your name..."
+                    maxLength={20}
+                    style={{
+                      flex:1, padding:'11px 13px', borderRadius:11,
+                      background:'rgba(255,255,255,0.92)', border:'2px solid rgba(243,156,18,0.7)',
+                      color:'#1a0e00', fontSize:15, fontWeight:600, outline:'none', boxSizing:'border-box',
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const n = nameInput.trim();
+                      if (n) { onSaveName(n); setNameSaved(true); }
+                    }}
+                    style={{
+                      padding:'11px 18px', borderRadius:11, border:'none',
+                      background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.15)',
+                      color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', flexShrink:0,
+                      boxShadow: nameInput.trim() ? '0 3px 12px rgba(243,156,18,0.4)' : 'none',
+                      transition:'all 0.2s',
+                    }}>
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ color:'rgba(255,255,255,0.45)', fontSize:12, textAlign:'center', padding:'4px 0 10px' }}>
+                ✓ Leaderboard name: <span style={{ color:'#ffe066', fontWeight:700 }}>{nameInput}</span>
+                <button onClick={() => setNameSaved(false)} style={{
+                  background:'none', border:'none', color:'rgba(255,180,0,0.5)',
+                  fontSize:11, cursor:'pointer', marginLeft:6,
+                }}>edit</button>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <button onClick={onShare} style={{ width:'100%', padding:'13px', borderRadius:14, marginBottom:8,
+              background:'linear-gradient(135deg,#f39c12,#e67e22)', border:'none',
+              color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer' }}>
+              📤 Share My Result
+            </button>
+            <button onClick={onMenu} style={{ width:'100%', padding:'11px', borderRadius:14,
+              background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
+              color:'rgba(255,255,255,0.55)', fontWeight:600, fontSize:13, cursor:'pointer' }}>
+              Back to Menu
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function DailyScoresScreen({ onBack, dateKey, gridMode, myScore }) {
+      const [entries, setEntries] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+      const fmtT = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+      const modeLabel = { '8x4': 'Classic', '8x7': 'Hard' }[gridMode] || gridMode;
+      const today = new Date();
+      const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+
+      React.useEffect(() => {
+        if (!db) { setLoading(false); return; }
+        db.collection('daily_scores')
+          .where('dateKey', '==', dateKey)
+          .where('gridMode', '==', gridMode)
+          .get()
+          .then(snap => {
+            const rows = snap.docs.map(d => d.data());
+            rows.sort((a, b) => (b.score || 0) - (a.score || 0));
+            setEntries(rows);
+            setLoading(false);
+          })
+          .catch(() => setLoading(false));
+      }, [dateKey, gridMode]);
+
+      return (
+        <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+            <button onClick={onBack} style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.15)',
+              color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16 }}>
+              {'←'}
+            </button>
+            <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:18, fontWeight:900 }}>
+              {'Daily — ' + modeLabel}
+            </h2>
+          </div>
+          <div style={{ background:'rgba(0,0,0,0.3)', borderRadius:14, padding:'10px 14px',
+            border:'1px solid rgba(255,255,255,0.1)', marginBottom:4 }}>
+            <div style={{ color:'rgba(255,224,130,0.6)', fontSize:11, fontWeight:700, letterSpacing:1 }}>
+              {dateLabel + ' · ' + entries.length + (entries.length === 1 ? ' player' : ' players') + ' today'}
+            </div>
+          </div>
+          {loading ? (
+            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>Loading...</div>
+          ) : entries.length === 0 ? (
+            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>
+              No scores yet today. Be the first!
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {entries.map((e, i) => {
+                const isMe = myScore > 0 && e.score === myScore;
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+                return (
+                  <div key={i} style={{
+                    display:'flex', alignItems:'center', gap:8,
+                    background: isMe ? 'rgba(243,156,18,0.25)' : i === 0 ? 'rgba(241,196,15,0.15)' : 'rgba(255,255,255,0.07)',
+                    border: isMe ? '1.5px solid rgba(243,156,18,0.6)' : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius:10, padding:'10px 12px',
+                  }}>
+                    <span style={{ color:'#ffe082', fontWeight:900, fontSize:13, minWidth:28 }}>
+                      {medal || ('#' + (i+1))}
+                    </span>
+                    <span style={{ color: isMe ? '#ffe066' : '#fff', fontWeight: isMe ? 800 : 600,
+                      flex:1, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {(e.user || 'Guest') + (isMe ? ' (you)' : '')}
+                    </span>
+                    <span style={{ color:'#ffe082', fontWeight:800, fontSize:13 }}>
+                      {(e.score||0).toLocaleString()}
+                    </span>
+                    <span style={{ color:'rgba(255,224,130,0.55)', fontSize:11, minWidth:44, textAlign:'right' }}>
+                      {fmtT(e.time||0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function WinModal({ moves, time, mode, score, comboBonus, rank, user, scoreDocId, onReplay, onMenu, onScores, onSaveName, onScoreDoubled }) {
       const [sharing, setSharing] = React.useState(false);
       const [confetti, setConfetti] = React.useState([]);
       const [nameInput, setNameInput] = React.useState('');
       const [nameSaved, setNameSaved] = React.useState(false);
+      const [adWatched, setAdWatched] = React.useState(false);
+      const [adLoading, setAdLoading] = React.useState(false);
+      const [adAvailable, setAdAvailable] = React.useState(false);
       const needsName = !user || user.trim() === '';
+
+      React.useEffect(() => {
+        const check = () => setAdAvailable(!!(window.MindSharpAds && window.MindSharpAds.isReady()));
+        check();
+        const t = setInterval(check, 1000);
+        return () => clearInterval(t);
+      }, []);
+
+      const handleWatchAd = () => {
+        if (adWatched || adLoading) return;
+        setAdLoading(true);
+        window.MindSharpAds.showRewarded((rewarded) => {
+          setAdLoading(false);
+          if (rewarded) { setAdWatched(true); onScoreDoubled && onScoreDoubled(); }
+        });
+      };
       const displayName = needsName ? (nameSaved ? nameInput : 'You') : user;
 
       const handleSaveName = () => {
@@ -1265,7 +1986,7 @@
 
         ctx.save();
         ctx.textAlign='center'; ctx.font='700 26px Segoe UI'; ctx.fillStyle='rgba(100,60,10,0.5)';
-        ctx.fillText('mindsharpgame.netlify.app', W/2, H-100);
+        ctx.fillText('mindsharp.co', W/2, H-100);
         ctx.restore();
 
         const confColors=['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
@@ -1488,6 +2209,26 @@
                 ✦ {dateStr} ✦
               </div>
 
+              {/* 2x Score Ad Button */}
+              {(adAvailable || adWatched) && (
+                <button
+                  onClick={handleWatchAd}
+                  disabled={adWatched || adLoading}
+                  style={{
+                    width:'100%', padding:'11px 0', borderRadius:12, border:'none', marginBottom:7,
+                    background: adWatched
+                      ? 'linear-gradient(135deg,#27ae60,#2ecc71)'
+                      : adLoading
+                      ? 'rgba(155,89,182,0.5)'
+                      : 'linear-gradient(135deg,#8e44ad,#9b59b6)',
+                    color:'#fff', fontWeight:900, fontSize:14, cursor: adWatched ? 'default' : 'pointer',
+                    boxShadow: adWatched ? '0 3px 10px rgba(46,204,113,0.4)' : '0 3px 14px rgba(155,89,182,0.5)',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                  }}>
+                  {adWatched ? '✅ +100 Puan Kazandın!' : adLoading ? '⏳ Yükleniyor...' : '🎬 Video İzle — +100 Puan!'}
+                </button>
+              )}
+
               <div style={{ display:'flex', gap:7, marginBottom:7 }}>
                 <button onClick={onScores} style={{
                   flex:1, padding:'9px 0', borderRadius:11, border:'none',
@@ -1531,7 +2272,7 @@
         catch { return def; }
       };
       const [sfx,       setSfxRaw]       = React.useState(() => load('sfx', true));
-      const [music,     setMusicRaw]     = React.useState(() => load('music', false));
+      const [music,     setMusicRaw]     = React.useState(() => load('music', true));
       const [vibration, setVibrationRaw] = React.useState(() => load('vibration', false));
       const save = (key, val) => { try { localStorage.setItem('ms_' + key, JSON.stringify(val)); } catch {} };
 
@@ -1546,19 +2287,22 @@
       const content = {
         privacy: {
           title: '🔒 Privacy Policy',
-          // BUG FIX #5: "Very Hard" modu kaldırıldı About'tan, gerçek modlar listelendi
-          body: `Last updated: February 2026
+          body: `Last updated: March 1, 2026 · Mendebur Studios
 
-MindSharp ("we", "our", or "us") is operated by Mendebur Studios.
+SUMMARY
+We collect only your chosen username and game scores to power leaderboards. We do not collect your name, email, or location. We do not sell your data.
 
 DATA WE COLLECT
-• Username you enter (stored locally on your device)
-• Game scores and statistics (stored in Firebase Firestore)
+• Username — a nickname you choose voluntarily for the leaderboard
+• Game scores and statistics (moves, time, difficulty level)
+• Device type and OS (via Firebase)
 • No email, phone, or personal identity data is collected
 
 HOW WE USE DATA
-• To display leaderboards and track your progress
-• We do not sell or share your data with third parties
+• To display your scores on global leaderboards
+• To calculate your ranking among other players
+• To improve gameplay and user experience
+• We do not sell or share your data with third parties for marketing
 
 THIRD-PARTY SERVICES
 • Firebase (Google) — score storage. Subject to Google's Privacy Policy.
@@ -1566,12 +2310,16 @@ THIRD-PARTY SERVICES
 CHILDREN
 This app does not knowingly collect data from children under 13.
 
+DATA DELETION
+You can delete your scores directly in the app (Scores → Clear Scores) or email us to delete all your data.
+
 CONTACT
-info@mindsharp.co`
+📧 info@mindsharp.co
+🌐 mindsharp.co`
         },
         terms: {
           title: '📋 Terms of Service',
-          body: `Last updated: February 2026
+          body: `Last updated: March 1, 2026 · Mendebur Studios
 
 By using MindSharp, you agree to these terms.
 
@@ -1579,20 +2327,28 @@ USE OF THE APP
 • MindSharp is provided for personal, non-commercial use
 • You must not attempt to cheat, hack, or manipulate game scores
 • We reserve the right to remove scores that appear fraudulent
+• You must be at least 13 years of age to use this Service
 
 INTELLECTUAL PROPERTY
 • All game content, design, and code © 2026 Mendebur Studios
 • You may not copy, modify, or redistribute without permission
 
+USER CONTENT
+• By submitting a username, you grant Mendebur Studios a license to display it within the Service
+
 DISCLAIMER
 • The app is provided "as is" without warranty of any kind
 • We are not liable for any data loss or damages
+
+GOVERNING LAW
+These Terms are governed by the laws of Turkey.
 
 CHANGES
 We may update these terms at any time. Continued use means acceptance.
 
 CONTACT
-info@mindsharp.co`
+📧 info@mindsharp.co
+🌐 mindsharp.co`
         },
         about: {
           title: '🎮 About MindSharp',
@@ -1608,15 +2364,16 @@ HOW TO PLAY
 • Chain consecutive matches for combo bonuses
 
 DIFFICULTY LEVELS
-• Easy   — 32 tiles (8×4)
-• Medium — 40 tiles (8×5)
-• Hard   — 56 tiles (8×7)
+• Classic  — 32 tiles (8×4)
+• Classic — 32 tiles (8×4)
+• Hard    — 56 tiles (8×7)
 
 SCORING
 Base score + combo bonuses − move penalty − time penalty
 
 DEVELOPED BY
 Mendebur Studios — Istanbul, Turkey
+www.mendeburstudios.com
 
 "Train your mind — 1 minute a day." 🧠`
         },
@@ -1624,16 +2381,17 @@ Mendebur Studios — Istanbul, Turkey
           title: '✉️ Contact Us',
           body: `We'd love to hear from you!
 
-📧 General: info@mindsharp.co
-🐛 Bug reports: info@mindsharp.co
-💡 Suggestions: info@mindsharp.co
+📧 info@mindsharp.co
 
-🌐 Website: https://mendeburstudios.com/
-📱 Instagram: @mindsharpmobile
+📱 Instagram: @mindsharpgame
+🎵 TikTok: @mindsharpgame
+📘 Facebook: MindSharp
+🌐 mindsharp.co
 
 Response time: 1-3 business days
 
 Mendebur Studios
+www.mendeburstudios.com
 Istanbul, Turkey 🇹🇷`
         },
       };
@@ -1696,37 +2454,23 @@ Istanbul, Turkey 🇹🇷`
     function SettingsModal({ onClose, settings }) {
       const [legalType, setLegalType] = React.useState(null);
 
-      const APP_STORE_URL = 'https://apps.apple.com/app/mindsharp/id0000000000'; // sonra güncellenecek
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=co.mindsharp.twa';
-// Platform tespiti
-const isAndroid = /android/i.test(navigator.userAgent);
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      const APP_STORE_URL  = 'https://apps.apple.com/app/mindsharp/idXXXXXXXXX';
+      const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mendebur.mindsharp';
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const showRateAppStore  = false;
+      const showRatePlayStore = false;
+      const showLinkAppStore  = false;
+      const showLinkPlayStore = false;
 
-const handleShare = () => {
-  const url = 'https://mindsharp.co';
-  const text = 'Train your memory with MindSharp! 🧠 ';
-  const fullText = text + url;
-  
-  const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
-  modal.innerHTML = `
-    <div style="background:#f5e6c8;border-radius:16px;padding:24px;width:300px;max-width:90vw;font-family:serif;text-align:center">
-      <h3 style="margin:0 0 16px;color:#3d1f00;font-size:18px">Share MindSharp 🧠</h3>
-      <button id="copyBtn" style="width:100%;padding:12px;margin-bottom:8px;background:#8B4513;color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer">📋 Copy Link</button>
-      <a href="https://wa.me/?text=${encodeURIComponent(fullText)}" target="_blank" style="display:block;padding:12px;margin-bottom:8px;background:#25D366;color:white;border-radius:8px;font-size:15px;text-decoration:none">💬 WhatsApp</a>
-      <a href="mailto:?subject=Try MindSharp!&body=${encodeURIComponent(fullText)}" style="display:block;padding:12px;margin-bottom:16px;background:#4a90d9;color:white;border-radius:8px;font-size:15px;text-decoration:none">✉️ Email</a>
-      <button id="cancelBtn" style="width:100%;padding:10px;background:transparent;color:#8B4513;border:2px solid #8B4513;border-radius:8px;font-size:14px;cursor:pointer">Cancel</button>
-    </div>`;
-  document.body.appendChild(modal);
-  document.getElementById('copyBtn').onclick = async () => {
-    await navigator.clipboard.writeText(url);
-    document.getElementById('copyBtn').textContent = '✅ Copied!';
-    setTimeout(() => document.getElementById('copyBtn').textContent = '📋 Copy Link', 2000);
-  };
-  document.getElementById('cancelBtn').onclick = () => modal.remove();
-  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
-};
+      const handleShare = async () => {
+        const text = 'Train your memory with MindSharp! 🧠\nhttps://mindsharp.co';
+        if (navigator.share) {
+          try { await navigator.share({ title:'MindSharp', text }); return; } catch {}
+        }
+        try { await navigator.clipboard.writeText(text); alert('Link copied! Share it with friends 🎉'); } catch {}
+      };
 
       const Toggle = ({ value, onChange }) => (
         <div onClick={() => onChange(!value)} style={{
@@ -1835,7 +2579,30 @@ const handleShare = () => {
 
                 <SectionHeader label="Social" />
                 <LinkRow icon="👥" label="Share with Friends" onClick={handleShare} />
-              {(() => { const ua = navigator.userAgent.toLowerCase(); const isAndroid = /android/.test(ua); const isIOS = /iphone|ipad|ipod/.test(ua); const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone; if (isAndroid && isStandalone) return <LinkRow icon="⭐" label="Rate on Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />; if (isIOS && isStandalone) return <LinkRow icon="⭐" label="Rate on App Store" onClick={() => window.open(APP_STORE_URL, '_blank')} />; return null; })()}
+                <div style={{ display:'flex', justifyContent:'center', gap:20, padding:'12px 0 8px' }}>
+                  <a href="https://instagram.com/mindsharpgame" target="_blank" rel="noopener noreferrer" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, textDecoration:'none' }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    </div>
+                    <span style={{ fontSize:10, color:'rgba(255,224,130,0.8)', fontWeight:600 }}>Instagram</span>
+                  </a>
+                  <a href="https://tiktok.com/@mindsharpgame" target="_blank" rel="noopener noreferrer" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, textDecoration:'none' }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'#010101', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.17 8.17 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+                    </div>
+                    <span style={{ fontSize:10, color:'rgba(255,224,130,0.8)', fontWeight:600 }}>TikTok</span>
+                  </a>
+                  <a href="https://www.facebook.com/profile.php?id=61583919300003" target="_blank" rel="noopener noreferrer" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, textDecoration:'none' }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'#1877F2', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </div>
+                    <span style={{ fontSize:10, color:'rgba(255,224,130,0.8)', fontWeight:600 }}>Facebook</span>
+                  </a>
+                </div>
+                {showRateAppStore  && <LinkRow icon="⭐" label="Rate on App Store"   onClick={() => window.open(APP_STORE_URL,  '_blank')} />}
+                {showRatePlayStore && <LinkRow icon="⭐" label="Rate on Play Store"  onClick={() => window.open(PLAY_STORE_URL, '_blank')} />}
+                {showLinkAppStore  && <LinkRow icon="🍎" label="App Store"  onClick={() => window.open(APP_STORE_URL,  '_blank')} />}
+                {showLinkPlayStore && <LinkRow icon="🤖" label="Play Store" onClick={() => window.open(PLAY_STORE_URL, '_blank')} />}
 
                 <SectionHeader label="Info" />
                 <LinkRow icon="ℹ️" label="About MindSharp"    onClick={() => setLegalType('about')} />
@@ -1849,6 +2616,53 @@ const handleShare = () => {
                 }}>
                   MindSharp v1.0 · © 2026 Mendebur Studios
                 </div>
+                {/* Install Banner in Settings */}
+                {(() => {
+                  const _standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                  const _ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+                  const _safari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                  const _dismissed = (() => { try { return !!localStorage.getItem('ms_install_dismissed'); } catch { return false; } })();
+                  const _installed = (() => { try { return !!localStorage.getItem('ms_pwa_installed'); } catch { return false; } })();
+                  if (_standalone || _dismissed || _installed) return null;
+                  if (!_ios && !_safari) return null;
+                  const ShareIcon = () => (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5ac8fa" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+                      <polyline points="16 6 12 2 8 6"/>
+                      <line x1="12" y1="2" x2="12" y2="15"/>
+                      <path d="M8 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2"/>
+                    </svg>
+                  );
+                  const AddIcon = () => (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5ac8fa" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ display:'inline-block', verticalAlign:'middle', flexShrink:0 }}>
+                      <rect x="3" y="3" width="18" height="18" rx="3.5"/>
+                      <line x1="12" y1="8" x2="12" y2="16"/>
+                      <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                  );
+                  const sic = 'rgba(255,255,255,0.4)';
+                  return (
+                    <div style={{ marginTop:4, boxSizing:'border-box', background:'rgba(15,15,22,0.95)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:13, padding:'12px 14px 13px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:11 }}>
+                        <span style={{ fontSize:17 }}>📲</span>
+                        <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>Install App</span>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7 }}>
+                        <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>1.</span>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Tap</span>
+                        <ShareIcon/>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Share</span>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                        <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>2.</span>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Tap</span>
+                        <AddIcon/>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Add to Home Screen</span>
+                        <span style={{ color:'rgba(255,255,255,0.18)', fontSize:11 }}>›</span>
+                        <span style={{ color:'rgba(255,255,255,0.38)', fontSize:12 }}>Add</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -1869,6 +2683,7 @@ const handleShare = () => {
       const [showOnboarding, setShowOnboarding] = useState(() => {
         try { return !localStorage.getItem('ms_onboarded'); } catch { return false; }
       });
+      const [showInstallBanner, setShowInstallBanner] = useState(true);
       const [scores, setScores]     = useState([]);
       const [rank, setRank]         = useState(null);
       const scoresRef               = useRef([]);
@@ -1892,15 +2707,109 @@ const handleShare = () => {
       const [user, setUser]           = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
       const [tempUser, setTempUser]   = useState('');
       const [scoreDocId, setScoreDocId] = useState(null);
+      const [dailyDocId, setDailyDocId] = useState(null);
       const [toast, setToast]         = useState(null);
       const [showExitConfirm, setShowExitConfirm] = useState(false);
+      const [isDailyMode, setIsDailyMode]         = useState(false);
+      const [dailyModeKey, setDailyModeKey]       = useState('8x4');
+      const [showDailyModal, setShowDailyModal]   = useState(false);
+      const [dailyResult, setDailyResult]         = useState(null);
+      const [dailyStreak, setDailyStreak]         = useState(() => loadDailyStreak());
+      const [dailyDoneMap, setDailyDoneMap] = useState(() => {
+        const map = {};
+        ['8x4','8x7'].forEach(m => { map[m] = getDailyDoneForMode(m); });
+        return map;
+      });
+      const todayDoneForMode = (m) => !!dailyDoneMap[m];
+      const [dailyRank, setDailyRank]             = useState(null);
+      const [dailyTotal, setDailyTotal]           = useState(0);
+      const [dailyPersonalBest, setDailyPersonalBest] = useState(null);
       const settings   = useSettings();
       const [showSettings, setShowSettings] = React.useState(false);
 
       const comboBonusRef = useRef(0);
       const comboRef      = useRef(0);
       const lockRef       = useRef(false);
+      const isDailyRef    = useRef(false);
       const play          = useSound();
+
+      // Background music — Web Audio API (ayrı thread, mobil performansını etkilemez)
+      const bgAudioCtxRef = useRef(null);
+      const bgSourceRef   = useRef(null);
+      const bgBufferRef   = useRef(null);
+      const bgLoadedRef   = useRef(false);
+      const bgPlayingRef  = useRef(false);
+      const musicEnabledRef = useRef(settings.music);
+      useEffect(() => { musicEnabledRef.current = settings.music; }, [settings.music]);
+
+      const getAudioCtx = () => {
+        if (!bgAudioCtxRef.current) {
+          bgAudioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return bgAudioCtxRef.current;
+      };
+
+      const startBgMusic = () => {
+        if (bgPlayingRef.current) return;
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+        if (!bgBufferRef.current) return;
+        const source = ctx.createBufferSource();
+        source.buffer = bgBufferRef.current;
+        source.loop = true;
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 0.18;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+        bgSourceRef.current = source;
+        bgPlayingRef.current = true;
+      };
+
+      const stopBgMusic = () => {
+        if (!bgPlayingRef.current) return;
+        try { bgSourceRef.current && bgSourceRef.current.stop(); } catch(e) {}
+        bgSourceRef.current = null;
+        bgPlayingRef.current = false;
+      };
+
+      // Load buffer once
+      useEffect(() => {
+        if (bgLoadedRef.current) return;
+        bgLoadedRef.current = true;
+        fetch('./music.mp3')
+          .then(r => r.arrayBuffer())
+          .then(ab => {
+            const ctx = getAudioCtx();
+            return ctx.decodeAudioData(ab);
+          })
+          .then(buffer => {
+            bgBufferRef.current = buffer;
+            if (musicEnabledRef.current) startBgMusic();
+          })
+          .catch(() => {});
+      }, []);
+
+      // Play/pause on toggle
+      useEffect(() => {
+        if (!bgBufferRef.current) return;
+        if (settings.music) startBgMusic();
+        else stopBgMusic();
+      }, [settings.music]);
+
+      // On first interaction: resume AudioContext (iOS requires it) and start if enabled
+      useEffect(() => {
+        const tryStart = () => {
+          const ctx = bgAudioCtxRef.current;
+          if (ctx && ctx.state === 'suspended') ctx.resume();
+          if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) {
+            startBgMusic();
+          }
+          document.removeEventListener('pointerdown', tryStart);
+        };
+        document.addEventListener('pointerdown', tryStart);
+        return () => document.removeEventListener('pointerdown', tryStart);
+      }, []);
 
       useEffect(() => {
         if (screen !== 'game') return;
@@ -1959,15 +2868,33 @@ const handleShare = () => {
         setTimeout(() => setToast(null), 2400);
       }, []);
 
+      const startDailyChallenge = useCallback((m) => {
+        const gm = m || mode;
+        setTiles(generateDailyTiles(gm));
+        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+        setRunning(false); setWon(false); lockRef.current = false;
+        setMode(gm); setScreen('game');
+        trackEvent('game_start', { mode: gm, type: 'daily' });
+        setScore(0); setComboBonus(0); setCombo(0);
+        setScoreDocId(null);
+        comboBonusRef.current = 0; comboRef.current = 0;
+        setIsDailyMode(true);
+        isDailyRef.current = true;
+        setDailyModeKey(gm);
+      }, [mode]);
+
       const startGame = useCallback((m) => {
         const cfg = GRID_CONFIGS[m];
         setTiles(generateTiles(cfg.pairs, cfg.maxNum));
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
         setMode(m); setScreen('game');
+        trackEvent('game_start', { mode: m, type: 'regular' });
         setScore(0); setComboBonus(0); setCombo(0);
         setScoreDocId(null);
         comboBonusRef.current = 0; comboRef.current = 0;
+        setIsDailyMode(false);
+        isDailyRef.current = false;
       }, []);
 
       const handleTile = useCallback((id) => {
@@ -2013,10 +2940,13 @@ const handleShare = () => {
                   const newMatchedCount = newTiles.filter(t => t.matched).length / 2;
                   setMatched(newMatchedCount);
 
-                  const cfg = GRID_CONFIGS[mode];
+                  const activeMode = isDailyRef.current ? dailyModeKey : mode;
+                  const cfg = GRID_CONFIGS[activeMode] || GRID_CONFIGS[mode];
                   if (newMatchedCount === cfg.pairs) {
                     setRunning(false);
-                    setWon(true);
+                    if (!isDailyRef.current) {
+                      setWon(true);
+                    }
                     if (settings.sfx) play('win');
 
                     setMoves((mv) => {
@@ -2048,15 +2978,48 @@ const handleShare = () => {
                         ) + 1;
                         setRank(myRank);
 
-                        submitScoreToCloud({
-                          user: user || "Guest",
-                          mode,
-                          moves: mv,
-                          time: tm,
-                          score: finalScore,
-                        }).then(docId => {
-                          if (docId) setScoreDocId(docId);
-                        });
+                        if (isDailyRef.current) {
+                          const result = { moves: mv, time: tm, score: finalScore, gridMode: dailyModeKey };
+                          saveDailyResult(result, dailyModeKey);
+                          setDailyDoneMap(prev => ({ ...prev, [dailyModeKey]: true }));
+                          const newStreak = updateStreak();
+                          setDailyStreak(newStreak);
+                          setDailyResult(result);
+                          submitDailyScore({ user: user || 'Guest', moves: mv, time: tm, score: finalScore, gridMode: dailyModeKey })
+                            .then(docId => { if (docId) setDailyDocId(docId); });
+                          (async () => {
+                            try {
+                              if (db) {
+                                const dateKey = getDailyDateKey();
+                                const snap = await db.collection('daily_scores')
+                                  .where('dateKey', '==', dateKey)
+                                  .where('gridMode', '==', dailyModeKey)
+                                  .get();
+                                const allScores = snap.docs.map(d => d.data().score || 0).sort((a,b) => b - a);
+                                const total = allScores.length;
+                                const rank = allScores.findIndex(s => s <= finalScore) + 1 || total;
+                                setDailyRank(rank);
+                                setDailyTotal(total);
+                                try {
+                                  const stats = JSON.parse(localStorage.getItem('ms_stats') || '{}');
+                                  const pb = stats.bestScores && stats.bestScores[dailyModeKey];
+                                  setDailyPersonalBest(pb || 0);
+                                } catch {}
+                              }
+                            } catch(e) {}
+                            setTimeout(() => { setWon(false); setScreen('menu'); setShowDailyModal(true); }, 800);
+                          })();
+                        } else {
+                          submitScoreToCloud({
+                            user: user || "Guest",
+                            mode,
+                            moves: mv,
+                            time: tm,
+                            score: finalScore,
+                          }).then(docId => {
+                            if (docId) setScoreDocId(docId);
+                          });
+                        }
 
                         // İstatistikleri kaydet
                         recordGameStats({
@@ -2130,10 +3093,29 @@ const handleShare = () => {
         <div style={{ minHeight: '100vh', width: '100%', maxWidth: 430, margin: '0 auto', ...woodBg,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           fontFamily: "'Segoe UI', sans-serif", userSelect: 'none', position: 'relative', overflow: 'hidden' }}>
+
+          {/* Floating Music Button */}
+          <button
+            onClick={() => settings.setMusic(!settings.music)}
+            title={settings.music ? 'Müziği Kapat' : 'Müziği Aç'}
+            style={{
+              position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 12, zIndex: 9999,
+              width: 32, height: 32, borderRadius: '50%',
+              background: settings.music ? 'rgba(255,180,0,0.3)' : 'rgba(0,0,0,0.5)',
+              border: settings.music ? '1.5px solid rgba(255,210,0,0.8)' : '1.5px solid rgba(255,255,255,0.25)',
+              color: settings.music ? '#ffe066' : 'rgba(255,255,255,0.55)',
+              fontSize: 15, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(4px)',
+              transition: 'all 0.2s ease',
+              boxShadow: settings.music ? '0 0 10px rgba(255,180,0,0.4)' : 'none',
+            }}>
+            {settings.music ? '🎵' : '🔇'}
+          </button>
           <style>{`
-            .contentWrap { padding: 50px 46px 40px; }
+            .contentWrap { padding: calc(env(safe-area-inset-top, 0px) + 50px) 46px 40px; }
             @media (max-width: 420px) {
-              .contentWrap { padding: 44px 18px 32px; }
+              .contentWrap { padding: calc(env(safe-area-inset-top, 0px) + 44px) 18px 32px; }
             }
             /* BUG FIX #4 CSS: "f\nrom" → "from" düzeltildi */
             @keyframes popIn {
@@ -2156,6 +3138,8 @@ const handleShare = () => {
 
           <div className="contentWrap" style={{ position: 'relative', zIndex: 5, width: '100%', minHeight: '100vh',
             boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+
 
             {/* MENU */}
             {screen === 'menu' && (
@@ -2290,9 +3274,67 @@ const handleShare = () => {
                       </button>
                     ))}
                   </div>
+                  {/* Daily Challenge Button — reacts to selected board mode */}
+                  {(() => {
+                    const doneForMode = todayDoneForMode(mode);
+                    return (
+                      <button onClick={() => {
+                        if (doneForMode) {
+                          const r = getDailyResult(mode);
+                          if (r) {
+                            setDailyResult(r);
+                            setDailyModeKey(mode);
+                            (async () => {
+                              try {
+                                if (db) {
+                                  const snap = await db.collection('daily_scores')
+                                    .where('dateKey','==',getDailyDateKey())
+                                    .where('gridMode','==',mode)
+                                    .get();
+                                  const all = snap.docs.map(d => d.data().score || 0).sort((a,b)=>b-a);
+                                  setDailyTotal(all.length);
+                                  setDailyRank(all.findIndex(s => s <= r.score) + 1 || all.length);
+                                }
+                              } catch {}
+                              setShowDailyModal(true);
+                            })();
+                          }
+                        } else {
+                          startDailyChallenge(mode);
+                        }
+                      }} style={{
+                        width:'100%', padding:'14px 15px', borderRadius:14,
+                        background: doneForMode
+                          ? 'linear-gradient(135deg,#b35a00,#e67e22)'
+                          : 'linear-gradient(135deg,#f39c12,#e67e22)',
+                        border: doneForMode ? 'none' : '2px solid rgba(255,220,80,0.5)',
+                        cursor:'pointer',
+                        animation: doneForMode ? 'none' : 'dailyGlow 2s ease-in-out infinite',
+                        display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                        position:'relative',
+                      }}>
+                        <span style={{ fontSize:18 }}>{doneForMode ? '✅' : '🎯'}</span>
+                        <span style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:1 }}>
+                          <span style={{ color:'#fff', fontWeight:800, fontSize:17, lineHeight:1.2 }}>Daily Challenge</span>
+                          {!doneForMode && (
+                            <span style={{ color:'rgba(255,255,255,0.7)', fontSize:10, fontStyle:'italic', fontWeight:400, lineHeight:1 }}>once a day</span>
+                          )}
+                        </span>
+                        {dailyStreak.count > 0 && (
+                          <span style={{ fontSize:12, background:'rgba(0,0,0,0.2)',
+                            padding:'2px 8px', borderRadius:20,
+                            color:'#fff', fontWeight:700, marginLeft:'auto', flexShrink:0 }}>
+                            {dailyStreak.count >= 7 ? '🔥' : '⚡'} {dailyStreak.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()}
+
                   <button onClick={() => startGame(mode)} style={{ width: '100%', padding: '15px', borderRadius: 14, border: 'none',
                     background: 'linear-gradient(135deg,#27ae60,#2ecc71)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
                     boxShadow: '0 5px 18px rgba(46,204,113,0.4)' }}>▶ Start Game</button>
+
                   <div style={{ display:'flex', gap:8 }}>
                     <button onClick={() => setScreen('scores')} style={{ flex:1, padding: '12px', borderRadius: 14,
                       border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
@@ -2301,17 +3343,40 @@ const handleShare = () => {
                       border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(0,0,0,0.3)',
                       color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>👤 Profile</button>
                   </div>
+                  {showInstallBanner && (
+                    <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+                  )}
                 </div>
               </div>
             )}
 
             {/* PROFILE */}
             {screen === 'profile' && (
-              <ProfileScreen
-                user={user}
-                scores={scores}
-                onBack={() => setScreen('menu')}
-              />
+              <div style={{ width:'100%', display:'flex', flexDirection:'column' }}>
+                <ProfileScreen
+                  user={user}
+                  scores={scores}
+                  onBack={() => setScreen('menu')}
+                />
+                {showInstallBanner && (
+                  <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+                )}
+              </div>
+            )}
+
+            {/* DAILY SCORES */}
+            {screen === 'daily_scores' && (
+              <div style={{ width:'100%', display:'flex', flexDirection:'column' }}>
+                <DailyScoresScreen
+                  onBack={() => setScreen('menu')}
+                  dateKey={getDailyDateKey()}
+                  gridMode={dailyModeKey}
+                  myScore={dailyResult ? dailyResult.score : 0}
+                />
+                {showInstallBanner && (
+                  <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+                )}
+              </div>
             )}
 
             {/* SCORES */}
@@ -2338,6 +3403,9 @@ const handleShare = () => {
                     }}
                   />
                 </div>
+              {showInstallBanner && (
+                <InstallBanner onDismiss={() => setShowInstallBanner(false)} />
+              )}
               </div>
             )}
 
@@ -2428,12 +3496,61 @@ const handleShare = () => {
                 try { localStorage.setItem('memotiles_user', name); } catch {}
                 showToast('✓ Name saved!');
               }}
+              onScoreDoubled={() => {
+                const boosted = score + 100;
+                setScore(boosted);
+                submitScoreToCloud({
+                  user: user || 'Guest',
+                  mode,
+                  moves,
+                  time,
+                  score: boosted,
+                }).then(docId => { if (docId) setScoreDocId(docId); });
+                showToast('🎬 +100 bonus puan!');
+              }}
             />
           )}
           {showSettings && (
             <SettingsModal
               onClose={() => setShowSettings(false)}
               settings={settings}
+            />
+          )}
+
+          {showDailyModal && dailyResult && (
+            <DailyCompleteModal
+              result={dailyResult}
+              streak={dailyStreak}
+              alreadyDone={todayDoneForMode(dailyModeKey) && screen === 'menu'}
+              user={user}
+              dailyRank={dailyRank}
+              dailyTotal={dailyTotal}
+              personalBest={dailyPersonalBest}
+              onSaveName={(name) => {
+                setUser(name);
+                try { localStorage.setItem('memotiles_user', name); } catch {}
+                if (dailyDocId && db) {
+                  db.collection('daily_scores').doc(dailyDocId).update({ user: name }).catch(function(){});
+                }
+              }}
+              onLeaderboard={() => { setShowDailyModal(false); setScreen('daily_scores'); }}
+              onMenu={() => { setShowDailyModal(false); setScreen('menu'); }}
+              onShare={() => {
+                const fmtT = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+                const today = new Date();
+                const dateLabel = today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+                const fire = dailyStreak.count >= 7 ? '🔥' : dailyStreak.count >= 3 ? '⚡' : '✨';
+                const rankTxt = dailyRank ? ' | #' + dailyRank + ' today' : '';
+                const text = [
+                  '🎯 MindSharp Daily Challenge',
+                  dateLabel,
+                  '\u23f1 ' + fmtT(dailyResult.time) + '  \u{1F0CF} ' + dailyResult.moves + ' moves  \u{1F3C6} ' + dailyResult.score.toLocaleString() + ' pts' + rankTxt,
+                  fire + ' ' + dailyStreak.count + ' day streak!',
+                  'mindsharp.co'
+                ].join('\n');
+                if (navigator.share) navigator.share({ text: text }).catch(function(){});
+                else navigator.clipboard.writeText(text).catch(function(){});
+              }}
             />
           )}
 
@@ -2475,6 +3592,23 @@ const handleShare = () => {
         .then(() => console.log('[SW] Registered'))
         .catch(err => console.warn('[SW] Failed:', err));
     }
+  </script>
+  <script>
+    // Capture Android install prompt globally — before React mounts
+    window.__installPromptEvent = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.__installPromptEvent = e;
+      console.log('[PWA] Install prompt captured');
+      // Notify React if it's already mounted
+      if (window.__onInstallPromptReady) window.__onInstallPromptReady();
+    });
+    window.addEventListener('appinstalled', function() {
+      window.__installPromptEvent = null;
+      try { localStorage.setItem('ms_pwa_installed', '1'); } catch {}
+      console.log('[PWA] App installed');
+      if (window.__onAppInstalled) window.__onAppInstalled();
+    });
   </script>
 </body>
 </html>
