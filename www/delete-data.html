@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete My Data — MindSharp</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Georgia', serif;
+      background: #fdf8f0;
+      color: #2d2d2d;
+      line-height: 1.8;
+    }
+    header {
+      background: linear-gradient(135deg, #2b1a10, #4a2c1a);
+      padding: 28px 24px;
+      text-align: center;
+      border-bottom: 3px solid #c8a96e;
+    }
+    header a {
+      display: inline-block;
+      font-family: 'Georgia', serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: #ffe066;
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    header p {
+      color: rgba(255,224,130,0.7);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    h1 {
+      font-size: 30px;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+      font-weight: 900;
+    }
+    .meta {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 36px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #e8d5b0;
+    }
+    h2 {
+      font-size: 18px;
+      color: #2c3e50;
+      margin: 36px 0 10px;
+      font-weight: 700;
+      padding-left: 12px;
+      border-left: 4px solid #c8a96e;
+    }
+    p { margin-bottom: 14px; font-size: 15px; }
+    ul {
+      margin: 8px 0 14px 24px;
+      font-size: 15px;
+    }
+    ul li { margin-bottom: 8px; }
+    a { color: #c8860a; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Info box */
+    .highlight {
+      background: #fff8e8;
+      border: 1px solid #e8d5b0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      font-size: 14px;
+      color: #5a3a10;
+    }
+
+    /* Step cards */
+    .steps { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: #fff;
+      border: 1px solid #e8d5b0;
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .step-num {
+      background: linear-gradient(135deg, #c8860a, #e6a020);
+      color: #fff;
+      font-weight: 900;
+      font-size: 15px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-body strong { display: block; font-size: 15px; color: #2b1a10; margin-bottom: 3px; }
+    .step-body span { font-size: 13px; color: #7a5c2e; }
+
+    /* Data table */
+    table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+    th { background: #f5e6c8; color: #4a2c1a; padding: 10px 14px; text-align: left; font-weight: 700; }
+    td { padding: 10px 14px; border-bottom: 1px solid #e8d5b0; }
+    tr:last-child td { border-bottom: none; }
+    .badge-del { background: #fdecea; color: #c0392b; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+    .badge-keep { background: #eafaf1; color: #1e8449; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+
+    /* Email CTA */
+    .email-box {
+      background: linear-gradient(135deg, #2b1a10, #4a2c1a);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      margin: 28px 0;
+    }
+    .email-box p { color: rgba(255,224,130,0.8); font-size: 14px; margin-bottom: 10px; }
+    .email-box a {
+      display: inline-block;
+      background: linear-gradient(135deg, #c8860a, #e6a020);
+      color: #fff;
+      font-weight: 900;
+      font-size: 16px;
+      padding: 12px 28px;
+      border-radius: 10px;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+    }
+    .email-box a:hover { opacity: 0.9; }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #aaa;
+      border-top: 1px solid #e8d5b0;
+      background: #fdf3e3;
+    }
+    footer a { color: #c8860a; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="https://mindsharp.co">🧠 MindSharp</a>
+  <p>Memory & Focus Training Game</p>
+</header>
+
+<div class="container">
+
+  <h1>🗑️ Delete My Data</h1>
+  <p class="meta">Mendebur Studios &nbsp;·&nbsp; Last updated: March 2026</p>
+
+  <div class="highlight">
+    <strong>Your privacy matters.</strong> You can request deletion of all data associated with your username and game scores at any time. We will process your request within <strong>7 business days</strong>.
+  </div>
+
+  <!-- OPTION 1: In-app deletion -->
+  <h2>Option 1 — Delete Scores Directly In the App</h2>
+  <p>You can instantly remove your scores from the leaderboard without contacting us:</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Open MindSharp</strong>
+        <span>Go to <a href="https://mindsharp.co" target="_blank">mindsharp.co</a> or open the app</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Tap "🏆 Scores"</strong>
+        <span>From the main menu, open the High Scores screen</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Select difficulty tab</strong>
+        <span>Choose Classic, Hard, or Extreme</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Tap "🗑 Clear Scores"</strong>
+        <span>Confirm the dialog — your scores for that category are permanently deleted from the leaderboard</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION 2: Email request -->
+  <h2>Option 2 — Submit a Deletion Request by Email</h2>
+  <p>To request full deletion of all data associated with your username across all categories, send us an email:</p>
+
+  <div class="email-box">
+    <p>Send your deletion request to:</p>
+    <a href="/cdn-cgi/l/email-protection#82ebece4edc2efebece6f1eae3f0f2ace1edbdf1f7e0e8e7e1f6bfc6e3f6e3a2c6e7eee7f6ebedeca2d0e7f3f7e7f1f6a2600216a2cfebece6d1eae3f0f2a4e0ede6fbbfcae7eeeeedaea7b2c3a7b2c3d2eee7e3f1e7a2e6e7eee7f6e7a2e3eeeea2e6e3f6e3a2e3f1f1ede1ebe3f6e7e6a2f5ebf6eaa2effba2f7f1e7f0ece3efe7b8a7b2c3a7b2c3d7f1e7f0ece3efe7b8a2d9fbedf7f0a2f7f1e7f0ece3efe7a2eae7f0e7dfa7b2c3a7b2c3d6eae3ece9a2fbedf7ac">
+      ✉️ <span class="__cf_email__" data-cfemail="dab3b4bcb59ab7b3b4bea9b2bba8aaf4b9b5">[email&#160;protected]</span>
+    </a>
+  </div>
+
+  <p>Please include your <strong>in-game username</strong> in the email. No other personal information is required.</p>
+
+  <!-- What gets deleted -->
+  <h2>What Data Is Deleted vs. Kept</h2>
+
+  <table>
+    <tr>
+      <th>Data Type</th>
+      <th>Storage</th>
+      <th>On Deletion Request</th>
+    </tr>
+    <tr>
+      <td>Username (leaderboard name)</td>
+      <td>Firebase Firestore + Local device</td>
+      <td><span class="badge-del">Deleted</span></td>
+    </tr>
+    <tr>
+      <td>Game scores (moves, time, score)</td>
+      <td>Firebase Firestore</td>
+      <td><span class="badge-del">Deleted</span></td>
+    </tr>
+    <tr>
+      <td>Local stats & streak (on your device)</td>
+      <td>Browser localStorage</td>
+      <td><span class="badge-del">Deleted on device clear</span></td>
+    </tr>
+    <tr>
+      <td>Anonymized aggregate analytics</td>
+      <td>Firebase</td>
+      <td><span class="badge-keep">May be retained (no personal link)</span></td>
+    </tr>
+  </table>
+
+  <!-- Timeline -->
+  <h2>Deletion Timeline</h2>
+  <ul>
+    <li><strong>In-app deletion:</strong> Immediate — scores removed instantly from leaderboard</li>
+    <li><strong>Email request:</strong> Processed within <strong>7 business days</strong></li>
+    <li><strong>Firebase backup copies:</strong> Purged within <strong>30 days</strong></li>
+  </ul>
+
+  <!-- Contact -->
+  <h2>Questions?</h2>
+  <p>
+    If you have any questions about your data or the deletion process, contact us:<br><br>
+    📧 <a href="/cdn-cgi/l/email-protection#a1c8cfc7cee1ccc8cfc5d2c9c0d3
