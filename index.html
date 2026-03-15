@@ -63,7 +63,7 @@
       margin: 0 auto;
     }
     body::after{
-      content:"© 2026 Mendebur Studios. All rights reserved.";
+      content:"© 2026 Mendebur Studios. {t("all_rights")}.";
       position: fixed;
       left: 0;
       right: 0;
@@ -417,6 +417,7 @@
             "cert_moves": "MOVES",
             "cert_time": "TIME",
             "cert_rank": "RANK",
+      "all_rights": "All rights reserved",
             "cert_quote": "\"Train your mind — 1 minute a day.\""
       },
       "tr": {
@@ -469,10 +470,10 @@
             "top10": "⭐ İlk 10 — Süper!",
             "well_played": "İyi Oynadın!",
             "rank_label": "Sıralama",
-            "save_score_prompt": "Skorunu kaydet — bir isim gir:",
+            "save_score_prompt": "Skorunu kaydetmek için ismini gir:",
             "skip_for_now": "Şimdilik geç",
             "high_scores": "🏆 En Yüksek Skorlar",
-            "share_button": "📤 Paylaş",
+            "share_button": "Paylaş",
             "menu_button": "← Menü",
             "play_again": "▶ Tekrar Oyna",
             "share_certificate_hint": "Sertifikanı paylaşarak arkadaşlarına meydan oku ✨",
@@ -483,7 +484,7 @@
             "ad_earned": "✅ +100 Puan Kazandın!",
             "daily_complete": "Meydan Okuma Tamamlandı!",
             "daily_today": "Bugünün Meydan Okuması",
-            "daily_ranking": "BUGÜNKÜ SIRALAMA",
+            "daily_ranking": "BUGÜNKÜ SIRALAMAN",
             "daily_calculating": "Hesaplanıyor...",
             "daily_players_today": "bugün oynayan",
             "daily_out_of": "bugün oynayan {n} oyuncu arasında",
@@ -494,7 +495,7 @@
             "daily_unlock_bolt": "⚡ için {n} gün daha",
             "daily_unlock_fire": "🔥 için {n} gün daha",
             "daily_on_fire": "Harikasın — sakın seriyi bozma!",
-            "daily_add_name": "Skor tablosuna adını ekle!",
+            "daily_add_name": "Skor tablosuna ismini ekle!",
             "daily_leaderboard_name": "Skor tablosundaki ismin:",
             "daily_edit": "düzenle",
             "daily_share_result": "📤 Sonucumu Paylaş",
@@ -515,8 +516,8 @@
             "profile_title": "👤 Profil",
             "total_games": "Toplam Oyun",
             "max_combo": "Maksimum Kombo Bonusu",
-            "avg_moves": "Ort. Hamle",
-            "avg_time": "Ort. Süre",
+            "avg_moves": "Ortalama Hamle",
+            "avg_time": "Ortalama Süre",
             "best_scores_diff": "Zorluğa Göre En İyi Skorlar",
             "no_games_yet": "Henüz oyun yok",
             "activity_35": "Aktivite — Son 35 Gün",
@@ -569,6 +570,8 @@
       return s;
     }
 
+    function tDiff(d) { return d === 'Classic' ? t('difficulty_classic') : d === 'Hard' ? t('difficulty_hard') : d; }
+
     // === Firebase Init ===
     const firebaseConfig = {
       apiKey: ["AIzaSyBqtoU6Drecy", "hCvjYoWOtOcCyadNMDu5dY"].join(""),
@@ -577,6 +580,7 @@
       storageBucket: "mindsharp-af404.firebasestorage.app",
       messagingSenderId: "520056575924",
       appId: "1:520056575924:web:4aff3dbee97a38650cc4e1",
+      "all_rights": "Tüm hakları saklıdır",
       measurementId: "G-9HCMNEQBF6"
     };
     let db = null;
@@ -1349,8 +1353,8 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: t('difficulty_classic'),         difficulty: t('difficulty_classic'), tileCount: 32 },
-      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: t('difficulty_hard'),            difficulty: t('difficulty_hard'),    tileCount: 56 },
+      '8x4':  { rows: 4, cols: 8,  pairs: 16, maxNum: 4,  label: t('difficulty_classic'),         difficulty: 'Classic', tileCount: 32 },
+      '8x7':  { rows: 7, cols: 8,  pairs: 28, maxNum: 7,  label: t('difficulty_hard'),            difficulty: 'Hard',    tileCount: 56 },
     };
     const PREVIEW_TILES = [
       { color: '#E8000A', number: 1, rot: -8,  y:  4 },
@@ -1733,7 +1737,7 @@
 
     function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryChange, onClearCategory }) {
       const [confirmClear, setConfirmClear] = React.useState(false);
-      const categories = Object.entries(GRID_CONFIGS).map(([key, val]) => ({ key, label: val.difficulty }));
+      const categories = Object.entries(GRID_CONFIGS).map(([key, val]) => ({ key, label: tDiff(val.difficulty) }));
       const filtered = scores.filter(s => s.mode === activeCategory);
       const sortedScores = [...filtered].sort((a, b) => {
         if (sortBy === 'score') return b.score - a.score;
@@ -1795,12 +1799,12 @@
               <button onClick={() => setConfirmClear(true)}
                 style={{ width: '100%', marginTop: 8, padding: '8px', borderRadius: 10, border: '1.5px solid #c0392b',
                   background: 'rgba(0,0,0,0.3)', color: '#e74c3c', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
-                🗑 Clear {GRID_CONFIGS[activeCategory].difficulty} Scores
+                {t('clear_scores', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
               </button>
               {confirmClear && (
                 <ConfirmDialog
-                  title="Clear Scores?"
-                  message={`All ${GRID_CONFIGS[activeCategory].difficulty} scores will be permanently deleted from the leaderboard.`}
+                  title={t("clear_confirm_title")}
+                  message={t('clear_confirm_msg', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
                   confirmLabel={t("delete_all")}
                   onConfirm={() => { setConfirmClear(false); onClearCategory(activeCategory); }}
                   onCancel={() => setConfirmClear(false)}
@@ -1836,13 +1840,13 @@
 
       const isPersonalBest = personalBest && result.score >= personalBest;
       const rankLabel = dailyRank
-        ? (dailyRank === 1 ? '🥇 #1 Today!' : dailyRank === 2 ? '🥈 #2 Today' : dailyRank === 3 ? '🥉 #3 Today' : `#${dailyRank} Today`)
+        ? (dailyRank === 1 ? '🥇 #1' : dailyRank === 2 ? '🥈 #2' : dailyRank === 3 ? '🥉 #3' : `#${dailyRank}`)
         : null;
       const rankColor = dailyRank === 1 ? '#f1c40f' : dailyRank <= 3 ? '#e67e22' : '#aaa';
 
       const tomorrowMsg = streak.count === 0 ? t("daily_start_streak") :
-        streak.count < 3 ? `${3 - streak.count} more days to unlock ⚡` :
-        streak.count < 7 ? `${7 - streak.count} more days to unlock 🔥` :
+        streak.count < 3 ? t('daily_unlock_bolt', {n: 3 - streak.count}) :
+        streak.count < 7 ? t('daily_unlock_fire', {n: 7 - streak.count}) :
         t('daily_on_fire');
 
       return (
@@ -1880,7 +1884,7 @@
               {[
                 { label:t('cert_time'),  value: fmtT(result.time), icon:'⏱' },
                 { label:t('cert_moves'), value: result.moves,      icon:'🃏' },
-                { label:'SCORE', value: result.score.toLocaleString(), icon:'🏆' },
+                { label:t('score_label'), value: result.score.toLocaleString(), icon:'🏆' },
               ].map(s => (
                 <div key={s.label} style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:12,
                   padding:'10px 4px', border:'1px solid rgba(255,255,255,0.08)' }}>
@@ -1946,7 +1950,7 @@
                     value={nameInput}
                     onChange={e => setNameInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { const n = nameInput.trim(); if (n) { onSaveName(n); setNameSaved(true); } } }}
-                    placeholder="Your name..."
+                    placeholder={t("name_placeholder")}
                     maxLength={20}
                     style={{
                       flex:1, padding:'11px 13px', borderRadius:11,
@@ -2266,8 +2270,8 @@
 
         const statsY=cy+820;
         const cols3=[
-          { label:'MOVES', value:moves, color:'#e74c3c' },
-          { label:'TIME',  value:formatTime(time), color:'#3498db' },
+          { label:t('moves_label'), value:moves, color:'#e74c3c' },
+          { label:t('time_label'),  value:formatTime(time), color:'#3498db' },
           { label:t('cert_rank'),  value:rank?`#${rank}`:'-', color:rank===1?'#f1c40f':rank<=3?'#e67e22':'#27ae60' },
         ];
         const colW=(cw-140)/3;
@@ -2335,7 +2339,7 @@
         if (sharing) trackEvent('certificate_share_attempt', { mode, score });
       }, [sharing]);
 
-      const diffLabel = GRID_CONFIGS[mode]?.difficulty || mode;
+      const diffLabel = tDiff(GRID_CONFIGS[mode]?.difficulty || mode);
 
       return (
         <div style={{
@@ -2413,7 +2417,7 @@
                   background:'linear-gradient(90deg, #b8860b, #f0c040, #b8860b)',
                   borderRadius:20, padding:'2px 14px',
                 }}>
-                  <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>A C H I E V E M E N T</span>
+                  <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>{t('achievement')}</span>
                 </div>
               </div>
 
@@ -2475,7 +2479,7 @@
                   </div>
                 )}
 
-                <div style={{ color:'rgba(120,80,20,0.55)', fontSize:10, marginTop:1 }}>{diffLabel} Board</div>
+                <div style={{ color:'rgba(120,80,20,0.55)', fontSize:10, marginTop:1 }}>{diffLabel}</div>
               </div>
 
               <div style={{
@@ -2505,9 +2509,9 @@
                 border:'1px solid rgba(200,169,110,0.25)',
               }}>
                 {[
-                  { label:'MOVES', value:moves, color:'#e74c3c' },
-                  { label:'TIME',  value:formatTime(time), color:'#2980b9' },
-                  { label:'RANK',  value:rank?`#${rank}`:'-',
+                  { label:t('moves_label'), value:moves, color:'#e74c3c' },
+                  { label:t('time_label'),  value:formatTime(time), color:'#2980b9' },
+                  { label:t('rank_label'),  value:rank?`#${rank}`:'-',
                     color:rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d' },
                 ].map((s,i) => (
                   <React.Fragment key={s.label}>
@@ -2516,7 +2520,7 @@
                       <div style={{ fontSize:9, color:'rgba(100,60,10,0.55)', fontWeight:700, marginBottom:1 }}>{s.label}</div>
                       <div style={{
                         fontSize:19, fontWeight:900, color:s.color,
-                        textShadow: s.label==='RANK'&&rank===1 ? '0 0 10px rgba(241,196,15,0.7)' : 'none',
+                        textShadow: s.label===t('rank_label')&&rank===1 ? '0 0 10px rgba(241,196,15,0.7)' : 'none',
                       }}>{s.value}</div>
                     </div>
                   </React.Fragment>
@@ -2874,7 +2878,6 @@ Istanbul, Turkey 🇹🇷`
                 display:'flex', justifyContent:'space-between', alignItems:'center',
               }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:20 }}>⚙️</span>
                   <span style={{ fontWeight:900, fontSize:17, color:'#3d1a00', fontFamily:'Georgia,serif' }}>{t("settings_title")}</span>
                 </div>
                 <button onClick={onClose} style={{
@@ -2888,7 +2891,7 @@ Istanbul, Turkey 🇹🇷`
               <div style={{ overflowY:'auto', flex:1 }}>
               {/* Language */}
               <div style={{marginBottom:18}}>
-                <div style={{fontSize:13,fontWeight:700,color:'#b8860d',marginBottom:8,textTransform:'uppercase',letterSpacing:1}}>{t("language_label")}</div>
+                <SectionHeader label={t("language_label")} />
                 <div style={{display:'flex',gap:8}}>
                   {[{code:'en',label:'English',flag:'🇬🇧'},{code:'tr',label:'Türkçe',flag:'🇹🇷'}].map(lang=>(
                     <button key={lang.code} onClick={()=>{setLang(lang.code);setForceRender(x=>x+1);}} style={{
@@ -3587,7 +3590,7 @@ Istanbul, Turkey 🇹🇷`
                             showToast(t('name_saved_toast'));
                           }
                         }}
-                        placeholder="Your name…"
+                        placeholder={t("name_placeholder")}
                         maxLength={20}
                         style={{
                           flex:1, padding:'11px 13px', borderRadius:11,
@@ -3612,7 +3615,7 @@ Istanbul, Turkey 🇹🇷`
                           flexShrink: 0, transition: 'all 0.2s',
                           boxShadow: tempUser.trim() ? '0 3px 12px rgba(243,156,18,0.4)' : 'none',
                         }}
-                      >Save</button>
+                      >{t("save_button")}</button>
                     </div>
                   </div>
                 )}
