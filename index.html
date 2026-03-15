@@ -1244,15 +1244,10 @@
       }
     }
 
-    // Update username in an existing score document
+    // Username update devre dışı — güvenlik kuralları update'i engelliyor
     async function updateScoreUsername(docId, newUser) {
-      if (!db || !docId) return;
-      try {
-        await db.collection("scores").doc(docId).update({ user: newUser });
-        console.log("Username updated in cloud");
-      } catch (e) {
-        console.warn("Username update failed:", e);
-      }
+      // Firestore update blocked by security rules
+      console.log("Username update skipped — set at creation time");
     }
 
     // ── TOAST COMPONENT ──────────────────────────────────────
@@ -1305,21 +1300,10 @@
       }
     }
 
-    // BUG FIX #4: Firebase'den silme fonksiyonu eklendi
+    // Firestore silme devre dışı — güvenlik kuralları tarafından engellendi
     async function clearScoresFromCloud(mode) {
-      if (!db) return;
-      try {
-        const snap = await db
-          .collection("scores")
-          .where("mode", "==", mode)
-          .get();
-        const batch = db.batch();
-        snap.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        console.log(`Cleared ${snap.docs.length} scores for mode ${mode}`);
-      } catch (e) {
-        console.warn("Clear failed:", e);
-      }
+      // Firestore delete blocked by security rules — data is protected
+      console.log("Score delete skipped — protected by Firestore rules");
     }
 
     function useSound() {
@@ -3393,7 +3377,7 @@ Istanbul, Turkey 🇹🇷`
                     activeCategory={scoreCategory}
                     onCategoryChange={setScoreCategory}
                     onClearCategory={async (cat) => {
-                      await clearScoresFromCloud(cat);
+                      // Sadece ekrandan gizler — Firestore verisi korunur
                       setScores(prev => prev.filter(s => s.mode !== cat));
                     }}
                   />
