@@ -947,7 +947,7 @@
                   <div key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
                     padding:'8px 12px', background:'rgba(255,255,255,0.06)', borderRadius:10, border:'1px solid rgba(255,255,255,0.08)' }}>
                     <div>
-                      <div style={{ color:'#fff', fontWeight:700, fontSize:13 }}>{val.label}</div>
+                      <div style={{ color:'#fff', fontWeight:700, fontSize:13 }}>{tDiff(val.difficulty)}</div>
                       <div style={{ color:'rgba(255,224,130,0.45)', fontSize:10 }}>{val.tileCount} {t('tiles_label')}</div>
                     </div>
                     {best ? (
@@ -991,8 +991,8 @@
 
     const TILE_COLORS = ['#E8000A', '#29B6F6', '#F9A825', '#212121'];
     const GRID_CONFIGS = {
-      '8x4': { rows:4, cols:8, pairs:16, maxNum:4, label:t('difficulty_classic'), difficulty:'Classic', tileCount:32 },
-      '8x7': { rows:7, cols:8, pairs:28, maxNum:7, label:t('difficulty_hard'),    difficulty:'Hard',    tileCount:56 },
+      '8x4': { rows:4, cols:8, pairs:16, maxNum:4, difficulty:'Classic', tileCount:32 },
+      '8x7': { rows:7, cols:8, pairs:28, maxNum:7, difficulty:'Hard',    tileCount:56 },
     };
     const PREVIEW_TILES = [
       { color:'#E8000A', number:1, rot:-8,  y: 4 },
@@ -2053,10 +2053,11 @@
                   <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:12, padding:2, display:'flex' }}>
                     <div dangerouslySetInnerHTML={{ __html: character.renderSvg().replace(/width="90"/, 'width="100"').replace(/height="110"/, 'height="126"') }} />
                   </div>
-                  <div style={{ background:'rgba(0,0,0,0.35)', border:`1.5px solid rgba(255,255,255,0.4)`,
-                    borderRadius:20, padding:'3px 9px',
-                    fontSize:8.5, fontWeight:800, color:'#fff', letterSpacing:0.5,
-                    textAlign:'center', maxWidth:100, textShadow:'0 1px 2px rgba(0,0,0,0.5)' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:`1.5px solid rgba(255,255,255,0.5)`,
+                    borderRadius:20, padding:'4px 12px',
+                    fontSize:11, fontWeight:900, color:'#fff', letterSpacing:0.8,
+                    textAlign:'center', maxWidth:110, textShadow:'0 1px 3px rgba(0,0,0,0.6)',
+                    whiteSpace:'nowrap' }}>
                     {charName}
                   </div>
                 </div>
@@ -2980,7 +2981,7 @@ Istanbul, Turkey 🇹🇷`
                           color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer',
                           display:'flex', justifyContent:'space-between', alignItems:'center',
                           boxShadow: mode===key ? '0 4px 14px rgba(70,130,180,0.45)' : 'none' }}>
-                        <span style={{ fontSize:20, fontWeight:900, letterSpacing:0.5 }}>{val.label}</span>
+                        <span style={{ fontSize:20, fontWeight:900, letterSpacing:0.5 }}>{tDiff(val.difficulty)}</span>
                         <span style={{ fontSize:12, fontWeight:700,
                           color: mode===key ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.5)',
                           background: mode===key ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)',
