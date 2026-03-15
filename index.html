@@ -501,7 +501,13 @@
       }
     };
 
-    function getLang() { return localStorage.getItem('mindsharp_lang') || 'en'; }
+    function getLang() {
+      const stored = localStorage.getItem('mindsharp_lang');
+      if (stored) return stored;
+      // Tarayıcı/cihaz dilini otomatik tespit et
+      const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+      return browserLang.startsWith('tr') ? 'tr' : 'en';
+    }
     function setLang(lang) { localStorage.setItem('mindsharp_lang', lang); }
     function t(key, params) {
       const lang = getLang();
@@ -1434,18 +1440,18 @@
                   <span style={{ fontSize:16 }}>👤</span>
                   <span style={{ color:'#ffe066', fontWeight:800, fontSize:13 }}>{t("daily_add_name")}</span>
                 </div>
-                <div style={{ display:'flex', gap:7 }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
                   <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
                     onKeyDown={e => { if (e.key==='Enter') { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} } }}
                     placeholder={t("name_placeholder")} maxLength={20}
-                    style={{ flex:1, padding:'11px 13px', borderRadius:11, background:'rgba(255,255,255,0.92)',
+                    style={{ width:'100%', padding:'11px 13px', borderRadius:11, background:'rgba(255,255,255,0.92)',
                       border:'2px solid rgba(243,156,18,0.7)', color:'#1a0e00', fontSize:15, fontWeight:600,
                       outline:'none', boxSizing:'border-box' }}
                   />
                   <button onClick={() => { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} }}
-                    style={{ padding:'11px 18px', borderRadius:11, border:'none',
-                      background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.15)',
-                      color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', flexShrink:0,
+                    style={{ width:'100%', padding:'12px', borderRadius:11, border:'none',
+                      background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.3)',
+                      color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer',
                       boxShadow: nameInput.trim() ? '0 3px 12px rgba(243,156,18,0.4)' : 'none', transition:'all 0.2s' }}>
                     {t("save_button")}
                   </button>
@@ -1500,33 +1506,61 @@
               {t('daily_header',{mode:modeLabel})}
             </h2>
           </div>
-          <div style={{ background:'rgba(0,0,0,0.3)', borderRadius:14, padding:'10px 14px',
-            border:'1px solid rgba(255,255,255,0.1)', marginBottom:4 }}>
-            <div style={{ color:'rgba(255,224,130,0.6)', fontSize:11, fontWeight:700, letterSpacing:1 }}>
-              {dateLabel + ' · ' + entries.length + ' ' + t('daily_players_today')}
+          <div style={{ background:'linear-gradient(135deg,rgba(243,156,18,0.15),rgba(230,126,34,0.08))',
+            borderRadius:14, padding:'12px 16px',
+            border:'1px solid rgba(243,156,18,0.3)', marginBottom:2,
+            display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div>
+              <div style={{ color:'#ffe082', fontSize:13, fontWeight:800 }}>{dateLabel}</div>
+              <div style={{ color:'rgba(255,224,130,0.55)', fontSize:11, fontWeight:600, marginTop:2 }}>
+                {getLang()==='tr'
+                  ? 'Bugün oynayan ' + entries.length + ' oyuncu'
+                  : entries.length + ' players today'}
+              </div>
             </div>
+            <div style={{ fontSize:28 }}>🏆</div>
           </div>
           {loading ? (
             <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>{t('loading')}</div>
           ) : entries.length===0 ? (
             <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>{t("daily_no_scores")}</div>
           ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
               {entries.map((e,i) => {
                 const isMe = myScore > 0 && e.score === myScore;
                 const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+                const rankColors = ['#f1c40f','#bdc3c7','#cd7f32'];
                 return (
                   <div key={i} style={{ display:'flex', alignItems:'center', gap:8,
-                    background: isMe ? 'rgba(243,156,18,0.25)' : i===0 ? 'rgba(241,196,15,0.15)' : 'rgba(255,255,255,0.07)',
-                    border: isMe ? '1.5px solid rgba(243,156,18,0.6)' : '1px solid rgba(255,255,255,0.08)',
-                    borderRadius:10, padding:'10px 12px' }}>
-                    <span style={{ color:'#ffe082', fontWeight:900, fontSize:13, minWidth:28 }}>{medal||('#'+(i+1))}</span>
+                    background: isMe
+                      ? 'linear-gradient(135deg,rgba(243,156,18,0.35),rgba(230,126,34,0.25))'
+                      : i===0 ? 'linear-gradient(135deg,rgba(241,196,15,0.2),rgba(243,156,18,0.1))'
+                      : i%2===0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                    border: isMe ? '1.5px solid rgba(243,156,18,0.7)'
+                      : i===0 ? '1px solid rgba(241,196,15,0.3)'
+                      : '1px solid rgba(255,255,255,0.06)',
+                    borderRadius:12, padding:'11px 14px',
+                    boxShadow: isMe ? '0 2px 12px rgba(243,156,18,0.2)' : 'none' }}>
+                    <span style={{ fontWeight:900, fontSize:14, minWidth:30, textAlign:'center',
+                      color: medal ? (rankColors[i]||'#aaa') : 'rgba(255,224,130,0.5)' }}>
+                      {medal||('#'+(i+1))}
+                    </span>
                     <span style={{ color:isMe?'#ffe066':'#fff', fontWeight:isMe?800:600, flex:1, fontSize:13,
                       overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {(e.user||t('guest'))+(isMe ? ' ('+t('daily_players_today').split(' ')[0]+')' : '')}
+                      {e.user||t('guest')}
                     </span>
-                    <span style={{ color:'#ffe082', fontWeight:800, fontSize:13 }}>{(e.score||0).toLocaleString()}</span>
-                    <span style={{ color:'rgba(255,224,130,0.55)', fontSize:11, minWidth:44, textAlign:'right' }}>{fmtT(e.time||0)}</span>
+                    {isMe && (
+                      <span style={{ background:'rgba(243,156,18,0.3)', border:'1px solid rgba(243,156,18,0.5)',
+                        color:'#ffe082', fontSize:10, fontWeight:800, padding:'2px 7px', borderRadius:20, flexShrink:0 }}>
+                        {getLang()==='tr' ? 'sen' : 'you'}
+                      </span>
+                    )}
+                    <span style={{ color:'#ffe082', fontWeight:900, fontSize:14, minWidth:50, textAlign:'right', flexShrink:0 }}>
+                      {(e.score||0).toLocaleString()}
+                    </span>
+                    <span style={{ color:'rgba(255,224,130,0.45)', fontSize:11, minWidth:38, textAlign:'right', flexShrink:0 }}>
+                      {fmtT(e.time||0)}
+                    </span>
                   </div>
                 );
               })}
@@ -2620,7 +2654,7 @@ Istanbul, Turkey 🇹🇷`
                       <span style={{ fontSize:16 }}>👤</span>
                       <span style={{ color:'#ffe066', fontWeight:800, fontSize:13 }}>{t("enter_name_prompt")}</span>
                     </div>
-                    <div style={{ display:'flex', gap:7 }}>
+                    <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
                       <input type="text" value={tempUser} onChange={e => setTempUser(e.target.value)}
                         onKeyDown={e => {
                           if (e.key==='Enter' && tempUser.trim()) {
@@ -2631,7 +2665,7 @@ Istanbul, Turkey 🇹🇷`
                           }
                         }}
                         placeholder={t("name_placeholder")} maxLength={20}
-                        style={{ flex:1, padding:'11px 13px', borderRadius:11,
+                        style={{ width:'100%', padding:'11px 13px', borderRadius:11,
                           background:'rgba(255,255,255,0.92)', border:'2px solid rgba(243,156,18,0.7)',
                           color:'#1a0e00', fontSize:15, fontWeight:600, outline:'none', boxSizing:'border-box' }}
                       />
@@ -2640,9 +2674,9 @@ Istanbul, Turkey 🇹🇷`
                         setUser(n); try { localStorage.setItem('memotiles_user',n); } catch {}
                         setTempUser(''); trackEvent('name_entered',{source:'menu'});
                         showToast(t('name_saved_toast'));
-                      }} style={{ padding:'11px 18px', borderRadius:11, border:'none',
-                        background: tempUser.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.15)',
-                        color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', flexShrink:0,
+                      }} style={{ width:'100%', padding:'12px', borderRadius:11, border:'none',
+                        background: tempUser.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.3)',
+                        color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer',
                         transition:'all 0.2s', boxShadow: tempUser.trim() ? '0 3px 12px rgba(243,156,18,0.4)' : 'none' }}>
                         {t("save_button")}
                       </button>
