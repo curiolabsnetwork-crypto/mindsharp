@@ -1499,80 +1499,74 @@
       }, [dateKey, gridMode]);
       return (
         <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+          {/* Header — ScoreBoard ile aynı */}
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
-            <button onClick={onBack} style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.15)',
-              color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16 }}>{'←'}</button>
-            <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:18, fontWeight:900 }}>
-              {t('daily_header',{mode:modeLabel})}
-            </h2>
+            <button onClick={onBack} style={{ background:'rgba(0,0,0,0.35)', border:'1px solid rgba(255,255,255,0.2)',
+              color:'#ffe082', borderRadius:10, padding:'7px 13px', cursor:'pointer', fontSize:16 }}>←</button>
+            <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:20,
+              textShadow:'0 2px 6px rgba(0,0,0,0.8)' }}>{t('daily_header',{mode:modeLabel})}</h2>
           </div>
-          <div style={{ background:'linear-gradient(135deg,rgba(100,50,0,0.75),rgba(60,25,0,0.7))',
-            borderRadius:14, padding:'12px 16px',
-            border:'1px solid rgba(243,156,18,0.35)', marginBottom:2,
-            display:'flex', alignItems:'center', justifyContent:'space-between',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
-            <div>
-              <div style={{ color:'#ffe082', fontSize:13, fontWeight:800, textShadow:'0 1px 3px rgba(0,0,0,0.5)' }}>{dateLabel}</div>
-              <div style={{ color:'rgba(255,220,130,0.7)', fontSize:11, fontWeight:600, marginTop:2 }}>
-                {getLang()==='tr'
-                  ? 'Bugün oynayan ' + entries.length + ' oyuncu'
-                  : entries.length + ' players today'}
-              </div>
+
+          <div style={{ background:'rgba(0,0,0,0.5)', borderRadius:16, padding:'14px 10px',
+            border:'1px solid rgba(255,255,255,0.15)', backdropFilter:'blur(4px)' }}>
+
+            {/* Tarih + oyuncu sayısı satırı */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10, padding:'0 4px' }}>
+              <span style={{ color:'#ffe082', fontSize:12, fontWeight:700 }}>{dateLabel}</span>
+              <span style={{ color:'rgba(255,224,130,0.6)', fontSize:11 }}>
+                {getLang()==='tr' ? 'Bugün oynayan ' + entries.length + ' oyuncu' : entries.length + ' players today'}
+              </span>
             </div>
-            <div style={{ fontSize:28 }}>🏆</div>
-          </div>
-          {loading ? (
-            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>{t('loading')}</div>
-          ) : entries.length===0 ? (
-            <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>{t("daily_no_scores")}</div>
-          ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-              {entries.map((e,i) => {
-                const isMe = myScore > 0 && e.score === myScore;
-                const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-                const rankColors = ['#f1c40f','#bdc3c7','#cd7f32'];
-                return (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:8,
-                    background: isMe
-                      ? 'linear-gradient(135deg,rgba(180,90,0,0.75),rgba(140,60,0,0.7))'
-                      : i===0 ? 'linear-gradient(135deg,rgba(100,70,0,0.75),rgba(80,55,0,0.7))'
-                      : 'rgba(20,10,0,0.62)',
-                    border: isMe ? '1.5px solid rgba(243,156,18,0.8)'
-                      : i===0 ? '1px solid rgba(200,160,0,0.4)'
-                      : '1px solid rgba(255,255,255,0.07)',
-                    borderRadius:12, padding:'11px 14px',
-                    boxShadow: isMe ? '0 2px 14px rgba(243,156,18,0.25)' : '0 1px 4px rgba(0,0,0,0.3)' }}>
-                    <span style={{ fontWeight:900, fontSize:14, minWidth:30, textAlign:'center',
-                      color: medal ? (rankColors[i]||'rgba(255,224,130,0.6)') : 'rgba(255,224,130,0.5)',
-                      textShadow: medal ? '0 1px 4px rgba(0,0,0,0.5)' : 'none' }}>
-                      {medal||('#'+(i+1))}
-                    </span>
-                    <span style={{ color: isMe ? '#ffe066' : i<=2 ? '#fff' : 'rgba(255,255,255,0.9)',
-                      fontWeight:isMe?800:i<=2?700:500, flex:1, fontSize:13,
-                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-                      textShadow:'0 1px 3px rgba(0,0,0,0.6)' }}>
-                      {e.user||t('guest')}
-                    </span>
-                    {isMe && (
-                      <span style={{ background:'rgba(243,156,18,0.4)', border:'1px solid rgba(243,156,18,0.7)',
-                        color:'#ffe082', fontSize:10, fontWeight:800, padding:'2px 7px', borderRadius:20, flexShrink:0,
-                        textShadow:'0 1px 2px rgba(0,0,0,0.4)' }}>
-                        {getLang()==='tr' ? 'sen' : 'you'}
+
+            {loading ? (
+              <div style={{ color:'rgba(255,255,255,0.4)', textAlign:'center', padding:24 }}>{t('loading')}</div>
+            ) : entries.length===0 ? (
+              <div style={{ color:'#ffe082', textAlign:'center', fontSize:13, margin:'16px 0' }}>{t("daily_no_scores")}</div>
+            ) : (
+              <div style={{ maxHeight:400, overflowY:'auto' }}>
+                {entries.map((e,i) => {
+                  const isMe = myScore > 0 && e.score === myScore;
+                  const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+                  return (
+                    <div key={i} style={{ display:'flex', alignItems:'center', padding:'6px 8px', marginBottom:4, gap:4,
+                      background: isMe ? 'rgba(243,156,18,0.25)' : i===0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
+                      borderRadius:8, fontSize:11,
+                      border: isMe ? '1.5px solid rgba(243,156,18,0.6)' : i===0 ? '1px solid rgba(255,200,0,0.4)' : '1px solid rgba(255,255,255,0.05)' }}>
+                      {/* Sıra / madalya */}
+                      <span style={{ fontWeight:700, color: medal ? '#ffe066' : isMe ? '#ffe066' : '#fff',
+                        minWidth:52, flexShrink:0, fontSize:13 }}>
+                        {medal || ('#'+(i+1))}
                       </span>
-                    )}
-                    <span style={{ color:'#ffe082', fontWeight:900, fontSize:14, minWidth:50, textAlign:'right', flexShrink:0,
-                      textShadow:'0 1px 3px rgba(0,0,0,0.5)' }}>
-                      {(e.score||0).toLocaleString()}
-                    </span>
-                    <span style={{ color:'rgba(255,224,130,0.7)', fontSize:11, minWidth:38, textAlign:'right', flexShrink:0,
-                      textShadow:'0 1px 2px rgba(0,0,0,0.5)' }}>
-                      {fmtT(e.time||0)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                      {/* İsim */}
+                      <span style={{ color: isMe ? '#ffe066' : '#fff', fontWeight: isMe ? 800 : 600,
+                        flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {e.user||t('guest')}
+                      </span>
+                      {/* Sen badge */}
+                      {isMe && (
+                        <span style={{ background:'rgba(243,156,18,0.35)', border:'1px solid rgba(243,156,18,0.6)',
+                          color:'#ffe082', fontSize:9, fontWeight:800, padding:'1px 6px', borderRadius:20, flexShrink:0, marginRight:2 }}>
+                          {getLang()==='tr' ? 'sen' : 'you'}
+                        </span>
+                      )}
+                      {/* Skor */}
+                      <span style={{ color:'#ffe082', fontWeight:800, minWidth:44, textAlign:'right', flexShrink:0 }}>
+                        {(e.score||0).toLocaleString()}
+                      </span>
+                      {/* Hamle */}
+                      <span style={{ color:'#ffe082', minWidth:36, textAlign:'right', flexShrink:0 }}>
+                        {(e.moves||0)}mv
+                      </span>
+                      {/* Süre */}
+                      <span style={{ color:'#ffe082', minWidth:36, textAlign:'right', flexShrink:0 }}>
+                        {fmtT(e.time||0)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -2109,7 +2103,7 @@ Istanbul, Turkey 🇹🇷`
       );
     }
 
-    function SettingsModal({ onClose, settings }) {
+    function SettingsModal({ onClose, settings, onLangChange }) {
       const [legalType, setLegalType] = React.useState(null);
       const [, forceUpdate] = React.useState(0);
       const handleShare = async () => {
@@ -2169,12 +2163,12 @@ Istanbul, Turkey 🇹🇷`
                   display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
               </div>
               <div style={{ overflowY:'auto', flex:1 }}>
-                {/* FIX: Dil seçimi — window.location.reload() ile anında tepki */}
+                {/* Dil seçimi — reload yok, sadece state güncelle */}
                 <div style={{ padding:'12px 14px 8px' }}>
                   <SectionHeader label={t("language_label")} />
                   <div style={{ display:'flex', gap:8, marginTop:4 }}>
                     {[{code:'en',label:'English',flag:'🇬🇧'},{code:'tr',label:'Türkçe',flag:'🇹🇷'}].map(lang => (
-                      <button key={lang.code} onClick={() => { setLang(lang.code); window.location.reload(); }}
+                      <button key={lang.code} onClick={() => { setLang(lang.code); forceUpdate(x => x+1); onLangChange && onLangChange(); }}
                         style={{ flex:1, padding:'10px 0', borderRadius:10,
                           border: getLang()===lang.code ? '2px solid #f5a623' : '2px solid rgba(200,169,110,0.3)',
                           background: getLang()===lang.code ? 'rgba(245,166,35,0.15)' : 'rgba(255,255,255,0.06)',
@@ -2879,7 +2873,7 @@ Istanbul, Turkey 🇹🇷`
             />
           )}
 
-          {showSettings && <SettingsModal onClose={() => setShowSettings(false)} settings={settings} />}
+          {showSettings && <SettingsModal onClose={() => setShowSettings(false)} settings={settings} onLangChange={() => setForceRender(x=>x+1)} />}
 
           {showDailyModal && dailyResult && (
             <DailyCompleteModal result={dailyResult} streak={dailyStreak}
