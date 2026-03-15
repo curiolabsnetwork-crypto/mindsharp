@@ -1244,10 +1244,25 @@
       }
     }
 
-    // Username update devre dışı — güvenlik kuralları update'i engelliyor
+    // Update username in score documents (only 'user' field can be changed per rules)
     async function updateScoreUsername(docId, newUser) {
-      // Firestore update blocked by security rules
-      console.log("Username update skipped — set at creation time");
+      if (!db || !docId) return;
+      try {
+        await db.collection("scores").doc(docId).update({ user: newUser });
+        console.log("Username updated in scores");
+      } catch (e) {
+        console.warn("Score username update failed:", e);
+      }
+    }
+
+    async function updateDailyScoreUsername(docId, newUser) {
+      if (!db || !docId) return;
+      try {
+        await db.collection("daily_scores").doc(docId).update({ user: newUser });
+        console.log("Username updated in daily_scores");
+      } catch (e) {
+        console.warn("Daily score username update failed:", e);
+      }
     }
 
     // ── TOAST COMPONENT ──────────────────────────────────────
@@ -3189,9 +3204,19 @@ Istanbul, Turkey 🇹🇷`
                         padding: '3px 8px', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 8 }}>Change</button>
                   </div>
                 ) : (
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ color: 'rgba(255,224,130,0.6)', fontSize: 11, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>
-                      Enter your name for the leaderboard
+                  <div style={{
+                    marginBottom: 10, padding: '14px 14px 12px',
+                    borderRadius: 16,
+                    background: 'linear-gradient(135deg,rgba(255,220,80,0.18),rgba(243,156,18,0.12))',
+                    border: '2px solid rgba(255,210,60,0.55)',
+                    boxShadow: '0 0 18px rgba(243,156,18,0.15)',
+                    animation: 'dailyGlow 2s ease-in-out infinite',
+                  }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8, justifyContent:'center' }}>
+                      <span style={{ fontSize:16 }}>👤</span>
+                      <span style={{ color:'#ffe066', fontWeight:800, fontSize:13, letterSpacing:0.2 }}>
+                        Enter your name for the leaderboard!
+                      </span>
                     </div>
                     <div style={{ display: 'flex', gap: 7 }}>
                       <input
@@ -3209,7 +3234,11 @@ Istanbul, Turkey 🇹🇷`
                         }}
                         placeholder="Your name…"
                         maxLength={20}
-                        className="ms-username-input"
+                        style={{
+                          flex:1, padding:'11px 13px', borderRadius:11,
+                          background:'rgba(255,255,255,0.92)', border:'2px solid rgba(243,156,18,0.7)',
+                          color:'#1a0e00', fontSize:15, fontWeight:600, outline:'none', boxSizing:'border-box',
+                        }}
                       />
                       <button
                         onClick={() => {
@@ -3221,10 +3250,11 @@ Istanbul, Turkey 🇹🇷`
                           showToast('✓ Name saved!');
                         }}
                         style={{
-                          padding: '0 16px', borderRadius: 11, border: 'none',
-                          background: tempUser.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.1)',
-                          color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer',
-                          flexShrink: 0, transition: 'background 0.2s',
+                          padding: '11px 18px', borderRadius: 11, border: 'none',
+                          background: tempUser.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(255,255,255,0.15)',
+                          color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer',
+                          flexShrink: 0, transition: 'all 0.2s',
+                          boxShadow: tempUser.trim() ? '0 3px 12px rgba(243,156,18,0.4)' : 'none',
                         }}
                       >Save</button>
                     </div>
@@ -3508,9 +3538,7 @@ Istanbul, Turkey 🇹🇷`
               onSaveName={(name) => {
                 setUser(name);
                 try { localStorage.setItem('memotiles_user', name); } catch {}
-                if (dailyDocId && db) {
-                  db.collection('daily_scores').doc(dailyDocId).update({ user: name }).catch(function(){});
-                }
+                updateDailyScoreUsername(dailyDocId, name);
               }}
               onLeaderboard={() => { setShowDailyModal(false); setScreen('daily_scores'); }}
               onMenu={() => { setShowDailyModal(false); setScreen('menu'); }}
