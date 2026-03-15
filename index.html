@@ -477,7 +477,7 @@
         "terms_of_service": "Kullanım Koşulları",
         "version_label": "MindSharp v1.0 · © 2026 Mendebur Studios",
         "language_label": "Dil",
-        "install_title": "Uygulamayı Kur",
+        "install_title": "Anasayfaya eklemek için",
         "install_subtitle": "Ana ekrana ekle — mobil uygulama gibi görünür",
         "install_button": "Kur",
         "install_done": "🎉 MindSharp ana ekranınıza eklendi!",
@@ -832,7 +832,8 @@
             <rect x="3" y="3" width="18" height="18" rx="3.5"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
           </svg>
         );
-        const stepStyle = { color:'rgba(255,255,255,0.38)', fontSize:12 };
+        const stepStyle = { color:'rgba(255,255,255,0.7)', fontSize:12 };
+        const dimStyle  = { color:'rgba(255,255,255,0.38)', fontSize:12 };
         return (
           <div style={{ width:'100%', marginTop:8, boxSizing:'border-box', background:'rgba(15,15,22,0.95)',
             border:'1px solid rgba(255,255,255,0.09)', borderRadius:13, padding:'12px 14px 13px', position:'relative' }}>
@@ -840,17 +841,23 @@
               color:'rgba(255,255,255,0.18)', fontSize:13, cursor:'pointer', lineHeight:1, padding:0 }}>✕</button>
             <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:11 }}>
               <span style={{ fontSize:17 }}>📲</span>
-              <span style={{ color:'#fff', fontWeight:800, fontSize:15, letterSpacing:0.1 }}>{t("install_title")}</span>
+              <span style={{ color:'#fff', fontWeight:800, fontSize:14, letterSpacing:0.1 }}>{t("install_title")}</span>
             </div>
-            <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7 }}>
-              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>1.</span>
-              <span style={stepStyle}>{t("install_ios_tap")}</span><ShareIcon/>
-              <span style={stepStyle}>{t("install_ios_share")}</span>
+            {/* Adım 1 */}
+            <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:8 }}>
+              <span style={{ color:'rgba(255,255,255,0.35)', fontSize:11, minWidth:16, fontWeight:700 }}>1.</span>
+              <ShareIcon/>
+              <span style={stepStyle}>
+                {getLang()==='tr' ? '(Paylaş) işaretine tıkla' : 'Tap the Share icon'}
+              </span>
             </div>
+            {/* Adım 2 */}
             <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-              <span style={{ color:'rgba(255,255,255,0.18)', fontSize:10, minWidth:14 }}>2.</span>
-              <span style={stepStyle}>{t("install_ios_tap")}</span><AddIcon/>
-              <span style={stepStyle}>{t("install_ios_add")}</span>
+              <span style={{ color:'rgba(255,255,255,0.35)', fontSize:11, minWidth:16, fontWeight:700 }}>2.</span>
+              <AddIcon/>
+              <span style={stepStyle}>
+                {getLang()==='tr' ? "Ana Ekrana Ekle'yi seç" : "Select Add to Home Screen"}
+              </span>
             </div>
           </div>
         );
