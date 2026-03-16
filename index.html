@@ -2838,8 +2838,11 @@ Istanbul, Turkey 🇹🇷`
       const innerW     = Math.max(0, boardWidth - BOARD_PAD*2);
       const tileW      = Math.max(22, Math.floor((innerW - GAP*(cfg.cols-1)) / cfg.cols));
 
+      // forceRender used to trigger re-render on lang change
+      const _lang = forceRender && getLang();
+
       return (
-        <div key={'app-lang-' + forceRender + '-' + getLang()} style={{ minHeight:'100vh', width:'100%', maxWidth:430, margin:'0 auto',
+        <div style={{ minHeight:'100vh', width:'100%', maxWidth:430, margin:'0 auto',
           backgroundImage:"url('/wood_bg.png')", backgroundSize:'cover', backgroundPosition:'center',
           backgroundRepeat:'no-repeat', backgroundColor:'#2b1a10',
           display:'flex', flexDirection:'column', alignItems:'center',
