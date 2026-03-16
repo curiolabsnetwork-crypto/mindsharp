@@ -352,7 +352,7 @@
         "share_daily_title": "🎯 MindSharp Daily Challenge",
         "share_daily_streak": "day streak!",
         "share_certificate_title": "MindSharp Certificate",
-        "share_certificate_text": "I scored {score} on MindSharp! 🧠",
+        "share_certificate_text": "I scored {score} on MindSharp! 🧠 Can you beat me? 🏆",
         "cert_achievement": "A C H I E V E M E N T",
         "cert_congratulations": "Congratulations!",
         "cert_score": "S C O R E",
@@ -491,7 +491,7 @@
         "share_daily_title": "🎯 MindSharp Günlük Yarışma",
         "share_daily_streak": "günlük seri!",
         "share_certificate_title": "MindSharp Sertifikası",
-        "share_certificate_text": "MindSharp'ta {score} puan aldım! 🧠",
+        "share_certificate_text": "MindSharp'ta {score} puan aldım! 🧠 Beni geçebilir misin? 🏆",
         "cert_achievement": "B A Ş A R I",
         "cert_congratulations": "Tebrikler!",
         "cert_score": "S K O R",
@@ -1868,12 +1868,12 @@
         bg2.addColorStop(0,'#b8860b');bg2.addColorStop(0.5,'#f0c040');bg2.addColorStop(1,'#b8860b');
         ctx.fillStyle=bg2;ctx.fill();
         ctx.save();ctx.textAlign='center';ctx.font='800 34px Segoe UI,Arial';ctx.fillStyle='#5a2d00';
-        ctx.fillText(lang==='tr'?'B A Ş A R I':'A C H I E V E M E N T',W/2,by+46);ctx.restore();
+        ctx.fillText('C O N G R A T U L A T I O N S !',W/2,by+46);ctx.restore();
 
-        // Rank
-        if(rank){
-          const rankColor=rank===1?'#f1c40f':rank<=3?'#e67e22':rank<=10?'#27ae60':'#7f8c8d';
-          const rankLabel=rank===1?(lang==='tr'?'YENİ REKOR!':'NEW RECORD!'):rank<=3?(lang==='tr'?'İLK 3 — Harika!':'TOP 3 — Amazing!'):`#${rank}`;
+        // Rank — only for top 3
+        if(rank && rank<=3){
+          const rankColor=rank===1?'#f1c40f':rank<=3?'#e67e22':'#27ae60';
+          const rankLabel=rank===1?(lang==='tr'?'YENİ REKOR!':'NEW RECORD!'):(lang==='tr'?'İLK 3 — Harika!':'TOP 3 — Amazing!');
           ctx.save();ctx.textAlign='center';ctx.font='900 42px Segoe UI';ctx.fillStyle=rankColor;
           ctx.fillText(rankLabel,W/2,cy+298);ctx.restore();
         }
@@ -1918,20 +1918,6 @@
           ctx.font='900 72px Segoe UI,Arial';ctx.fillStyle=col.color;ctx.fillText(String(col.value),colX,statsY+88);ctx.restore();
         });
 
-        // Fact kutusu
-        const factY=cy+1460;
-        rr(cx+60,factY,cw-120,180,20);
-        ctx.fillStyle='rgba(200,169,110,0.12)';ctx.fill();
-        rr(cx+60,factY,cw-120,180,20);
-        ctx.strokeStyle='rgba(200,169,110,0.4)';ctx.lineWidth=3;ctx.stroke();
-        ctx.save();ctx.textAlign='center';ctx.font='700 24px Segoe UI';ctx.fillStyle='#c8860a';
-        ctx.fillText('💡 '+(lang==='tr'?'Biliyor muydun?':'Did you know?'),W/2,factY+42);ctx.restore();
-        // Fact metni — sözcük kaydırma
-        ctx.save();ctx.textAlign='center';ctx.font='500 26px Segoe UI';ctx.fillStyle='#4a2a00';
-        const words=factText.split(' '); let line=''; const maxW=cw-180; let fy=factY+82;
-        for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,W/2,fy);line=word;fy+=38;}else{line=test;}}
-        if(line)ctx.fillText(line,W/2,fy);ctx.restore();
-
         // Footer
         ctx.save();ctx.strokeStyle='rgba(180,140,80,0.3)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx+100,cy+ch-130);ctx.lineTo(cx+cw-100,cy+ch-130);ctx.stroke();
         ctx.textAlign='center';ctx.font='600 28px Segoe UI';ctx.fillStyle='rgba(100,60,10,0.5)';ctx.fillText(`✦  ${dateStr}  ✦`,W/2,cy+ch-90);
@@ -1948,7 +1934,7 @@
           const blob = await res.blob();
           const file = new File([blob],'mindsharp-certificate.png',{type:'image/png'});
           if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-            await navigator.share({title:t('share_certificate_title'),text:t('share_certificate_text',{score:score.toLocaleString()}),files:[file]});
+            await navigator.share({title:t('share_certificate_title'),text:t('share_certificate_text',{score:score}),files:[file]});
             return;
           }
           const a = document.createElement('a');
