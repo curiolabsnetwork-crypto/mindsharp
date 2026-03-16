@@ -64,7 +64,7 @@
     }
     /* FIX: CSS'te JS template literal kullanılamaz — sabit string */
     body::after{
-      content:"© 2026 Mendebur Studios. Tüm hakları saklıdır.";
+      content:"© 2026 Mendebur Studios. All rights reserved.";
       position: fixed;
       left: 0;
       right: 0;
@@ -76,6 +76,9 @@
       z-index: 2;
       pointer-events: none;
       user-select: none;
+    }
+    body.lang-tr::after{
+      content:"© 2026 Mendebur Studios. Tüm hakları saklıdır.";
     }
     .ms-hint {
       width: calc(100% - 24px);
@@ -508,7 +511,9 @@
       const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
       return browserLang.startsWith('tr') ? 'tr' : 'en';
     }
-    function setLang(lang) { localStorage.setItem('mindsharp_lang', lang); }
+    function setLang(lang) { localStorage.setItem('mindsharp_lang', lang); document.body.classList.toggle('lang-tr', lang === 'tr'); }
+    // Set initial body class for copyright footer
+    (function(){ var l = getLang(); document.body.classList.toggle('lang-tr', l === 'tr'); })();
     function t(key, params) {
       const lang = getLang();
       let s = (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || (TRANSLATIONS.en && TRANSLATIONS.en[key]) || key;
