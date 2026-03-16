@@ -2834,7 +2834,7 @@ Istanbul, Turkey 🇹🇷`
       const tileW      = Math.max(22, Math.floor((innerW - GAP*(cfg.cols-1)) / cfg.cols));
 
       return (
-        <div style={{ minHeight:'100vh', width:'100%', maxWidth:430, margin:'0 auto',
+        <div key={'app-lang-' + forceRender + '-' + getLang()} style={{ minHeight:'100vh', width:'100%', maxWidth:430, margin:'0 auto',
           backgroundImage:"url('/wood_bg.png')", backgroundSize:'cover', backgroundPosition:'center',
           backgroundRepeat:'no-repeat', backgroundColor:'#2b1a10',
           display:'flex', flexDirection:'column', alignItems:'center',
