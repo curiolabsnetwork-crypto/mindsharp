@@ -2097,26 +2097,76 @@
                 </button>
               )}
 
-              {/* Buttons */}
-              <div style={{ display:'flex', gap:7, marginBottom:7 }}>
-                <button onClick={onScores} style={{ flex:1, padding:'9px 0', borderRadius:11, border:'none',
-                  background:'linear-gradient(135deg,#2980b9,#3498db)', color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer' }}>
-                  {t("high_scores")}
-                </button>
-                <button onClick={handleShare} disabled={sharing} style={{ flex:1, padding:'9px 0', borderRadius:11, border:'none',
-                  background:sharing?'rgba(230,126,34,0.5)':'linear-gradient(135deg,#f39c12,#e67e22)',
-                  color:'#fff', fontWeight:800, fontSize:12, cursor:'pointer' }}>
-                  {sharing ? t('ad_loading') : t('share_button')}
-                </button>
-              </div>
-              <div style={{ display:'flex', gap:7, marginBottom:8 }}>
-                <button onClick={onMenu} style={{ flex:1, padding:'9px 0', borderRadius:11,
-                  border:'2px solid #c8a96e', background:'transparent',
-                  color:'#7a5c2e', fontWeight:800, fontSize:12, cursor:'pointer' }}>{t("menu_button")}</button>
-                <button onClick={onReplay} style={{ flex:1, padding:'9px 0', borderRadius:11, border:'none',
-                  background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:800,
-                  fontSize:12, cursor:'pointer' }}>{t("play_again")}</button>
-              </div>
+              {/* Buttons — hiyerarşik */}
+              {(() => {
+                const isGoodScore = score >= 1000 || (rank && rank <= 10);
+                if (isGoodScore) {
+                  return (
+                    <div>
+                      <style>{`
+                        @keyframes pulseGlow {
+                          0%,100% { box-shadow: 0 0 0 0 rgba(243,156,18,0.7), 0 4px 20px rgba(243,156,18,0.5); transform: scale(1); }
+                          50% { box-shadow: 0 0 0 8px rgba(243,156,18,0), 0 6px 28px rgba(243,156,18,0.7); transform: scale(1.02); }
+                        }
+                      `}</style>
+                      <div style={{ textAlign:'center', fontSize:11, fontWeight:800, color:'#c8860a',
+                        marginBottom:6, letterSpacing:0.5 }}>
+                        {lang==='tr' ? '🔥 Arkadaşlarına meydan oku!' : '🔥 Challenge your friends!'}
+                      </div>
+                      <button onClick={handleShare} disabled={sharing} style={{ width:'100%', padding:'15px 0',
+                        borderRadius:14, border:'none', marginBottom:8,
+                        background: sharing ? 'rgba(243,156,18,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22,#d35400)',
+                        color:'#fff', fontWeight:900, fontSize:17, cursor:'pointer', letterSpacing:0.5,
+                        animation: sharing ? 'none' : 'pulseGlow 1.8s ease-in-out infinite' }}>
+                        {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : (lang==='tr' ? '📤 Paylaş — Skoru Gönder!' : '📤 Share — Send Your Score!')}
+                      </button>
+                      <button onClick={onReplay} style={{ width:'100%', padding:'11px 0', borderRadius:12,
+                        border:'none', marginBottom:6,
+                        background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
+                        fontSize:14, cursor:'pointer' }}>{t('play_again')}</button>
+                      <div style={{ display:'flex', gap:6, marginBottom:6 }}>
+                        <button onClick={onScores} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
+                          background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
+                          🏆 {t('high_scores')}
+                        </button>
+                        <button onClick={onMenu} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                          border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
+                          color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
+                          {t('menu_button')}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div>
+                      <button onClick={onReplay} style={{ width:'100%', padding:'14px 0', borderRadius:14,
+                        border:'none', marginBottom:7,
+                        background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
+                        fontSize:16, cursor:'pointer', boxShadow:'0 4px 16px rgba(46,204,113,0.4)' }}>
+                        {t('play_again')}
+                      </button>
+                      <button onClick={handleShare} disabled={sharing} style={{ width:'100%', padding:'11px 0',
+                        borderRadius:12, border:'none', marginBottom:7,
+                        background: sharing ? 'rgba(230,126,34,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
+                        color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
+                        {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : t('share_button')}
+                      </button>
+                      <div style={{ display:'flex', gap:6, marginBottom:6 }}>
+                        <button onClick={onScores} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
+                          background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
+                          🏆 {t('high_scores')}
+                        </button>
+                        <button onClick={onMenu} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                          border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
+                          color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
+                          {t('menu_button')}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
               <div style={{ textAlign:'center', fontSize:9, color:'rgba(120,80,20,0.45)', fontStyle:'italic' }}>
                 {t("share_certificate_hint")}
               </div>
