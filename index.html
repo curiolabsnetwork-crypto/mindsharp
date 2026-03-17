@@ -1709,10 +1709,10 @@
     ];
 
     function getCharacter(score) {
-      for (const c of CHARACTERS) {
-        if (score >= c.minScore) return c;
-      }
-      return CHARACTERS[CHARACTERS.length - 1];
+      // Filter all chars with minScore <= score, return highest minScore
+      const eligible = CHARACTERS.filter(c => score >= c.minScore);
+      if (eligible.length === 0) return CHARACTERS[CHARACTERS.length - 1];
+      return eligible.reduce((best, c) => c.minScore > best.minScore ? c : best, eligible[0]);
     }
 
     // ── FACTS ─────────────────────────────────────────────────
@@ -1985,7 +1985,7 @@
             {[{top:14,left:14},{top:14,right:14},{bottom:14,left:14},{bottom:14,right:14}].map((pos,i) => (
               <div key={i} style={{ position:'absolute', ...pos, color:'#c8a96e', fontSize:18, pointerEvents:'none', zIndex:2 }}>✦</div>
             ))}
-            <div style={{ padding:'12px 14px 12px', position:'relative', zIndex:3 }}>
+            <div style={{ padding:'8px 12px 8px', position:'relative', zIndex:3 }}>
               {/* Header */}
               <div style={{ textAlign:'center', marginBottom:6 }}>
                 <h2 style={{ margin:'0 0 4px', fontFamily:'Georgia,serif', fontSize:30, fontWeight:900,
@@ -2036,10 +2036,10 @@
               </div>
 
               {/* Character — centered */}
-              <div style={{ textAlign:'center', marginBottom:8 }}>
+              <div style={{ textAlign:'center', marginBottom:4 }}>
                 <img src={character.img} alt={charName}
-                  style={{ width:140, height:140, borderRadius:16, objectFit:'cover',
-                    border:'3px solid rgba(200,169,110,0.4)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)' }} />
+                  style={{ width:100, height:100, borderRadius:12, objectFit:'cover',
+                    border:'2px solid rgba(200,169,110,0.4)', boxShadow:'0 3px 12px rgba(0,0,0,0.2)' }} />
                 <div>
                   <span style={{ display:'inline-block', marginTop:6, background:'rgba(80,50,20,0.12)',
                     border:'1.5px solid rgba(200,169,110,0.5)', borderRadius:20, padding:'4px 16px',
@@ -2051,17 +2051,17 @@
 
               {/* Character quote */}
               <div style={{ textAlign:'center', fontSize:11, color:'rgba(100,60,10,0.6)', fontStyle:'italic',
-                marginBottom:8 }}>
+                marginBottom:4 }}>
                 "{charQuote}"
               </div>
 
               {/* Score block — centered */}
               <div style={{ background:character.bgGrad||'linear-gradient(135deg,#e67e22,#c0392b)',
-                borderRadius:14, padding:'12px 16px 10px', textAlign:'center',
-                marginBottom:8, boxShadow:'0 6px 20px rgba(200,80,20,0.4)',
+                borderRadius:12, padding:'7px 12px 6px', textAlign:'center',
+                marginBottom:6, boxShadow:'0 4px 14px rgba(200,80,20,0.4)',
                 animation:'scorePop 0.5s 0.2s cubic-bezier(.22,1.2,.36,1) both' }}>
-                <div style={{ color:'rgba(255,255,255,0.9)', fontSize:9, fontWeight:800, letterSpacing:2 }}>{t('score_label')}</div>
-                <div style={{ color:'#fff', fontSize:48, fontWeight:900, lineHeight:1.1,
+                <div style={{ color:'rgba(255,255,255,0.9)', fontSize:8, fontWeight:800, letterSpacing:2 }}>{t('score_label')}</div>
+                <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1,
                   textShadow:'0 2px 12px rgba(0,0,0,0.4)' }}>
                   {score.toLocaleString()}
                 </div>
@@ -2979,6 +2979,8 @@ Istanbul, Turkey 🇹🇷`
                           }
                         }}
                         placeholder={t("name_placeholder")} maxLength={20}
+                        onFocus={() => { window.scrollTo(0, 0); document.body.style.overflow = 'hidden'; }}
+                        onBlur={() => { document.body.style.overflow = ''; }}
                         style={{ flex:1, padding:'9px 11px', borderRadius:10, minWidth:0,
                           background:'rgba(255,255,255,0.92)', border:'2px solid rgba(243,156,18,0.7)',
                           color:'#1a0e00', fontSize:16, fontWeight:600, outline:'none', boxSizing:'border-box',
@@ -3152,11 +3154,13 @@ Istanbul, Turkey 🇹🇷`
                     width:`${(matched/totalPairs)*100}%`, transition:'width 0.4s ease', borderRadius:2 }}/>
                 </div>
                 {combo >= 2 && (
-                  <div style={{ width:'100%', padding:'7px 0', textAlign:'center',
+                  <div style={{ position:'absolute', top:-36, left:0, right:0, zIndex:10,
+                    padding:'7px 0', textAlign:'center',
                     background: combo>=3 ? 'linear-gradient(90deg,#f39c12,#e67e22)' : 'linear-gradient(90deg,#27ae60,#2ecc71)',
                     color:'#fff', fontWeight:900, fontSize:combo>=3?18:15, letterSpacing:1.5,
                     boxShadow: combo>=3 ? '0 0 18px rgba(243,156,18,0.8),0 3px 10px rgba(0,0,0,0.3)' : '0 0 14px rgba(46,204,113,0.7),0 2px 8px rgba(0,0,0,0.25)',
                     textShadow:'0 1px 4px rgba(0,0,0,0.35)',
+                    borderRadius:'8px 8px 0 0',
                     animation:'comboBanner 0.35s cubic-bezier(.22,1.5,.36,1)' }}>
                     {combo>=3 ? t('combo_x3',{n:combo}) : t('combo_x2',{n:combo})}
                   </div>
