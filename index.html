@@ -352,7 +352,7 @@
         "share_daily_title": "🎯 MindSharp Daily Challenge",
         "share_daily_streak": "day streak!",
         "share_certificate_title": "MindSharp Certificate",
-        "share_certificate_text": "I scored {score} on MindSharp! 🧠 Can you beat me? 🏆\nhttps://mindsharp.co",
+        "share_certificate_text": "I scored {score} on MindSharp! 🧠 Can you beat me? 🏆\nPlay for free: https://mindsharp.co",
         "cert_achievement": "A C H I E V E M E N T",
         "cert_congratulations": "Congratulations!",
         "cert_score": "S C O R E",
@@ -491,7 +491,7 @@
         "share_daily_title": "🎯 MindSharp Günlük Yarışma",
         "share_daily_streak": "günlük seri!",
         "share_certificate_title": "MindSharp Sertifikası",
-        "share_certificate_text": "MindSharp'ta {score} puan aldım! 🧠 Beni geçebilir misin? 🏆\nhttps://mindsharp.co",
+        "share_certificate_text": "MindSharp'ta {score} puan aldım! 🧠 Beni geçebilir misin? 🏆\nBu linkten ücretsiz oynanıyor: https://mindsharp.co",
         "cert_achievement": "B A Ş A R I",
         "cert_congratulations": "Tebrikler!",
         "cert_score": "S K O R",
@@ -762,11 +762,7 @@
                   )
                 )}
               </div>
-              {!audioUnlocked && sfxEnabled && (
-                <div style={{ textAlign:'center', marginBottom:14, color:'rgba(70,35,5,0.45)', fontSize:10, fontWeight:700, letterSpacing:0.5 }}>
-                  {t("ob_sound_hint")}
-                </div>
-              )}
+
               <button onClick={handleDone} style={{ width:'100%', padding:'16px 0', borderRadius:16, border:'none',
                 background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900, fontSize:18,
                 cursor:'pointer', boxShadow:'0 6px 20px rgba(46,204,113,0.45)', letterSpacing:0.5 }}>
@@ -2485,30 +2481,20 @@ Istanbul, Turkey 🇹🇷`
                   display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
               </div>
               <div style={{ overflowY:'auto', flex:1 }}>
-                {/* Dil seçimi — reload yok, sadece state güncelle */}
-                <div style={{ padding:'12px 14px 8px' }}>
-                  <SectionHeader label={t("language_label")} />
-                  <div style={{ display:'flex', gap:8, marginTop:4 }}>
-                    {[{code:'en',label:'English',flag:'🇬🇧'},{code:'tr',label:'Türkçe',flag:'🇹🇷'}].map(lang => (
-                      <button key={lang.code} onClick={() => { setLang(lang.code); forceUpdate(x => x+1); onLangChange && onLangChange(); }}
-                        style={{ flex:1, padding:'10px 0', borderRadius:10,
-                          border: getLang()===lang.code ? '2px solid #f5a623' : '2px solid rgba(200,169,110,0.3)',
-                          background: getLang()===lang.code ? 'rgba(245,166,35,0.15)' : 'rgba(255,255,255,0.06)',
-                          color: getLang()===lang.code ? '#f5a623' : '#7a5c2e',
-                          fontSize:14, fontWeight:700, cursor:'pointer',
-                          display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                        {lang.flag} {lang.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <Row icon="🌐" label={t("language_label")}
+                  right={
+                    <button onClick={() => { const next = getLang()==='tr' ? 'en' : 'tr'; setLang(next); forceUpdate(x => x+1); onLangChange && onLangChange(); trackEvent('setting_toggle',{setting:'language',value:next}); }}
+                      style={{ background:'rgba(245,166,35,0.15)', border:'2px solid #f5a623', borderRadius:8,
+                        color:'#f5a623', fontWeight:800, fontSize:13, padding:'4px 12px', cursor:'pointer', minWidth:44 }}>
+                      {getLang()==='tr' ? 'TR' : 'EN'}
+                    </button>
+                  } />
                 <SectionHeader label={t("sound_section")} />
                 <Row icon="🔊" label={t("sound_effects")}
                   right={<Toggle value={settings.sfx} onChange={v => { settings.setSfx(v); trackEvent('setting_toggle',{setting:'sfx',value:v}); }} />} />
                 <Row icon="🎵" label={t("music_label")}
                   right={<Toggle value={settings.music} onChange={v => { settings.setMusic(v); trackEvent('setting_toggle',{setting:'music',value:v}); }} />} />
-                <Row icon="📳" label={t("vibration_label")}
-                  right={<Toggle value={settings.vibration} onChange={v => { settings.setVibration(v); trackEvent('setting_toggle',{setting:'vibration',value:v}); }} />} />
+
                 <SectionHeader label={t("social_section")} />
                 <LinkRow icon="👥" label={t("share_friends")} onClick={() => { handleShare(); trackEvent('share_friends',{source:'settings'}); }} />
                 <div style={{ display:'flex', justifyContent:'center', gap:20, padding:'12px 0 8px' }}>
@@ -2766,7 +2752,7 @@ Istanbul, Turkey 🇹🇷`
                   if (newCombo>=3) { bonusPts=60; if(settings.sfx)play('combo3'); trackEvent('combo_achieved',{combo:newCombo,mode}); }
                   else if (newCombo===2) { bonusPts=25; if(settings.sfx)play('combo'); trackEvent('combo_achieved',{combo:2,mode}); }
                   else { if(settings.sfx)play('match'); }
-                  if (settings.vibration && navigator.vibrate) navigator.vibrate(40);
+                  
                   comboBonusRef.current += bonusPts;
                   setComboBonus(b => b+bonusPts);
                   setMatchAnim([a.id,b.id]);
@@ -2845,7 +2831,7 @@ Istanbul, Turkey 🇹🇷`
                 } else {
                   comboRef.current=0; setCombo(0);
                   if (settings.sfx) play('fail');
-                  if (settings.vibration && navigator.vibrate) navigator.vibrate([30,20,30]);
+                  
                   setShake(next);
                   setTimeout(() => setShake(null), 400);
                   const reset = cur.map(t => next.includes(t.id) ? {...t,flipped:false} : t);
