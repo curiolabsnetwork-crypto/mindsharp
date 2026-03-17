@@ -999,44 +999,75 @@
             </div>
             {(() => {
               const bestScore = Math.max(...Object.values(stats.bestScores||{}), 0);
-              const unlocked = CHARACTERS.filter(c => bestScore >= c.minScore)
-                .sort((a,b) => a.minScore - b.minScore);
-              const locked = CHARACTERS.filter(c => bestScore < c.minScore)
-                .sort((a,b) => a.minScore - b.minScore);
+              const allSorted = [...CHARACTERS].sort((a,b) => a.minScore - b.minScore);
+              const unlocked = allSorted.filter(c => bestScore >= c.minScore);
+              const locked = allSorted.filter(c => bestScore < c.minScore);
+              const [zoomed, setZoomed] = React.useState(null);
+              const cLang = getLang();
               return (
                 <div>
+                  {/* Zoom overlay */}
+                  {zoomed && (
+                    <div onClick={() => setZoomed(null)} style={{ position:'fixed', inset:0, zIndex:99999,
+                      background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center',
+                      justifyContent:'center', padding:20 }}>
+                      <div onClick={e => e.stopPropagation()} style={{ textAlign:'center' }}>
+                        <img src={zoomed.img} alt={cLang==='tr'?zoomed.tr:zoomed.en}
+                          style={{ width:220, height:220, borderRadius:20, objectFit:'cover',
+                            border:'3px solid rgba(200,169,110,0.6)',
+                            boxShadow:'0 8px 32px rgba(0,0,0,0.6)' }} />
+                        <div style={{ color:'#ffe082', fontWeight:900, fontSize:18, marginTop:10,
+                          fontFamily:'Georgia,serif' }}>{cLang==='tr'?zoomed.tr:zoomed.en}</div>
+                        <div style={{ color:'rgba(255,224,130,0.5)', fontSize:12, marginTop:3 }}>
+                          {zoomed.minScore}+ {cLang==='tr'?'puan':'pts'}
+                        </div>
+                        <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11, marginTop:6 }}>
+                          {cLang==='tr'?'kapatmak için dokun':'tap to close'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <style>{`
+                    .col-item { transition: transform 0.15s ease; }
+                    .col-item:active { transform: scale(0.92); }
+                  `}</style>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:6, marginBottom:8 }}>
                     {unlocked.map(c => (
-                      <div key={c.key} style={{ textAlign:'center' }}>
+                      <div key={c.key} className="col-item" onClick={() => setZoomed(c)}
+                        style={{ textAlign:'center', cursor:'pointer' }}>
                         <div style={{ width:'100%', paddingBottom:'100%', position:'relative', borderRadius:10,
                           overflow:'hidden', border:'2px solid rgba(200,169,110,0.6)',
                           boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
-                          <img src={c.img} alt={getLang()==='tr'?c.tr:c.en}
+                          <img src={c.img} alt={cLang==='tr'?c.tr:c.en}
                             style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
                         </div>
-                        <div style={{ color:'rgba(255,224,130,0.7)', fontSize:8, fontWeight:700,
+                        <div style={{ color:'rgba(255,224,130,0.7)', fontSize:7, fontWeight:700,
                           marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                          {getLang()==='tr'?c.tr:c.en}
+                          {cLang==='tr'?c.tr:c.en}
                         </div>
                       </div>
                     ))}
-                    {locked.slice(0,Math.min(5,10-unlocked.length)).map(c => (
-                      <div key={c.key} style={{ textAlign:'center', opacity:0.35 }}>
+                    {locked.map(c => (
+                      <div key={c.key} style={{ textAlign:'center' }}>
                         <div style={{ width:'100%', paddingBottom:'100%', position:'relative', borderRadius:10,
-                          overflow:'hidden', background:'rgba(255,255,255,0.05)',
-                          border:'2px solid rgba(255,255,255,0.08)',
-                          display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          overflow:'hidden', background:'rgba(255,255,255,0.04)',
+                          border:'2px solid rgba(255,255,255,0.07)' }}>
+                          {/* Bulanık gri kare — hayvan hiç anlaşılmasın */}
+                          <div style={{ position:'absolute', inset:0,
+                            background:'linear-gradient(135deg,rgba(80,70,60,0.5),rgba(50,40,30,0.6))',
+                            backdropFilter:'blur(2px)' }}/>
                           <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
-                            justifyContent:'center', fontSize:18, color:'rgba(255,255,255,0.2)' }}>🔒</div>
+                            justifyContent:'center', fontSize:12, color:'rgba(255,255,255,0.15)' }}>?</div>
                         </div>
-                        <div style={{ color:'rgba(255,224,130,0.3)', fontSize:8, fontWeight:700,
-                          marginTop:3 }}>{c.minScore}+</div>
+                        <div style={{ color:'rgba(255,224,130,0.2)', fontSize:7, fontWeight:600, marginTop:3 }}>
+                          {c.minScore}+
+                        </div>
                       </div>
                     ))}
                   </div>
                   <div style={{ color:'rgba(255,224,130,0.4)', fontSize:10, textAlign:'center' }}>
-                    {unlocked.length}/{CHARACTERS.length} {getLang()==='tr'?'hayvan açık':'animals unlocked'}
-                    {bestScore > 0 && <span> · En yüksek: {bestScore.toLocaleString()}</span>}
+                    {unlocked.length}/{CHARACTERS.length} {cLang==='tr'?'hayvan açık':'animals unlocked'}
+                    {bestScore > 0 && <span style={{ color:'rgba(255,224,130,0.3)' }}> · {bestScore.toLocaleString()} {cLang==='tr'?'en yüksek':'best'}</span>}
                   </div>
                 </div>
               );
@@ -1462,17 +1493,17 @@
             <div style={{ padding:'12px 14px 12px', position:'relative', zIndex:3 }}>
               {/* Başlık */}
               <div style={{ textAlign:'center', marginBottom:6 }}>
-                <div style={{ fontSize:28, marginBottom:2 }}>🎯</div>
-                <h2 style={{ margin:'0 0 2px', fontFamily:'Georgia,serif', fontSize:22, fontWeight:900,
+                <h2 style={{ margin:'0 0 1px', fontFamily:'Georgia,serif', fontSize:24, fontWeight:900,
                   background:'linear-gradient(135deg,#7a3e00 0%,#c8860a 50%,#7a3e00 100%)',
                   backgroundSize:'200% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-                  animation:'shimmer 3s linear infinite' }}>
-                  {lang==='tr' ? 'Günlük Yarışma' : 'Daily Challenge'}
-                </h2>
+                  animation:'shimmer 3s linear infinite' }}>MindSharp</h2>
                 <div style={{ display:'inline-block', background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)',
-                  borderRadius:20, padding:'2px 14px' }}>
-                  <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>{dateStr.toUpperCase()}</span>
+                  borderRadius:20, padding:'3px 16px', marginBottom:3 }}>
+                  <span style={{ fontSize:10, fontWeight:800, color:'#5a2d00', letterSpacing:1.5 }}>
+                    {lang==='tr' ? '🎯 GÜNLÜK YARIŞMA' : '🎯 DAILY CHALLENGE'}
+                  </span>
                 </div>
+                <div style={{ color:'rgba(100,60,10,0.5)', fontSize:10, fontWeight:600 }}>{dateStr}</div>
               </div>
               {isPersonalBest && !alreadyDone && (
                 <div style={{ textAlign:'center', marginBottom:6 }}>
@@ -1494,22 +1525,36 @@
                     fontSize:12, fontWeight:900, color:'#5a4030', letterSpacing:0.8 }}>{charName}</span>
                 </div>
               </div>
-              {/* Skor kutusu */}
+              {/* Skor + Sıralama aynı kutu */}
               <div style={{ background:character.bgGrad||'linear-gradient(135deg,#e67e22,#c0392b)',
-                borderRadius:12, padding:'7px 12px 6px', textAlign:'center',
-                marginBottom:8, boxShadow:'0 4px 14px rgba(200,80,20,0.4)',
+                borderRadius:12, padding:'8px 12px 8px', marginBottom:8,
+                boxShadow:'0 4px 14px rgba(200,80,20,0.4)',
                 animation:'dailyScorePop 0.5s 0.2s cubic-bezier(.22,1.2,.36,1) both' }}>
-                <div style={{ color:'rgba(255,255,255,0.9)', fontSize:8, fontWeight:800, letterSpacing:2 }}>{t('score_label')}</div>
-                <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, textShadow:'0 2px 12px rgba(0,0,0,0.4)' }}>
-                  {result.score.toLocaleString()}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12 }}>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ color:'rgba(255,255,255,0.75)', fontSize:8, fontWeight:800, letterSpacing:2 }}>{t('score_label')}</div>
+                    <div style={{ color:'#fff', fontSize:38, fontWeight:900, lineHeight:1, textShadow:'0 2px 12px rgba(0,0,0,0.4)' }}>
+                      {result.score.toLocaleString()}
+                    </div>
+                  </div>
+                  {rankLabel && (
+                    <div style={{ width:1, height:40, background:'rgba(255,255,255,0.25)' }}/>
+                  )}
+                  {rankLabel && (
+                    <div style={{ textAlign:'center' }}>
+                      <div style={{ color:'rgba(255,255,255,0.75)', fontSize:8, fontWeight:800, letterSpacing:2 }}>{t('rank_label')}</div>
+                      <div style={{ color:'#fff', fontSize:28, fontWeight:900, lineHeight:1, textShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>
+                        {rankLabel}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Stats */}
               <div style={{ display:'flex', gap:6, marginBottom:8 }}>
                 {[
-                  { label:t('time_label'),  value:fmtT(result.time),  color:'#2980b9' },
-                  { label:t('moves_label'), value:result.moves,       color:'#e74c3c' },
-                  { label:t('rank_label'),  value:rankLabel||'-',     color:rankColor },
+                  { label:t('time_label'),  value:fmtT(result.time), color:'#2980b9' },
+                  { label:t('moves_label'), value:result.moves,      color:'#e74c3c' },
                 ].map(s => (
                   <div key={s.label} style={{ flex:1, background:'rgba(80,50,20,0.07)', borderRadius:10,
                     padding:'7px 4px', border:'1px solid rgba(200,169,110,0.25)', textAlign:'center' }}>
@@ -1518,16 +1563,14 @@
                   </div>
                 ))}
               </div>
-              {/* Sıralama butonu */}
-              {dailyTotal > 0 && (
-                <div style={{ textAlign:'center', marginBottom:6 }}>
-                  <button onClick={onLeaderboard} style={{ background:'rgba(41,128,185,0.12)',
-                    border:'1px solid rgba(41,128,185,0.35)', borderRadius:10, padding:'6px 14px',
-                    color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
-                    🏆 {t("daily_view_all")} ({dailyTotal} {lang==='tr'?'oyuncu':'players'})
-                  </button>
-                </div>
-              )}
+              {/* Tümünü gör — büyük buton */}
+              <button onClick={onLeaderboard} style={{ width:'100%', padding:'11px', borderRadius:12,
+                border:'none', marginBottom:8,
+                background:'linear-gradient(135deg,#2980b9,#3498db)',
+                color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer',
+                boxShadow:'0 3px 10px rgba(41,128,185,0.4)' }}>
+                🏆 {t("daily_view_all")}{dailyTotal > 0 ? ` — ${dailyTotal} ${lang==='tr'?'oyuncu':'players'}` : ''}
+              </button>
               {/* Seri */}
               <div style={{ background:'rgba(243,156,18,0.1)', border:'1px solid rgba(243,156,18,0.3)',
                 borderRadius:12, padding:'8px 12px', marginBottom:8, display:'flex', alignItems:'center', gap:10 }}>
