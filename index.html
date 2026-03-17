@@ -999,9 +999,11 @@
             </div>
             {(() => {
               const bestScore = Math.max(...Object.values(stats.bestScores||{}), 0);
+              const hasPlayed = (stats.totalGames || 0) > 0;
               const allSorted = [...CHARACTERS].sort((a,b) => a.minScore - b.minScore);
-              const unlocked = allSorted.filter(c => bestScore >= c.minScore);
-              const locked = allSorted.filter(c => bestScore < c.minScore);
+              // minScore:0 olan (snail) bile, hiç oynanmamışsa kilitli göster
+              const unlocked = allSorted.filter(c => hasPlayed && bestScore >= c.minScore);
+              const locked = allSorted.filter(c => !hasPlayed || bestScore < c.minScore);
               const [zoomed, setZoomed] = React.useState(null);
               const cLang = getLang();
               return (
@@ -1505,6 +1507,13 @@
                 </div>
                 <div style={{ color:'rgba(100,60,10,0.5)', fontSize:10, fontWeight:600 }}>{dateStr}</div>
               </div>
+              {/* Kullanıcı adı — büyük */}
+              {(user || nameInput) && (
+                <div style={{ textAlign:'center', marginBottom:4 }}>
+                  <div style={{ color:'#3d1a00', fontWeight:900, fontSize:22, fontFamily:'Georgia,serif',
+                    textShadow:'0 1px 4px rgba(0,0,0,0.1)' }}>{user || nameInput}</div>
+                </div>
+              )}
               {isPersonalBest && !alreadyDone && (
                 <div style={{ textAlign:'center', marginBottom:6 }}>
                   <div style={{ display:'inline-block', background:'linear-gradient(135deg,rgba(241,196,15,0.2),rgba(243,156,18,0.15))',
@@ -2915,8 +2924,12 @@ Istanbul, Turkey 🇹🇷`
                   const cfg = GRID_CONFIGS[activeMode] || GRID_CONFIGS[mode];
                   if (newMatchedCount === cfg.pairs) {
                     setRunning(false);
-                    if (!isDailyRef.current) setWon(true);
                     if (settings.sfx) play('win');
+                    if (!isDailyRef.current) {
+                      // Son komboyu göster, sonra modal aç
+                      const comboDelay = comboRef.current >= 2 ? 1800 : 0;
+                      setTimeout(() => setWon(true), comboDelay);
+                    }
                     setMoves((mv) => {
                       setTime((tm) => {
                         const finalScore = calcScore({pairs:cfg.pairs,moves:mv,time:tm,comboBonus:comboBonusRef.current});
@@ -3365,20 +3378,86 @@ Istanbul, Turkey 🇹🇷`
               }}
               onLeaderboard={() => { trackEvent('daily_leaderboard_view',{mode:dailyModeKey}); setShowDailyModal(false); setScreen('daily_scores'); }}
               onMenu={() => { trackEvent('menu_return',{source:'daily_modal'}); setShowDailyModal(false); setScreen('menu'); }}
-              onShare={() => {
+              onShare={async () => {
                 trackEvent('daily_share',{mode:dailyModeKey,score:dailyResult.score,rank:dailyRank});
-                const fmtT = s => String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-                const today = new Date();
-                const dateLabel = today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-                const fire = dailyStreak.count>=7?'🔥':dailyStreak.count>=3?'⚡':'✨';
-                const rankTxt = dailyRank ? ' | #'+dailyRank+' today' : '';
                 const lang = getLang();
                 const shareText = lang==='tr'
                   ? `🎯 MindSharp Günlük Yarışması'nda ${dailyResult.score.toLocaleString()} puan aldım! 🧠 Beni geçebilir misin? 🏆\nBu linkten ücretsiz oynanıyor: https://mindsharp.co`
                   : `🎯 I scored ${dailyResult.score.toLocaleString()} in MindSharp Daily Challenge! 🧠 Can you beat me? 🏆\nPlay for free: https://mindsharp.co`;
-                const text = shareText;
-                if (navigator.share) navigator.share({text}).catch(()=>{});
-                else navigator.clipboard.writeText(text).catch(()=>{});
+                try {
+                  const character = getCharacter(dailyResult.score);
+                  const charName = lang==='tr' ? character.tr : character.en;
+                  const today = new Date();
+                  const dateStr = String(today.getDate()).padStart(2,'0')+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+today.getFullYear();
+                  const fmtT = s => String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+                  const rankLabel = dailyRank ? (dailyRank===1?'🥇 #1':dailyRank===2?'🥈 #2':dailyRank===3?'🥉 #3':'#'+dailyRank) : null;
+                  const W=1080, H=1920;
+                  const canvas = document.createElement('canvas');
+                  canvas.width=W; canvas.height=H;
+                  const ctx = canvas.getContext('2d');
+                  const bgImg = new Image(); bgImg.crossOrigin='anonymous'; bgImg.src='./wood_bg.png';
+                  await new Promise(r=>{bgImg.onload=r;bgImg.onerror=r;});
+                  ctx.fillStyle='#2b1a10'; ctx.fillRect(0,0,W,H);
+                  try { const r=Math.max(W/bgImg.width,H/bgImg.height); ctx.drawImage(bgImg,(W-bgImg.width*r)/2,(H-bgImg.height*r)/2,bgImg.width*r,bgImg.height*r); } catch(e){}
+                  const vg=ctx.createRadialGradient(W/2,H*0.4,50,W/2,H*0.4,H*0.7);
+                  vg.addColorStop(0,'rgba(0,0,0,0.2)'); vg.addColorStop(1,'rgba(0,0,0,0.78)');
+                  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+                  const cx=60,cy=140,cw=W-120,ch=H-300,cr=48;
+                  const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();};
+                  ctx.save();ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=60;ctx.shadowOffsetY=20;
+                  rr(cx,cy,cw,ch,cr);
+                  const cardGrad=ctx.createLinearGradient(cx,cy,cx,cy+ch);
+                  cardGrad.addColorStop(0,'#fdf6e3');cardGrad.addColorStop(0.5,'#fef9ed');cardGrad.addColorStop(1,'#f5e6c8');
+                  ctx.fillStyle=cardGrad;ctx.fill();ctx.restore();
+                  rr(cx,cy,cw,ch,cr);ctx.lineWidth=10;ctx.strokeStyle='#c8a96e';ctx.stroke();
+                  ctx.fillRect(cx+10,cy,cw-20,12);
+                  ctx.save();ctx.textAlign='center';
+                  const tg=ctx.createLinearGradient(W/2-250,0,W/2+250,0);
+                  tg.addColorStop(0,'#8B4513');tg.addColorStop(0.5,'#c8860a');tg.addColorStop(1,'#8B4513');
+                  ctx.font='900 100px Georgia,serif';ctx.fillStyle=tg;ctx.fillText('MindSharp',W/2,cy+140);ctx.restore();
+                  const bx=cx+80,by=cy+160,bw=cw-160,bh=64,br=12;
+                  rr(bx,by,bw,bh,br);
+                  const bg2=ctx.createLinearGradient(bx,by,bx+bw,by);
+                  bg2.addColorStop(0,'#b8860b');bg2.addColorStop(0.5,'#f0c040');bg2.addColorStop(1,'#b8860b');
+                  ctx.fillStyle=bg2;ctx.fill();
+                  ctx.save();ctx.textAlign='center';ctx.font='800 30px Segoe UI,Arial';ctx.fillStyle='#5a2d00';
+                  ctx.fillText(lang==='tr'?'🎯 GÜNLÜK YARIŞMA':'🎯 DAILY CHALLENGE',W/2,by+42);ctx.restore();
+                  ctx.save();ctx.textAlign='center';ctx.font='900 76px Segoe UI,Arial';ctx.fillStyle='#3d1a00';
+                  ctx.fillText((user||lang==='tr'?'Misafir':'Guest').trim(),W/2,cy+380);ctx.restore();
+                  const charImg=new Image();charImg.crossOrigin='anonymous';charImg.src=character.img;
+                  await new Promise(r=>{charImg.onload=r;charImg.onerror=r;});
+                  try{ctx.save();ctx.beginPath();ctx.roundRect(W/2-160,cy+410,320,320,24);ctx.clip();ctx.drawImage(charImg,W/2-160,cy+410,320,320);ctx.restore();}catch(e){try{ctx.drawImage(charImg,W/2-160,cy+410,320,320);}catch(e2){}}
+                  ctx.save();ctx.textAlign='center';ctx.font='700 34px Segoe UI';ctx.fillStyle='#5a4030';ctx.fillText(charName,W/2,cy+780);ctx.restore();
+                  const spx=cx+70,spy=cy+820,spw=cw-140,sph=200,spr=28;
+                  rr(spx,spy,spw,sph,spr);
+                  ctx.save();ctx.shadowColor='rgba(200,120,0,0.4)';ctx.shadowBlur=28;ctx.shadowOffsetY=10;
+                  const sg=ctx.createLinearGradient(spx,spy,spx+spw,spy+sph);
+                  sg.addColorStop(0,'#e67e22');sg.addColorStop(1,'#c0392b');ctx.fillStyle=sg;ctx.fill();ctx.restore();
+                  ctx.save();ctx.textAlign='center';
+                  ctx.font='800 28px Segoe UI';ctx.fillStyle='rgba(255,255,255,0.85)';ctx.fillText(lang==='tr'?'SKOR':'SCORE',W/2,spy+52);
+                  ctx.font='900 130px Segoe UI,Arial';ctx.fillStyle='#fff';ctx.fillText(dailyResult.score.toLocaleString(),W/2,spy+178);
+                  if(rankLabel){ctx.font='700 36px Segoe UI';ctx.fillStyle='rgba(255,255,200,0.9)';ctx.fillText(rankLabel,W/2,spy+218);}
+                  ctx.restore();
+                  [{label:lang==='tr'?'SÜRE':'TIME',value:fmtT(dailyResult.time),color:'#3498db'},{label:lang==='tr'?'HAMLE':'MOVES',value:String(dailyResult.moves),color:'#e74c3c'}].forEach((col,i)=>{
+                    const colX=cx+70+(i+0.5)*((cw-140)/2);
+                    ctx.save();ctx.textAlign='center';ctx.font='700 28px Segoe UI';ctx.fillStyle='rgba(100,60,10,0.6)';ctx.fillText(col.label,colX,spy+300);
+                    ctx.font='900 72px Segoe UI,Arial';ctx.fillStyle=col.color;ctx.fillText(col.value,colX,spy+380);ctx.restore();
+                  });
+                  ctx.save();ctx.textAlign='center';ctx.font='600 28px Segoe UI';ctx.fillStyle='rgba(100,60,10,0.5)';
+                  ctx.fillText('mindsharp.co',W/2,cy+ch-60);ctx.restore();
+                  const dataUrl = canvas.toDataURL('image/png');
+                  const res = await fetch(dataUrl);
+                  const blob = await res.blob();
+                  const file = new File([blob],'mindsharp-daily.png',{type:'image/png'});
+                  if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+                    await navigator.share({title:'MindSharp',text:shareText,files:[file]});
+                    return;
+                  }
+                  const a=document.createElement('a');a.href=dataUrl;a.download='mindsharp-daily.png';document.body.appendChild(a);a.click();a.remove();
+                } catch(e) {
+                  if (navigator.share) navigator.share({text:shareText}).catch(()=>{});
+                  else navigator.clipboard.writeText(shareText).catch(()=>{});
+                }
               }}
             />
           )}
