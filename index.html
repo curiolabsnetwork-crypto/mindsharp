@@ -581,6 +581,7 @@
       stats.totalMoves = (stats.totalMoves || 0) + moves;
       stats.totalTime  = (stats.totalTime  || 0) + time;
       if (comboBonus > (stats.maxCombo || 0)) stats.maxCombo = comboBonus;
+      stats.totalScore = (stats.totalScore || 0) + score;
       const today = new Date().toISOString().slice(0, 10);
       if (!stats.streak) stats.streak = [];
       if (!stats.streak.includes(today)) stats.streak.push(today);
@@ -886,11 +887,13 @@
 
     function ProfileScreen({ user, onBack, scores }) {
       const stats = loadStats();
+      const lang = getLang();
       const streak = getStreakCount(stats.streak || []);
       const avgMoves = stats.totalGames > 0 ? Math.round(stats.totalMoves / stats.totalGames) : 0;
       const avgTime  = stats.totalGames > 0 ? Math.round(stats.totalTime  / stats.totalGames) : 0;
+      const avgScore = stats.totalGames > 0 && stats.totalScore ? Math.round(stats.totalScore / stats.totalGames) : 0;
       const calDays = [];
-      for (let i = 34; i >= 0; i--) {
+      for (let i = 29; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
         calDays.push(d.toISOString().slice(0,10));
       }
@@ -931,8 +934,8 @@
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
             <Card><Label>{t("total_games")}</Label><BigNum color='#29B6F6'>{stats.totalGames || 0}</BigNum></Card>
             <Card>
-              <Label>{t("max_combo")}</Label>
-              <BigNum color='#f39c12'>{stats.maxCombo || 0}</BigNum>
+              <Label>{lang==='tr'?'Ortalama Puan':'Avg Score'}</Label>
+              <BigNum color='#f39c12'>{avgScore > 0 ? avgScore.toLocaleString() : '-'}</BigNum>
               <div style={{ color:'rgba(255,200,80,0.5)', fontSize:10 }}>{t("pts_label")}</div>
             </Card>
             <Card><Label>{t("avg_moves")}</Label><BigNum color='#e74c3c'>{avgMoves || '-'}</BigNum></Card>
@@ -966,7 +969,7 @@
             </div>
           </Card>
           <Card>
-            <Label>{t("activity_35")}</Label>
+            <Label>{getLang()==='tr'?'Aktivite — Son 30 Gün':'Activity — Last 30 Days'}</Label>
             <div style={{ marginTop:8, display:'flex', flexWrap:'wrap', gap:4 }}>
               {calDays.map(day => {
                 const played = playedSet.has(day);
@@ -985,6 +988,59 @@
               <div style={{ width:12, height:12, borderRadius:3, background:'linear-gradient(135deg,#27ae60,#2ecc71)', marginLeft:10 }}/>
               <span style={{ color:'rgba(255,224,130,0.4)', fontSize:10 }}>{t("played")}</span>
             </div>
+          </Card>
+          {/* Koleksiyon */}
+          <Card>
+            <Label>{getLang()==='tr'?'Koleksiyon':'Collection'}</Label>
+            <div style={{ color:'rgba(255,224,130,0.4)', fontSize:10, marginBottom:8 }}>
+              {getLang()==='tr'
+                ? `En yüksek skoruna kadar kazandığın hayvanlar`
+                : `Animals unlocked up to your best score`}
+            </div>
+            {(() => {
+              const bestScore = Math.max(...Object.values(stats.bestScores||{}), 0);
+              const unlocked = CHARACTERS.filter(c => bestScore >= c.minScore)
+                .sort((a,b) => a.minScore - b.minScore);
+              const locked = CHARACTERS.filter(c => bestScore < c.minScore)
+                .sort((a,b) => a.minScore - b.minScore);
+              return (
+                <div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:6, marginBottom:8 }}>
+                    {unlocked.map(c => (
+                      <div key={c.key} style={{ textAlign:'center' }}>
+                        <div style={{ width:'100%', paddingBottom:'100%', position:'relative', borderRadius:10,
+                          overflow:'hidden', border:'2px solid rgba(200,169,110,0.6)',
+                          boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
+                          <img src={c.img} alt={getLang()==='tr'?c.tr:c.en}
+                            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
+                        </div>
+                        <div style={{ color:'rgba(255,224,130,0.7)', fontSize:8, fontWeight:700,
+                          marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                          {getLang()==='tr'?c.tr:c.en}
+                        </div>
+                      </div>
+                    ))}
+                    {locked.slice(0,Math.min(5,10-unlocked.length)).map(c => (
+                      <div key={c.key} style={{ textAlign:'center', opacity:0.35 }}>
+                        <div style={{ width:'100%', paddingBottom:'100%', position:'relative', borderRadius:10,
+                          overflow:'hidden', background:'rgba(255,255,255,0.05)',
+                          border:'2px solid rgba(255,255,255,0.08)',
+                          display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
+                            justifyContent:'center', fontSize:18, color:'rgba(255,255,255,0.2)' }}>🔒</div>
+                        </div>
+                        <div style={{ color:'rgba(255,224,130,0.3)', fontSize:8, fontWeight:700,
+                          marginTop:3 }}>{c.minScore}+</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ color:'rgba(255,224,130,0.4)', fontSize:10, textAlign:'center' }}>
+                    {unlocked.length}/{CHARACTERS.length} {getLang()==='tr'?'hayvan açık':'animals unlocked'}
+                    {bestScore > 0 && <span> · En yüksek: {bestScore.toLocaleString()}</span>}
+                  </div>
+                </div>
+              );
+            })()}
           </Card>
           <div style={{ height:20 }}/>
         </div>
@@ -1355,136 +1411,177 @@
       const [confetti, setConfetti] = React.useState([]);
       const [nameInput, setNameInput] = React.useState(user || '');
       const [nameSaved, setNameSaved] = React.useState(!!user);
+      const lang = getLang();
+      const character = React.useMemo(() => getCharacter(result.score), [result.score]);
+      const charName = lang==='tr' ? character.tr : character.en;
       React.useEffect(() => {
         const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f'];
         const shapes = ['■','●','▲','★','◆'];
-        setConfetti(Array.from({ length:36 }, (_,i) => ({
+        setConfetti(Array.from({ length:30 }, (_,i) => ({
           id:i, color:colors[i%colors.length], shape:shapes[i%shapes.length],
-          left:Math.random()*100, delay:Math.random()*1.8,
-          duration:2.2+Math.random()*2, size:8+Math.random()*9,
+          left:Math.random()*100, delay:Math.random()*1.5,
+          duration:2+Math.random()*2, size:7+Math.random()*8,
         })));
       }, []);
       const fmtT = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
       const today = new Date();
-      const dateLabel = today.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+      const dateStr = today.toLocaleDateString(lang==='tr'?'tr-TR':'en-GB', { day:'2-digit', month:'short', year:'numeric' });
       const streakFire = streak.count >= 7 ? '🔥' : streak.count >= 3 ? '⚡' : '✨';
       const isPersonalBest = personalBest && result.score >= personalBest;
       const rankLabel = dailyRank ? (dailyRank===1?'🥇 #1':dailyRank===2?'🥈 #2':dailyRank===3?'🥉 #3':`#${dailyRank}`) : null;
-      const rankColor = dailyRank===1?'#f1c40f':dailyRank<=3?'#e67e22':'#aaa';
+      const rankColor = dailyRank===1?'#f1c40f':dailyRank<=3?'#e67e22':'#27ae60';
       const tomorrowMsg = streak.count===0 ? t("daily_start_streak") :
         streak.count<3 ? t('daily_unlock_bolt',{n:3-streak.count}) :
         streak.count<7 ? t('daily_unlock_fire',{n:7-streak.count}) :
         t('daily_on_fire');
       return (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', zIndex:10000,
-          display:'flex', alignItems:'center', justifyContent:'center', padding:'16px' }}>
+        <div style={{ position:'fixed', inset:0, zIndex:10000, background:'rgba(0,0,0,0.72)',
+          display:'flex', alignItems:'flex-start', justifyContent:'center',
+          overflowY:'auto', padding:'12px 0 24px', WebkitOverflowScrolling:'touch' }}>
+          <style>{`
+            @keyframes dailyCardIn{from{transform:translateY(40px) scale(0.94);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+            @keyframes dailyScorePop{0%{transform:scale(0.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+          `}</style>
           {confetti.map(p => (
             <div key={p.id} style={{ position:'fixed', top:'-20px', left:`${p.left}%`,
               fontSize:p.size, color:p.color, animation:`fall ${p.duration}s ${p.delay}s ease-in forwards`,
               pointerEvents:'none', zIndex:10001 }}>{p.shape}</div>
           ))}
-          <div style={{ background:'linear-gradient(160deg,#2a1e08,#1a1004)', borderRadius:24,
-            padding:'24px 20px 20px', width:'100%', maxWidth:360, boxSizing:'border-box',
-            border:'1.5px solid rgba(255,210,80,0.3)', boxShadow:'0 12px 50px rgba(0,0,0,0.8)',
-            textAlign:'center', position:'relative', zIndex:10002, maxHeight:'90vh', overflowY:'auto' }}>
-            <div style={{ fontSize:40, marginBottom:4 }}>🎯</div>
-            <h2 style={{ color:'#ffe066', fontFamily:'Georgia,serif', margin:'0 0 1px', fontSize:22 }}>
-              {alreadyDone ? t("daily_today") : t("daily_complete")}
-            </h2>
-            <p style={{ color:'rgba(255,255,255,0.4)', fontSize:11, margin:'0 0 16px', letterSpacing:0.5 }}>{dateLabel}</p>
-            {isPersonalBest && !alreadyDone && (
-              <div style={{ background:'linear-gradient(135deg,rgba(241,196,15,0.25),rgba(243,156,18,0.15))',
-                border:'1px solid rgba(241,196,15,0.5)', borderRadius:10, padding:'6px 14px',
-                color:'#f1c40f', fontWeight:800, fontSize:13, marginBottom:12, display:'inline-block' }}>
-                {t("daily_personal_best")}
-              </div>
-            )}
-            <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-              {[
-                { label:t('time_label'),  value:fmtT(result.time),             icon:'⏱' },
-                { label:t('moves_label'), value:result.moves,                  icon:'🃏' },
-                { label:t('score_label'), value:result.score.toLocaleString(), icon:'🏆' },
-              ].map(s => (
-                <div key={s.label} style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:12,
-                  padding:'10px 4px', border:'1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ fontSize:14, marginBottom:2 }}>{s.icon}</div>
-                  <div style={{ color:'#ffe066', fontWeight:900, fontSize:17 }}>{s.value}</div>
-                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:9, letterSpacing:1 }}>{s.label}</div>
+          <div style={{ position:'relative', width:'92%', maxWidth:360, margin:'auto 0',
+            background:'linear-gradient(160deg,#fdf8ec 0%,#fef5da 50%,#f5e6c3 100%)',
+            borderRadius:24, border:'3px solid #c8a96e',
+            boxShadow:'0 0 0 6px rgba(200,169,110,0.2),0 24px 64px rgba(0,0,0,0.55)',
+            animation:'dailyCardIn 0.45s cubic-bezier(.22,1.2,.36,1) both',
+            overflow:'hidden', maxHeight:'calc(100vh - 32px)', overflowY:'auto', zIndex:10002 }}>
+            <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
+            {/* X butonu */}
+            <button onClick={onMenu} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
+              background:'rgba(200,169,110,0.18)', border:'1.5px solid rgba(200,169,110,0.4)', borderRadius:'50%',
+              color:'#7a5c2e', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+              fontWeight:700 }}>✕</button>
+            <div style={{ padding:'12px 14px 12px', position:'relative', zIndex:3 }}>
+              {/* Başlık */}
+              <div style={{ textAlign:'center', marginBottom:6 }}>
+                <div style={{ fontSize:28, marginBottom:2 }}>🎯</div>
+                <h2 style={{ margin:'0 0 2px', fontFamily:'Georgia,serif', fontSize:22, fontWeight:900,
+                  background:'linear-gradient(135deg,#7a3e00 0%,#c8860a 50%,#7a3e00 100%)',
+                  backgroundSize:'200% auto', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+                  animation:'shimmer 3s linear infinite' }}>
+                  {lang==='tr' ? 'Günlük Yarışma' : 'Daily Challenge'}
+                </h2>
+                <div style={{ display:'inline-block', background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)',
+                  borderRadius:20, padding:'2px 14px' }}>
+                  <span style={{ fontSize:9, fontWeight:800, color:'#5a2d00', letterSpacing:2 }}>{dateStr.toUpperCase()}</span>
                 </div>
-              ))}
-            </div>
-            <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)',
-              borderRadius:14, padding:'12px 14px', marginBottom:10, display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ flex:1, textAlign:'left' }}>
-                <div style={{ color:'rgba(255,255,255,0.45)', fontSize:10, letterSpacing:1, marginBottom:2 }}>{t("daily_ranking")}</div>
-                {rankLabel ? (
-                  <div style={{ color:rankColor, fontWeight:900, fontSize:20 }}>{rankLabel}</div>
-                ) : (
-                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:13 }}>{t("daily_calculating")}</div>
-                )}
-                {dailyTotal > 0 && (
-                  <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11 }}>{t("daily_out_of", {n:dailyTotal})}</div>
-                )}
               </div>
-              <button onClick={onLeaderboard} style={{ background:'rgba(255,180,0,0.15)',
-                border:'1px solid rgba(255,180,0,0.35)', borderRadius:10, padding:'8px 12px',
-                color:'#ffb300', fontWeight:700, fontSize:12, cursor:'pointer' }}>
-                {t("daily_view_all")}
-              </button>
-            </div>
-            <div style={{ background:'rgba(255,140,0,0.1)', border:'1px solid rgba(255,140,0,0.25)',
-              borderRadius:14, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', gap:10 }}>
-              <div style={{ fontSize:26 }}>{streakFire}</div>
-              <div style={{ textAlign:'left', flex:1 }}>
-                <div style={{ color:'#ffb300', fontWeight:900, fontSize:16 }}>{streak.count} {t("daily_day_streak")}</div>
-                <div style={{ color:'rgba(255,255,255,0.4)', fontSize:11, marginTop:1 }}>{tomorrowMsg}</div>
-              </div>
-            </div>
-            {(!nameSaved || !nameInput.trim()) ? (
-              <div style={{ marginBottom:14, borderRadius:14,
-                background:'linear-gradient(135deg,rgba(255,220,80,0.18),rgba(243,156,18,0.12))',
-                border:'1.5px solid rgba(255,210,60,0.55)', padding:'14px 14px 12px',
-                boxShadow:'0 0 18px rgba(243,156,18,0.15)' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8, justifyContent:'center' }}>
-                  <span style={{ fontSize:16 }}>👤</span>
-                  <span style={{ color:'#ffe066', fontWeight:800, fontSize:13 }}>{t("daily_add_name")}</span>
+              {isPersonalBest && !alreadyDone && (
+                <div style={{ textAlign:'center', marginBottom:6 }}>
+                  <div style={{ display:'inline-block', background:'linear-gradient(135deg,rgba(241,196,15,0.2),rgba(243,156,18,0.15))',
+                    border:'1px solid rgba(241,196,15,0.6)', borderRadius:10, padding:'4px 14px',
+                    color:'#b8860b', fontWeight:800, fontSize:12 }}>
+                    ⭐ {t("daily_personal_best")}
+                  </div>
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-                  <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
-                    onKeyDown={e => { if (e.key==='Enter') { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} } }}
-                    placeholder={t("name_placeholder")} maxLength={20}
-                    style={{ width:'100%', padding:'11px 13px', borderRadius:11, background:'rgba(255,255,255,0.92)',
-                      border:'2px solid rgba(243,156,18,0.7)', color:'#1a0e00', fontSize:15, fontWeight:600,
-                      outline:'none', boxSizing:'border-box' }}
-                  />
-                  <button onClick={() => { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} }}
-                    style={{ width:'100%', padding:'12px', borderRadius:11, border:'none',
-                      background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.3)',
-                      color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer',
-                      boxShadow: nameInput.trim() ? '0 3px 12px rgba(243,156,18,0.4)' : 'none', transition:'all 0.2s' }}>
-                    {t("save_button")}
+              )}
+              {/* Hayvan görseli */}
+              <div style={{ textAlign:'center', marginBottom:6 }}>
+                <img src={character.img} alt={charName}
+                  style={{ width:100, height:100, borderRadius:12, objectFit:'cover',
+                    border:'2px solid rgba(200,169,110,0.4)', boxShadow:'0 3px 12px rgba(0,0,0,0.2)' }} />
+                <div>
+                  <span style={{ display:'inline-block', marginTop:5, background:'rgba(80,50,20,0.12)',
+                    border:'1.5px solid rgba(200,169,110,0.5)', borderRadius:20, padding:'3px 14px',
+                    fontSize:12, fontWeight:900, color:'#5a4030', letterSpacing:0.8 }}>{charName}</span>
+                </div>
+              </div>
+              {/* Skor kutusu */}
+              <div style={{ background:character.bgGrad||'linear-gradient(135deg,#e67e22,#c0392b)',
+                borderRadius:12, padding:'7px 12px 6px', textAlign:'center',
+                marginBottom:8, boxShadow:'0 4px 14px rgba(200,80,20,0.4)',
+                animation:'dailyScorePop 0.5s 0.2s cubic-bezier(.22,1.2,.36,1) both' }}>
+                <div style={{ color:'rgba(255,255,255,0.9)', fontSize:8, fontWeight:800, letterSpacing:2 }}>{t('score_label')}</div>
+                <div style={{ color:'#fff', fontSize:40, fontWeight:900, lineHeight:1.1, textShadow:'0 2px 12px rgba(0,0,0,0.4)' }}>
+                  {result.score.toLocaleString()}
+                </div>
+              </div>
+              {/* Stats */}
+              <div style={{ display:'flex', gap:6, marginBottom:8 }}>
+                {[
+                  { label:t('time_label'),  value:fmtT(result.time),  color:'#2980b9' },
+                  { label:t('moves_label'), value:result.moves,       color:'#e74c3c' },
+                  { label:t('rank_label'),  value:rankLabel||'-',     color:rankColor },
+                ].map(s => (
+                  <div key={s.label} style={{ flex:1, background:'rgba(80,50,20,0.07)', borderRadius:10,
+                    padding:'7px 4px', border:'1px solid rgba(200,169,110,0.25)', textAlign:'center' }}>
+                    <div style={{ color:s.color, fontWeight:900, fontSize:15 }}>{s.value}</div>
+                    <div style={{ color:'rgba(100,60,10,0.5)', fontSize:9, letterSpacing:1, fontWeight:700 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Sıralama butonu */}
+              {dailyTotal > 0 && (
+                <div style={{ textAlign:'center', marginBottom:6 }}>
+                  <button onClick={onLeaderboard} style={{ background:'rgba(41,128,185,0.12)',
+                    border:'1px solid rgba(41,128,185,0.35)', borderRadius:10, padding:'6px 14px',
+                    color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
+                    🏆 {t("daily_view_all")} ({dailyTotal} {lang==='tr'?'oyuncu':'players'})
                   </button>
                 </div>
+              )}
+              {/* Seri */}
+              <div style={{ background:'rgba(243,156,18,0.1)', border:'1px solid rgba(243,156,18,0.3)',
+                borderRadius:12, padding:'8px 12px', marginBottom:8, display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ fontSize:22 }}>{streakFire}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ color:'#b8860b', fontWeight:900, fontSize:14 }}>{streak.count} {t("daily_day_streak")}</div>
+                  <div style={{ color:'rgba(100,60,10,0.55)', fontSize:11, marginTop:1 }}>{tomorrowMsg}</div>
+                </div>
               </div>
-            ) : (
-              <div style={{ color:'rgba(255,255,255,0.45)', fontSize:12, textAlign:'center', padding:'4px 0 10px' }}>
-                {t("daily_leaderboard_name")} <span style={{ color:'#ffe066', fontWeight:700 }}>{nameInput}</span>
-                <button onClick={() => setNameSaved(false)} style={{ background:'none', border:'none',
-                  color:'rgba(255,180,0,0.5)', fontSize:11, cursor:'pointer', marginLeft:6 }}>
-                  {t("daily_edit")}
-                </button>
-              </div>
-            )}
-            <button onClick={onShare} style={{ width:'100%', padding:'13px', borderRadius:14, marginBottom:8,
-              background:'linear-gradient(135deg,#f39c12,#e67e22)', border:'none',
-              color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer' }}>
-              {t("daily_share_result")}
-            </button>
-            <button onClick={onMenu} style={{ width:'100%', padding:'11px', borderRadius:14,
-              background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)',
-              color:'rgba(255,255,255,0.55)', fontWeight:600, fontSize:13, cursor:'pointer' }}>
-              {t("daily_back_menu")}
-            </button>
+              {/* İsim */}
+              {(!nameSaved || !nameInput.trim()) ? (
+                <div style={{ marginBottom:8, borderRadius:12,
+                  background:'linear-gradient(135deg,rgba(200,169,110,0.15),rgba(243,156,18,0.1))',
+                  border:'1.5px solid rgba(200,169,110,0.5)', padding:'10px 12px' }}>
+                  <div style={{ color:'#7a5c2e', fontWeight:800, fontSize:12, marginBottom:6, textAlign:'center' }}>
+                    👤 {t("daily_add_name")}
+                  </div>
+                  <div style={{ display:'flex', gap:6 }}>
+                    <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
+                      onKeyDown={e => { if (e.key==='Enter') { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} } }}
+                      onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
+                      onBlur={() => { document.body.style.overflow=''; }}
+                      placeholder={t("name_placeholder")} maxLength={20}
+                      style={{ flex:1, padding:'8px 10px', borderRadius:9, border:'1.5px solid #c8a96e',
+                        background:'rgba(255,255,255,0.9)', fontSize:16, fontWeight:700, color:'#3d1a00',
+                        outline:'none', textAlign:'center', transform:'translateZ(0)' }}/>
+                    <button onClick={() => { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} }}
+                      style={{ padding:'8px 12px', borderRadius:9, border:'none', flexShrink:0,
+                        background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.3)',
+                        color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
+                      {t("save_button")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color:'rgba(100,60,10,0.5)', fontSize:11, textAlign:'center', padding:'2px 0 6px' }}>
+                  {t("daily_leaderboard_name")} <span style={{ color:'#b8860b', fontWeight:700 }}>{nameInput}</span>
+                  <button onClick={() => setNameSaved(false)} style={{ background:'none', border:'none',
+                    color:'rgba(180,120,20,0.5)', fontSize:11, cursor:'pointer', marginLeft:6 }}>{t("daily_edit")}</button>
+                </div>
+              )}
+              {/* Butonlar */}
+              <button onClick={onShare} style={{ width:'100%', padding:'14px 0', borderRadius:14, border:'none', marginBottom:7,
+                background:'linear-gradient(135deg,#f39c12,#e67e22,#d35400)',
+                color:'#fff', fontWeight:900, fontSize:16, cursor:'pointer',
+                boxShadow:'0 4px 16px rgba(243,156,18,0.5)', letterSpacing:0.5 }}>
+                📤 {lang==='tr' ? 'Paylaş — Skoru Gönder!' : 'Share My Result!'}
+              </button>
+              <button onClick={onMenu} style={{ width:'100%', padding:'10px', borderRadius:12,
+                border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
+                color:'rgba(120,80,20,0.6)', fontWeight:600, fontSize:12, cursor:'pointer' }}>
+                {t("daily_back_menu")}
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -3232,12 +3329,11 @@ Istanbul, Turkey 🇹🇷`
                 const dateLabel = today.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
                 const fire = dailyStreak.count>=7?'🔥':dailyStreak.count>=3?'⚡':'✨';
                 const rankTxt = dailyRank ? ' | #'+dailyRank+' today' : '';
-                const text = [
-                  t('share_daily_title'), dateLabel,
-                  '⏱ '+fmtT(dailyResult.time)+'  🃏 '+dailyResult.moves+' moves  🏆 '+dailyResult.score.toLocaleString()+' pts'+rankTxt,
-                  fire+' '+dailyStreak.count+' '+t('share_daily_streak'),
-                  'mindsharp.co'
-                ].join('\n');
+                const lang = getLang();
+                const shareText = lang==='tr'
+                  ? `🎯 MindSharp Günlük Yarışması'nda ${dailyResult.score.toLocaleString()} puan aldım! 🧠 Beni geçebilir misin? 🏆\nBu linkten ücretsiz oynanıyor: https://mindsharp.co`
+                  : `🎯 I scored ${dailyResult.score.toLocaleString()} in MindSharp Daily Challenge! 🧠 Can you beat me? 🏆\nPlay for free: https://mindsharp.co`;
+                const text = shareText;
                 if (navigator.share) navigator.share({text}).catch(()=>{});
                 else navigator.clipboard.writeText(text).catch(()=>{});
               }}
