@@ -642,7 +642,7 @@
       );
     }
 
-    function OnboardingModal({ onDone, playSound, sfxEnabled }) {
+    function OnboardingModal({ onDone, playSound, sfxEnabled, unlockMusic }) {
       React.useEffect(() => { trackEvent('onboarding_view', {}); }, []);
       const _obStart = React.useRef(Date.now());
       const [demoStep, setDemoStep] = React.useState(0);
@@ -688,6 +688,7 @@
         const watchSec = Math.round((Date.now() - _obStart.current) / 1000);
         trackEvent('onboarding_complete', { watch_seconds: watchSec });
         try { localStorage.setItem('ms_onboarded', '1'); } catch {}
+        if (typeof unlockMusic === 'function') unlockMusic();
         onDone();
       };
       return (
@@ -2795,7 +2796,14 @@ Istanbul, Turkey 🇹🇷`
           return ctx.decodeAudioData(ab);
         }).then(buffer => {
           bgBufferRef.current = buffer;
-          if (musicEnabledRef.current) startBgMusic();
+          if (musicEnabledRef.current) {
+            const ctx = getAudioCtx();
+            if (ctx.state === 'suspended') {
+              ctx.resume().then(() => { if (musicEnabledRef.current && !bgPlayingRef.current) startBgMusic(); });
+            } else {
+              startBgMusic();
+            }
+          }
         }).catch(() => {});
       }, []);
       useEffect(() => {
@@ -2805,8 +2813,13 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         const tryStart = () => {
           const ctx = bgAudioCtxRef.current;
-          if (ctx && ctx.state==='suspended') ctx.resume();
-          if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) startBgMusic();
+          if (ctx && ctx.state==='suspended') {
+            ctx.resume().then(() => {
+              if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) startBgMusic();
+            });
+          } else if (ctx) {
+            if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) startBgMusic();
+          }
           document.removeEventListener('pointerdown', tryStart);
         };
         document.addEventListener('pointerdown', tryStart);
@@ -3547,7 +3560,24 @@ Istanbul, Turkey 🇹🇷`
           {toast && <div className="ms-toast">{toast}</div>}
 
           {showOnboarding && (
-            <OnboardingModal onDone={() => setShowOnboarding(false)} playSound={play} sfxEnabled={settings.sfx} />
+            <OnboardingModal
+              onDone={() => setShowOnboarding(false)}
+              playSound={play}
+              sfxEnabled={settings.sfx}
+              unlockMusic={() => {
+                if (!musicEnabledRef.current) return;
+                try {
+                  const ctx = getAudioCtx();
+                  if (ctx.state === 'suspended') {
+                    ctx.resume().then(() => {
+                      if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) startBgMusic();
+                    });
+                  } else {
+                    if (!bgPlayingRef.current && bgBufferRef.current) startBgMusic();
+                  }
+                } catch(e) {}
+              }}
+            />
           )}
         </div>
       );
