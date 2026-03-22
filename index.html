@@ -46,9 +46,10 @@
           var navEntry = performance.getEntriesByType('navigation')[0];
           var loadMs = navEntry ? Math.round(navEntry.loadEventEnd) : Math.round(performance.now());
           if (loadMs <= 0) loadMs = Math.round(performance.now());
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'page_load_complete', { load_time_ms: loadMs, load_time_sec: Math.round(loadMs / 100) / 10 });
-          }
+          var payload = { load_time_ms: loadMs, load_time_sec: Math.round(loadMs / 100) / 10 };
+          function fire() { if (typeof gtag !== 'undefined') { gtag('event', 'page_load_complete', payload); } }
+          if (typeof gtag !== 'undefined') { fire(); }
+          else { setTimeout(fire, 2000); }
         } catch(e) {}
       }
       if (document.readyState === 'complete') { sendLoadEvent(); }
@@ -2978,28 +2979,33 @@ Istanbul, Turkey 🇹🇷`
                   if (newMatchedCount === cfg.pairs) {
                     setRunning(false);
                     if (settings.sfx) play('win');
+                    const _type = isDailyRef.current ? 'daily' : 'regular';
+                    const _modeKey = isDailyRef.current ? dailyModeKey : mode;
+                    if (window.__setGameActive) window.__setGameActive(false);
                     if (!isDailyRef.current) {
                       // Son komboyu göster, sonra modal aç
                       const comboDelay = comboRef.current >= 2 ? 1800 : 0;
-                      if (window.__setGameActive) window.__setGameActive(false);
                       setTimeout(() => setWon(true), comboDelay);
                     }
                     setMoves((mv) => {
                       setTime((tm) => {
                         const finalScore = calcScore({pairs:cfg.pairs,moves:mv,time:tm,comboBonus:comboBonusRef.current});
+                        try {
+                          const p = {mode:_modeKey,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:_type,session_time_sec:Math.round((Date.now()-_sessionStart)/1000)};
+                          if (typeof gtag !== 'undefined') gtag('event','game_complete',p);
+                        } catch(e) {}
                         setScore(finalScore);
                         const myEntry = {user:user||t('guest'),mode,moves:mv,time:tm,score:finalScore};
                         const sameMode = (scoresRef.current||[]).filter(s => s.mode===mode);
                         const merged = [...sameMode,myEntry].sort((a,b)=>(b.score||0)-(a.score||0));
                         const myRank = merged.findIndex(s => s.user===myEntry.user&&s.score===myEntry.score&&s.time===myEntry.time&&s.moves===myEntry.moves)+1;
                         setRank(myRank);
-                        if (!isDailyRef.current) {
-                          trackEvent('game_complete',{mode:activeMode,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:'regular'});
-                        }
                         if (isDailyRef.current) {
                           const result = {moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey};
-                          trackEvent('game_complete',{mode:dailyModeKey,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:'daily'});
-                          if (window.__setGameActive) window.__setGameActive(false);
+                          try {
+                            const p = {mode:_modeKey,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:_type,session_time_sec:Math.round((Date.now()-_sessionStart)/1000)};
+                            if (typeof gtag !== 'undefined') gtag('event','game_complete',p);
+                          } catch(e) {}
                           saveDailyResult(result,dailyModeKey);
                           setDailyDoneMap(prev => ({...prev,[dailyModeKey]:true}));
                           const newStreak = updateStreak();
