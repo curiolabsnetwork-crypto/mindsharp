@@ -39,6 +39,22 @@
     gtag('js', new Date());
     gtag('config', 'G-F04KE32281');
   </script>
+  <script>
+    (function() {
+      function sendLoadEvent() {
+        try {
+          var navEntry = performance.getEntriesByType('navigation')[0];
+          var loadMs = navEntry ? Math.round(navEntry.loadEventEnd) : Math.round(performance.now());
+          if (loadMs <= 0) loadMs = Math.round(performance.now());
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'page_load_complete', { load_time_ms: loadMs, load_time_sec: Math.round(loadMs / 100) / 10 });
+          }
+        } catch(e) {}
+      }
+      if (document.readyState === 'complete') { sendLoadEvent(); }
+      else { window.addEventListener('load', sendLoadEvent); }
+    })();
+  </script>
   <style>
     html, body { height: 100%; }
     html { overflow-x: hidden; }
@@ -550,6 +566,23 @@
         if (typeof gtag !== 'undefined') gtag('event', name, p);
       } catch(e) {}
     }
+
+    (function() {
+      var _gameActive = false;
+      var _gameMode = null;
+      var _gameProgress = 0;
+      var _gameMoves = 0;
+      var _gameType = 'regular';
+      window.__setGameActive = function(active, mode, type) { _gameActive = active; _gameMode = mode; _gameType = type||'regular'; };
+      window.__updateGameProgress = function(pct, moves) { _gameProgress = pct; _gameMoves = moves; };
+      function fireAbandoned() {
+        if (!_gameActive) return;
+        trackEvent('game_abandoned', {mode: _gameMode, progress_pct: _gameProgress, moves: _gameMoves, type: _gameType});
+        _gameActive = false;
+      }
+      document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') fireAbandoned(); });
+      window.addEventListener('beforeunload', function() { fireAbandoned(); });
+    })();
     (function() {
       const milestones = [30, 60, 120, 300, 600];
       let idx = 0;
@@ -1934,6 +1967,10 @@
       const fact = React.useMemo(() => getRandomFact(), []);
 
       React.useEffect(() => {
+        trackEvent('win_modal_view', {mode, score, rank, combo_bonus: comboBonus});
+      }, []);
+
+      React.useEffect(() => {
         const check = () => setAdAvailable(!!(window.MindSharpAds && window.MindSharpAds.isReady()));
         check();
         const timer = setInterval(check,1000);
@@ -2874,6 +2911,7 @@ Istanbul, Turkey 🇹🇷`
         setRunning(false); setWon(false); lockRef.current = false;
         setMode(gm); setScreen('game');
         trackEvent('game_start',{mode:gm,type:'daily'});
+        if (window.__setGameActive) window.__setGameActive(true, gm, 'daily');
         setScore(0); setComboBonus(0); setCombo(0); setScoreDocId(null);
         comboBonusRef.current=0; comboRef.current=0;
         setIsDailyMode(true); isDailyRef.current=true;
@@ -2887,6 +2925,7 @@ Istanbul, Turkey 🇹🇷`
         setRunning(false); setWon(false); lockRef.current = false;
         setMode(m); setScreen('game');
         trackEvent('game_start',{mode:m,type:'regular'});
+        if (window.__setGameActive) window.__setGameActive(true, m, 'regular');
         setScore(0); setComboBonus(0); setCombo(0); setScoreDocId(null);
         comboBonusRef.current=0; comboRef.current=0;
         setIsDailyMode(false); isDailyRef.current=false;
@@ -2932,7 +2971,8 @@ Istanbul, Turkey 🇹🇷`
                   const activeM = isDailyRef.current ? dailyModeKey : mode;
                   const cfgP = GRID_CONFIGS[activeM] || GRID_CONFIGS[mode];
                   const pct = Math.round((newMatchedCount/cfgP.pairs)*100);
-                  if (pct===25||pct===50||pct===75) trackEvent('game_progress',{percent:pct,mode:activeM,type:isDailyRef.current?'daily':'regular'});
+                  if (pct===25||pct===50||pct===75) { trackEvent('game_progress',{percent:pct,mode:activeM,type:isDailyRef.current?'daily':'regular',elapsed_sec:time}); }
+                  if (window.__updateGameProgress) window.__updateGameProgress(pct, newMatchedCount);
                   const activeMode = isDailyRef.current ? dailyModeKey : mode;
                   const cfg = GRID_CONFIGS[activeMode] || GRID_CONFIGS[mode];
                   if (newMatchedCount === cfg.pairs) {
@@ -2941,6 +2981,8 @@ Istanbul, Turkey 🇹🇷`
                     if (!isDailyRef.current) {
                       // Son komboyu göster, sonra modal aç
                       const comboDelay = comboRef.current >= 2 ? 1800 : 0;
+                      trackEvent('game_complete',{mode:activeMode,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:'regular'});
+                      if (window.__setGameActive) window.__setGameActive(false);
                       setTimeout(() => setWon(true), comboDelay);
                     }
                     setMoves((mv) => {
@@ -2954,6 +2996,8 @@ Istanbul, Turkey 🇹🇷`
                         setRank(myRank);
                         if (isDailyRef.current) {
                           const result = {moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey};
+                          trackEvent('game_complete',{mode:dailyModeKey,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:'daily'});
+                          if (window.__setGameActive) window.__setGameActive(false);
                           saveDailyResult(result,dailyModeKey);
                           setDailyDoneMap(prev => ({...prev,[dailyModeKey]:true}));
                           const newStreak = updateStreak();
@@ -3552,6 +3596,7 @@ Istanbul, Turkey 🇹🇷`
               onConfirm={() => {
                 setShowExitConfirm(false);
                 trackEvent('game_quit',{mode,time,moves,matched,total_pairs:totalPairs,type:isDailyRef.current?'daily':'regular'});
+                if (window.__setGameActive) window.__setGameActive(false);
                 setRunning(false); setWon(false); setScreen('menu');
               }}
               onCancel={() => setShowExitConfirm(false)} />
