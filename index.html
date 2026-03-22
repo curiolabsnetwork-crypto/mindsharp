@@ -2981,7 +2981,6 @@ Istanbul, Turkey 🇹🇷`
                     if (!isDailyRef.current) {
                       // Son komboyu göster, sonra modal aç
                       const comboDelay = comboRef.current >= 2 ? 1800 : 0;
-                      trackEvent('game_complete',{mode:activeMode,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:'regular'});
                       if (window.__setGameActive) window.__setGameActive(false);
                       setTimeout(() => setWon(true), comboDelay);
                     }
@@ -2994,6 +2993,9 @@ Istanbul, Turkey 🇹🇷`
                         const merged = [...sameMode,myEntry].sort((a,b)=>(b.score||0)-(a.score||0));
                         const myRank = merged.findIndex(s => s.user===myEntry.user&&s.score===myEntry.score&&s.time===myEntry.time&&s.moves===myEntry.moves)+1;
                         setRank(myRank);
+                        if (!isDailyRef.current) {
+                          trackEvent('game_complete',{mode:activeMode,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:'regular'});
+                        }
                         if (isDailyRef.current) {
                           const result = {moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey};
                           trackEvent('game_complete',{mode:dailyModeKey,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:'daily'});
