@@ -271,6 +271,7 @@
         "start_game": "▶ Start Game",
         "scores_button": "🏆 Scores",
         "profile_button": "👤 Profile",
+        "how_to_play": "❓ How to Play",
         "day_streak": "day streak",
         "difficulty_classic": "Classic",
         "difficulty_hard": "Hard",
@@ -410,6 +411,7 @@
         "start_game": "▶ Oyunu Başlat",
         "scores_button": "🏆 Skorlar",
         "profile_button": "👤 Profil",
+        "how_to_play": "❓ Nasıl Oynanır?",
         "day_streak": "günlük seri",
         "difficulty_classic": "Klasik",
         "difficulty_hard": "Zor",
@@ -2743,9 +2745,7 @@ Istanbul, Turkey 🇹🇷`
       const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
-      const [showOnboarding, setShowOnboarding] = useState(() => {
-        try { return !localStorage.getItem('ms_onboarded'); } catch { return false; }
-      });
+      const [showOnboarding, setShowOnboarding] = useState(false);
       const [showInstallBanner, setShowInstallBanner] = useState(true);
       const [scores, setScores]     = useState([]);
       const [rank, setRank]         = useState(null);
@@ -3305,6 +3305,9 @@ Istanbul, Turkey 🇹🇷`
                     <button onClick={() => { setScreen('profile'); trackEvent('profile_click',{}); }}
                       style={{ flex:1, padding:'12px', borderRadius:14, border:'2px solid rgba(255,255,255,0.3)',
                         background:'rgba(0,0,0,0.3)', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer' }}>{t("profile_button")}</button>
+                    <button onClick={() => { setShowOnboarding(true); trackEvent('how_to_play_open',{}); }}
+                      style={{ flex:1, padding:'12px', borderRadius:14, border:'2px solid rgba(255,255,255,0.3)',
+                        background:'rgba(0,0,0,0.3)', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer' }}>{t("how_to_play")}</button>
                   </div>
                 </div>
               </div>
