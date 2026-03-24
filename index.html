@@ -2899,7 +2899,23 @@ Istanbul, Turkey 🇹🇷`
         return () => clearInterval(id);
       }, [running]);
 
-
+      // İlk ziyarette direkt Klasik oyunu başlat
+      const autoplayDone = useRef(false);
+      useEffect(() => {
+        const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
+        if (hasPlayedBefore || autoplayDone.current) return;
+        autoplayDone.current = true;
+        const cfg = GRID_CONFIGS['8x4'];
+        setTiles(generateTiles(cfg.pairs, cfg.maxNum));
+        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+        setRunning(false); setWon(false); lockRef.current = false;
+        setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
+        setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
+        setIsDailyMode(false); isDailyRef.current=false;
+        firstFlipTracked.current=false;
+        setScreen('game');
+        trackEvent('autoplay_start', {});
+      }, []);
 
       const showToast = useCallback((msg) => {
         setToast(msg);
