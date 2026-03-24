@@ -2902,10 +2902,13 @@ Istanbul, Turkey 🇹🇷`
       }, [running]);
 
       // İlk ziyaret: otomatik oyun başlat ve 2 kart demo aç/kapat
+      const autoplayTilesRef = useRef(null);
+
       useEffect(() => {
         if (hasPlayedBefore || autoplayDone) return;
         const cfg = GRID_CONFIGS["8x4"];
         const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
+        autoplayTilesRef.current = newTiles;
         setTiles(newTiles);
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
@@ -2915,12 +2918,21 @@ Istanbul, Turkey 🇹🇷`
         firstFlipTracked.current=false;
         setAutoplayDone(true);
         trackEvent("autoplay_start", {});
-        const idx1 = newTiles.findIndex((t,i) => i>0 && t.val !== newTiles[0].val);
-        setTimeout(() => {
-          setFlipped([newTiles[0].id, newTiles[idx1].id]);
-          setTimeout(() => { setFlipped([]); }, 1200);
-        }, 600);
       }, []);
+
+      // Tiles render edildikten sonra demo kartları aç
+      useEffect(() => {
+        if (!autoplayTilesRef.current || tiles.length === 0) return;
+        if (flipped.length > 0 || matched > 0 || moves > 0) return;
+        const t = autoplayTilesRef.current;
+        if (tiles[0]?.id !== t[0]?.id) return; // farklı tiles set edilmişse çalışma
+        autoplayTilesRef.current = null;
+        const idx1 = t.findIndex((tile, i) => i > 0 && tile.val !== t[0].val);
+        setTimeout(() => {
+          setFlipped([t[0].id, t[idx1].id]);
+          setTimeout(() => { setFlipped([]); }, 1200);
+        }, 500);
+      }, [tiles]);
 
       const showToast = useCallback((msg) => {
         setToast(msg);
