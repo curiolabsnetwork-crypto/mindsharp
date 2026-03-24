@@ -2923,16 +2923,30 @@ Istanbul, Turkey 🇹🇷`
       // Tiles render edildikten sonra demo kartları aç
       useEffect(() => {
         if (!autoplayTilesRef.current || tiles.length === 0) return;
-        if (flipped.length > 0 || matched > 0 || moves > 0) return;
+        if (matched > 0 || moves > 0) return;
         const t = autoplayTilesRef.current;
-        if (tiles[0]?.id !== t[0]?.id) return; // farklı tiles set edilmişse çalışma
+        if (tiles[0]?.id !== t[0]?.id) return;
         autoplayTilesRef.current = null;
         const idx1 = t.findIndex((tile, i) => i > 0 && tile.val !== t[0].val);
-        // Hint 5 saniye görünür — kartlar hemen açılır, 3.5s sonra kapanır (hint kapanmadan önce)
+        const id0 = t[0].id;
+        const id1 = t[idx1].id;
+        // Birinci kartı aç (gerçek oyun gibi tile flip)
         setTimeout(() => {
-          setFlipped([t[0].id, t[idx1].id]);
-          setTimeout(() => { setFlipped([]); }, 3500);
-        }, 100);
+          setTiles(prev => prev.map(tile => tile.id === id0 ? {...tile, flipped: true} : tile));
+          setFlipped([id0]);
+          // 700ms sonra ikinci kartı aç
+          setTimeout(() => {
+            setTiles(prev => prev.map(tile => tile.id === id1 ? {...tile, flipped: true} : tile));
+            setFlipped([id0, id1]);
+            // Eşleşmeyince kapan (oyunun normal kapanma süresiyle tutarlı ~900ms)
+            setTimeout(() => {
+              setTiles(prev => prev.map(tile =>
+                tile.id === id0 || tile.id === id1 ? {...tile, flipped: false} : tile
+              ));
+              setFlipped([]);
+            }, 900);
+          }, 700);
+        }, 200);
       }, [tiles]);
 
       const showToast = useCallback((msg) => {
