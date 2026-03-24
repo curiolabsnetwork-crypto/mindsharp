@@ -2742,8 +2742,8 @@ Istanbul, Turkey 🇹🇷`
     function App() {
       const [forceRender, setForceRender] = React.useState(0);
       const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
-      const [screen, setScreen]     = useState(hasPlayedBefore ? 'menu' : 'game');
-      const [autoplayDone, setAutoplayDone] = useState(false);
+      const [screen, setScreen]     = useState('menu');
+      const autoplayDone = useRef(false);
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
@@ -2901,53 +2901,41 @@ Istanbul, Turkey 🇹🇷`
         return () => clearInterval(id);
       }, [running]);
 
-      // İlk ziyaret: otomatik oyun başlat ve 2 kart demo aç/kapat
-      const autoplayTilesRef = useRef(null);
-
+      // İlk ziyaret autoplay
       useEffect(() => {
-        if (hasPlayedBefore || autoplayDone) return;
-        const cfg = GRID_CONFIGS["8x4"];
+        if (hasPlayedBefore || autoplayDone.current) return;
+        autoplayDone.current = true;
+        // startGame ile normal oyun başlat (tiles set edilir, screen game olur)
+        const cfg = GRID_CONFIGS['8x4'];
         const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
-        autoplayTilesRef.current = newTiles;
         setTiles(newTiles);
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
-        setMode("8x4"); setScore(0); setComboBonus(0); setCombo(0);
+        setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
         setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
         setIsDailyMode(false); isDailyRef.current=false;
         firstFlipTracked.current=false;
-        setAutoplayDone(true);
-        trackEvent("autoplay_start", {});
-      }, []);
-
-      const autoplayFiredRef = useRef(false);
-
-      // Tiles render edildikten sonra demo kartları aç
-      useEffect(() => {
-        if (autoplayFiredRef.current) return;
-        if (!autoplayTilesRef.current || tiles.length === 0) return;
-        const t = autoplayTilesRef.current;
-        if (tiles[0]?.id !== t[0]?.id) return;
-        autoplayTilesRef.current = null;
-        autoplayFiredRef.current = true;
-        const idx1 = t.findIndex((tile, i) => i > 0 && tile.val !== t[0].val);
-        const id0 = t[0].id;
-        const id1 = t[idx1].id;
-        // Birinci kartı aç
-        const t1 = setTimeout(() => {
-          setTiles(prev => prev.map(tile => tile.id === id0 ? {...tile, flipped: true} : tile));
-          // 700ms sonra ikinci kartı aç
-          const t2 = setTimeout(() => {
-            setTiles(prev => prev.map(tile => tile.id === id1 ? {...tile, flipped: true} : tile));
-            // 900ms sonra ikisini kapat
-            const t3 = setTimeout(() => {
-              setTiles(prev => prev.map(tile =>
-                tile.id === id0 || tile.id === id1 ? {...tile, flipped: false} : tile
+        setScreen('game');
+        trackEvent('autoplay_start', {});
+        // Tile id'lerini ref üzerinden koru, render sonrası aç
+        const id0 = newTiles[0].id;
+        const idx1 = newTiles.findIndex((t, i) => i > 0 && t.val !== newTiles[0].val);
+        const id1 = newTiles[idx1].id;
+        setTimeout(() => {
+          // 1. kart aç
+          setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
+          setTimeout(() => {
+            // 2. kart aç
+            setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
+            setTimeout(() => {
+              // İkisini kapat
+              setTiles(prev => prev.map(t =>
+                t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
               ));
-            }, 900);
-          }, 700);
-        }, 300);
-      }, [tiles.length]);
+            }, 1800);
+          }, 800);
+        }, 800);
+      }, []);
 
       const showToast = useCallback((msg) => {
         setToast(msg);
