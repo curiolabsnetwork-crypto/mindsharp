@@ -2168,9 +2168,9 @@
             animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
             overflow:'hidden', maxHeight:'calc(100vh - 32px)', overflowY:'auto' }}>
             <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
-            <button onClick={() => { if(needsName && !nameSaved) return; onMenu(); }} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
+            <button onClick={onMenu} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
               background:'rgba(200,169,110,0.18)', border:'1.5px solid rgba(200,169,110,0.4)', borderRadius:'50%',
-              color: needsName && !nameSaved ? '#ccc' : '#7a5c2e', fontSize:16, cursor: needsName && !nameSaved ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+              color:'#7a5c2e', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
               fontWeight:700, lineHeight:1 }}>✕</button>
             <div style={{ position:'absolute', inset:8, borderRadius:18, border:'1.5px solid rgba(200,169,110,0.35)', pointerEvents:'none', zIndex:1 }}/>
             {[{top:14,left:14},{top:14,right:14},{bottom:14,left:14},{bottom:14,right:14}].map((pos,i) => (
@@ -2216,8 +2216,9 @@
                         background:'linear-gradient(135deg,#f39c12,#e67e22)', color:'#fff', fontWeight:800,
                         fontSize:13, cursor:'pointer', flexShrink:0 }}>{t("save_button")}</button>
                     </div>
-                    <div style={{ color:'rgba(120,80,20,0.5)', fontSize:10, marginTop:5 }}>
-                      {t("name_required_hint") || "İsim girmeden devam edemezsin"}
+                    <div onClick={() => setNameSaved(true)}
+                      style={{ color:'rgba(120,80,20,0.4)', fontSize:10, marginTop:5, cursor:'pointer', textDecoration:'underline' }}>
+                      {t("skip_for_now")}
                     </div>
                   </div>
                 ) : (
@@ -2316,7 +2317,7 @@
                         animation: sharing ? 'none' : 'pulseGlow 1.8s ease-in-out infinite' }}>
                         {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : (lang==='tr' ? '📤 Paylaş — Skoru Gönder!' : '📤 Share — Send Your Score!')}
                       </button>
-                      <button onClick={() => { if(needsName && !nameSaved) return; onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
+                      <button onClick={onReplay} style={{ width:'100%', padding:'11px 0', borderRadius:12,
                         border:'none', marginBottom:6,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:14, cursor:'pointer' }}>{t('play_again')}</button>
@@ -2325,7 +2326,7 @@
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(needsName && !nameSaved) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={onMenu} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2336,7 +2337,7 @@
                 } else {
                   return (
                     <div>
-                      <button onClick={() => { if(needsName && !nameSaved) return; onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
+                      <button onClick={onReplay} style={{ width:'100%', padding:'14px 0', borderRadius:14,
                         border:'none', marginBottom:7,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:16, cursor:'pointer', boxShadow:'0 4px 16px rgba(46,204,113,0.4)' }}>
@@ -2353,7 +2354,7 @@
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(needsName && !nameSaved) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={onMenu} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2741,9 +2742,7 @@ Istanbul, Turkey 🇹🇷`
 
     function App() {
       const [forceRender, setForceRender] = React.useState(0);
-      const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
       const [screen, setScreen]     = useState('menu');
-      const autoplayDone = useRef(false);
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
@@ -2901,42 +2900,6 @@ Istanbul, Turkey 🇹🇷`
         return () => clearInterval(id);
       }, [running]);
 
-      // İlk ziyaret autoplay
-      useEffect(() => {
-        if (hasPlayedBefore || autoplayDone.current) return;
-        autoplayDone.current = true;
-        // startGame ile normal oyun başlat (tiles set edilir, screen game olur)
-        const cfg = GRID_CONFIGS['8x4'];
-        const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
-        setTiles(newTiles);
-        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
-        setRunning(false); setWon(false); lockRef.current = false;
-        setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
-        setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
-        setIsDailyMode(false); isDailyRef.current=false;
-        firstFlipTracked.current=false;
-        setScreen('game');
-        trackEvent('autoplay_start', {});
-        // Tile id'lerini ref üzerinden koru, render sonrası aç
-        const id0 = newTiles[0].id;
-        const idx1 = newTiles.findIndex((t, i) => i > 0 && t.val !== newTiles[0].val);
-        const id1 = newTiles[idx1].id;
-        setTimeout(() => {
-          // 1. kart aç
-          setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
-          setTimeout(() => {
-            // 2. kart aç
-            setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
-            setTimeout(() => {
-              // İkisini kapat
-              setTiles(prev => prev.map(t =>
-                t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
-              ));
-            }, 1800);
-          }, 800);
-        }, 800);
-      }, []);
-
       const showToast = useCallback((msg) => {
         setToast(msg);
         setTimeout(() => setToast(null), 2400);
@@ -2979,17 +2942,6 @@ Istanbul, Turkey 🇹🇷`
             firstFlipTracked.current = true;
             trackEvent('game_first_flip',{mode,type:isDailyRef.current?'daily':'regular'});
           }
-          // İlk dokunuşta müziği başlat (iOS gesture şartı)
-          try {
-            if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) {
-              const ctx = getAudioCtx();
-              if (ctx.state === 'suspended') {
-                ctx.resume().then(() => { if (musicEnabledRef.current && !bgPlayingRef.current) startBgMusic(); });
-              } else {
-                startBgMusic();
-              }
-            }
-          } catch(e) {}
         }
         if (settings.sfx) play('flip');
         setTiles(prev => prev.map(t => t.id===id ? {...t,flipped:true} : t));
@@ -3033,7 +2985,7 @@ Istanbul, Turkey 🇹🇷`
                     if (!isDailyRef.current) {
                       // Son komboyu göster, sonra modal aç
                       const comboDelay = comboRef.current >= 2 ? 1800 : 0;
-                      setTimeout(() => { try { localStorage.setItem("ms_played_before", "1"); } catch {} setWon(true); }, comboDelay);
+                      setTimeout(() => setWon(true), comboDelay);
                     }
                     setMoves((mv) => {
                       setTime((tm) => {
