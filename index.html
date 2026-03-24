@@ -2920,34 +2920,34 @@ Istanbul, Turkey 🇹🇷`
         trackEvent("autoplay_start", {});
       }, []);
 
+      const autoplayFiredRef = useRef(false);
+
       // Tiles render edildikten sonra demo kartları aç
       useEffect(() => {
+        if (autoplayFiredRef.current) return;
         if (!autoplayTilesRef.current || tiles.length === 0) return;
-        if (matched > 0 || moves > 0) return;
         const t = autoplayTilesRef.current;
         if (tiles[0]?.id !== t[0]?.id) return;
         autoplayTilesRef.current = null;
+        autoplayFiredRef.current = true;
         const idx1 = t.findIndex((tile, i) => i > 0 && tile.val !== t[0].val);
         const id0 = t[0].id;
         const id1 = t[idx1].id;
-        // Birinci kartı aç (gerçek oyun gibi tile flip)
-        setTimeout(() => {
+        // Birinci kartı aç
+        const t1 = setTimeout(() => {
           setTiles(prev => prev.map(tile => tile.id === id0 ? {...tile, flipped: true} : tile));
-          setFlipped([id0]);
           // 700ms sonra ikinci kartı aç
-          setTimeout(() => {
+          const t2 = setTimeout(() => {
             setTiles(prev => prev.map(tile => tile.id === id1 ? {...tile, flipped: true} : tile));
-            setFlipped([id0, id1]);
-            // Eşleşmeyince kapan (oyunun normal kapanma süresiyle tutarlı ~900ms)
-            setTimeout(() => {
+            // 900ms sonra ikisini kapat
+            const t3 = setTimeout(() => {
               setTiles(prev => prev.map(tile =>
                 tile.id === id0 || tile.id === id1 ? {...tile, flipped: false} : tile
               ));
-              setFlipped([]);
             }, 900);
           }, 700);
-        }, 200);
-      }, [tiles]);
+        }, 300);
+      }, [tiles.length]);
 
       const showToast = useCallback((msg) => {
         setToast(msg);
