@@ -2919,12 +2919,16 @@ Istanbul, Turkey 🇹🇷`
 
       // İlk ziyarette direkt Klasik oyunu başlat
       const autoplayDone = useRef(false);
+      const demoTilesRef = useRef(null);
+      const demoFiredRef = useRef(false);
       useEffect(() => {
         const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
         if (hasPlayedBefore || autoplayDone.current) return;
         autoplayDone.current = true;
         const cfg = GRID_CONFIGS['8x4'];
-        setTiles(generateTiles(cfg.pairs, cfg.maxNum));
+        const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
+        demoTilesRef.current = newTiles;
+        setTiles(newTiles);
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
         setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
@@ -2934,6 +2938,32 @@ Istanbul, Turkey 🇹🇷`
         setScreen('game');
         trackEvent('autoplay_start', {});
       }, []);
+
+      // Hint gösterilirken (screen=game olunca) demo taş açılışı yap
+      useEffect(() => {
+        if (screen !== 'game') return;
+        if (demoFiredRef.current) return;
+        if (!demoTilesRef.current) return;
+        demoFiredRef.current = true;
+        const t = demoTilesRef.current;
+        // İki farklı değerli taş seç
+        const id0 = t[0].id;
+        const idx1 = t.findIndex((tile, i) => i > 0 && tile.val !== t[0].val);
+        const id1 = t[idx1].id;
+        // Hint 5 saniye görünür
+        // 0.8s: 1. taş aç, 1.6s: 2. taş aç, 3.4s: ikisi kapansın (hint bitmeden)
+        const t1 = setTimeout(() => {
+          setTiles(prev => prev.map(tile => tile.id === id0 ? {...tile, flipped: true} : tile));
+          const t2 = setTimeout(() => {
+            setTiles(prev => prev.map(tile => tile.id === id1 ? {...tile, flipped: true} : tile));
+            const t3 = setTimeout(() => {
+              setTiles(prev => prev.map(tile =>
+                tile.id === id0 || tile.id === id1 ? {...tile, flipped: false} : tile
+              ));
+            }, 1800);
+          }, 800);
+        }, 800);
+      }, [screen]);
 
       const showToast = useCallback((msg) => {
         setToast(msg);
