@@ -2928,10 +2928,11 @@ Istanbul, Turkey 🇹🇷`
         if (tiles[0]?.id !== t[0]?.id) return; // farklı tiles set edilmişse çalışma
         autoplayTilesRef.current = null;
         const idx1 = t.findIndex((tile, i) => i > 0 && tile.val !== t[0].val);
+        // Hint 5 saniye görünür — kartlar hemen açılır, 3.5s sonra kapanır (hint kapanmadan önce)
         setTimeout(() => {
           setFlipped([t[0].id, t[idx1].id]);
-          setTimeout(() => { setFlipped([]); }, 1200);
-        }, 500);
+          setTimeout(() => { setFlipped([]); }, 3500);
+        }, 100);
       }, [tiles]);
 
       const showToast = useCallback((msg) => {
