@@ -296,6 +296,7 @@
         "rank_label": "Rank",
         "save_score_prompt": "Save your score — enter a name:",
         "skip_for_now": "Skip for now",
+        "name_required_hint": "Enter your name to continue",
         "high_scores": "🏆 High Scores",
         "share_button": "📤 Share",
         "menu_button": "← Menu",
@@ -436,6 +437,7 @@
         "rank_label": "Sıralama",
         "save_score_prompt": "Skorunu kaydetmek için ismini gir:",
         "skip_for_now": "Şimdilik geç",
+        "name_required_hint": "Devam etmek için isim girmelisin",
         "high_scores": "🏆 En Yüksek Skorlar",
         "share_button": "📤 Paylaş",
         "menu_button": "← Menü",
@@ -1963,7 +1965,16 @@
       const [adWatched, setAdWatched] = React.useState(false);
       const [adLoading, setAdLoading] = React.useState(false);
       const [adAvailable, setAdAvailable] = React.useState(false);
+      const [nameShake, setNameShake] = React.useState(false);
       const needsName = !user || user.trim() === '';
+      const requireName = () => {
+        if (needsName && !nameSaved) {
+          setNameShake(true);
+          setTimeout(() => setNameShake(false), 600);
+          return true;
+        }
+        return false;
+      };
 
       // Character & fact — sabit kalsın, her render'da değişmesin
       const character = React.useMemo(() => getCharacter(score), [score]);
@@ -2154,6 +2165,8 @@
             @keyframes cardSlideUp{from{transform:translateY(40px) scale(0.94);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
             @keyframes scorePop{0%{transform:scale(0.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
             @keyframes rankGlow{0%,100%{box-shadow:0 0 8px currentColor}50%{box-shadow:0 0 22px currentColor,0 0 40px rgba(241,196,15,0.4)}}
+            @keyframes nameGlow{0%,100%{box-shadow:0 0 0 3px rgba(230,126,34,0.25)}50%{box-shadow:0 0 0 5px rgba(230,126,34,0.55),0 0 16px rgba(230,126,34,0.3)}}
+            @keyframes nameShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-8px)}35%{transform:translateX(8px)}55%{transform:translateX(-6px)}75%{transform:translateX(6px)}90%{transform:translateX(-3px)}}
             @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
           `}</style>
           {confetti.map(p => (
@@ -2168,7 +2181,7 @@
             animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
             overflow:'hidden', maxHeight:'calc(100vh - 32px)', overflowY:'auto' }}>
             <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
-            <button onClick={() => { if(needsName && !nameSaved) return; onMenu(); }} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
+            <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
               background:'rgba(200,169,110,0.18)', border:'1.5px solid rgba(200,169,110,0.4)', borderRadius:'50%',
               color: needsName && !nameSaved ? '#ccc' : '#7a5c2e', fontSize:16, cursor: needsName && !nameSaved ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center',
               fontWeight:700, lineHeight:1 }}>✕</button>
@@ -2202,23 +2215,29 @@
               <div style={{ textAlign:'center', marginBottom:10 }}>
                 {needsName && !nameSaved ? (
                   <div style={{ marginTop:5, marginBottom:2 }}>
-                    <div style={{ color:'rgba(100,60,10,0.55)', fontSize:11, marginBottom:5 }}>{t("save_score_prompt")}</div>
-                    <div style={{ display:'flex', gap:6 }}>
-                      <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
-                        onKeyDown={e => e.key==='Enter' && handleSaveName()}
-                        onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
-                        onBlur={() => { document.body.style.overflow=''; }}
-                        placeholder={t("name_placeholder")} maxLength={20}
-                        style={{ flex:1, padding:'8px 10px', borderRadius:9, border:'1.5px solid #c8a96e',
-                          background:'rgba(255,255,255,0.9)', fontSize:16, fontWeight:700, color:'#3d1a00',
-                          outline:'none', textAlign:'center', transform:'translateZ(0)' }}/>
-                      <button onClick={handleSaveName} style={{ padding:'8px 12px', borderRadius:9, border:'none',
-                        background:'linear-gradient(135deg,#f39c12,#e67e22)', color:'#fff', fontWeight:800,
-                        fontSize:13, cursor:'pointer', flexShrink:0 }}>{t("save_button")}</button>
+                    <div style={{ color:'#c0392b', fontWeight:700, fontSize:12, marginBottom:6 }}>{t("name_required_hint")}</div>
+                    <div style={{
+                      animation: nameShake ? 'nameShake 0.5s ease' : 'nameGlow 2s ease-in-out infinite',
+                      borderRadius:11, padding:3
+                    }}>
+                      <div style={{ display:'flex', gap:6 }}>
+                        <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
+                          onKeyDown={e => e.key==='Enter' && handleSaveName()}
+                          onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
+                          onBlur={() => { document.body.style.overflow=''; }}
+                          placeholder={t("name_placeholder")} maxLength={20}
+                          style={{ flex:1, padding:'10px 12px', borderRadius:9,
+                            border: nameShake ? '2px solid #e74c3c' : '2px solid #e67e22',
+                            background:'rgba(255,255,255,0.95)', fontSize:16, fontWeight:700, color:'#3d1a00',
+                            outline:'none', textAlign:'center', transform:'translateZ(0)',
+                            boxShadow: nameShake ? '0 0 0 3px rgba(231,76,60,0.3)' : '0 0 0 3px rgba(230,126,34,0.25)' }}/>
+                        <button onClick={handleSaveName} style={{ padding:'10px 14px', borderRadius:9, border:'none',
+                          background:'linear-gradient(135deg,#f39c12,#e67e22)', color:'#fff', fontWeight:800,
+                          fontSize:14, cursor:'pointer', flexShrink:0,
+                          boxShadow:'0 2px 8px rgba(230,126,34,0.4)' }}>{t("save_button")}</button>
+                      </div>
                     </div>
-                    <div style={{ color:'rgba(120,80,20,0.5)', fontSize:10, marginTop:5 }}>
-                      {t("name_required_hint") || "İsim girmeden devam edemezsin"}
-                    </div>
+                  </div>
                   </div>
                 ) : (
                   <div style={{ color:'#3d1a00', fontWeight:900, fontSize:22, fontFamily:'Georgia,serif' }}>{displayName}</div>
@@ -2309,14 +2328,14 @@
                         marginBottom:6, letterSpacing:0.5 }}>
                         {lang==='tr' ? '🔥 Arkadaşlarına meydan oku!' : '🔥 Challenge your friends!'}
                       </div>
-                      <button onClick={handleShare} disabled={sharing} style={{ width:'100%', padding:'15px 0',
+                      <button onClick={() => { if(requireName()) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'15px 0',
                         borderRadius:14, border:'none', marginBottom:8,
                         background: sharing ? 'rgba(243,156,18,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22,#d35400)',
                         color:'#fff', fontWeight:900, fontSize:17, cursor:'pointer', letterSpacing:0.5,
                         animation: sharing ? 'none' : 'pulseGlow 1.8s ease-in-out infinite' }}>
                         {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : (lang==='tr' ? '📤 Paylaş — Skoru Gönder!' : '📤 Share — Send Your Score!')}
                       </button>
-                      <button onClick={() => { if(needsName && !nameSaved) return; onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
+                      <button onClick={() => { if(requireName()) return; onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
                         border:'none', marginBottom:6,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:14, cursor:'pointer' }}>{t('play_again')}</button>
@@ -2325,7 +2344,7 @@
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(needsName && !nameSaved) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2336,13 +2355,13 @@
                 } else {
                   return (
                     <div>
-                      <button onClick={() => { if(needsName && !nameSaved) return; onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
+                      <button onClick={() => { if(requireName()) return; onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
                         border:'none', marginBottom:7,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:16, cursor:'pointer', boxShadow:'0 4px 16px rgba(46,204,113,0.4)' }}>
                         {t('play_again')}
                       </button>
-                      <button onClick={handleShare} disabled={sharing} style={{ width:'100%', padding:'11px 0',
+                      <button onClick={() => { if(requireName()) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'11px 0',
                         borderRadius:12, border:'none', marginBottom:7,
                         background: sharing ? 'rgba(230,126,34,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
                         color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
@@ -2353,7 +2372,7 @@
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(needsName && !nameSaved) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
