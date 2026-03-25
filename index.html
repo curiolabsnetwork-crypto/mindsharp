@@ -2759,9 +2759,9 @@ Istanbul, Turkey 🇹🇷`
 
     function App() {
       const [forceRender, setForceRender] = React.useState(0);
-      const _hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
-      const _initTiles = !_hasPlayedBefore ? (() => { const c = GRID_CONFIGS['8x4']; return generateTiles(c.pairs, c.maxNum); })() : [];
-      const [screen, setScreen]     = useState(_hasPlayedBefore ? 'menu' : 'game');
+      const [screen, setScreen]     = useState(() => {
+        try { return localStorage.getItem('ms_played_before') ? 'menu' : 'game'; } catch { return 'menu'; }
+      });
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
@@ -2770,7 +2770,13 @@ Istanbul, Turkey 🇹🇷`
       const [rank, setRank]         = useState(null);
       const scoresRef               = useRef([]);
       useEffect(() => { scoresRef.current = scores; }, [scores]);
-      const [tiles, setTiles]         = useState(_initTiles);
+      const [tiles, setTiles]         = useState(() => {
+        try {
+          if (localStorage.getItem('ms_played_before')) return [];
+          const c = GRID_CONFIGS['8x4'];
+          return generateTiles(c.pairs, c.maxNum);
+        } catch { return []; }
+      });
       const [flipped, setFlipped]     = useState([]);
       const [moves, setMoves]         = useState(0);
       const [matched, setMatched]     = useState(0);
@@ -2927,16 +2933,14 @@ Istanbul, Turkey 🇹🇷`
         return () => clearInterval(id);
       }, [running]);
 
-      // İlk ziyarette: tiles ve screen useState'de hazır, sadece demo taş açılışı yap
+      // İlk ziyarette demo taş açılışı — tiles zaten useState'de hazır
       useEffect(() => {
-        if (_hasPlayedBefore) return;
+        try { if (localStorage.getItem('ms_played_before')) return; } catch {}
+        if (tiles.length === 0) return;
         trackEvent('autoplay_start', {});
-        // _initTiles'tan demo taşları seç
-        if (_initTiles.length === 0) return;
-        const id0 = _initTiles[0].id;
-        const i1 = _initTiles.findIndex((t, i) => i > 0 && t.val !== _initTiles[0].val);
-        const id1 = _initTiles[i1].id;
-        // hint yazısı gösterilirken (5sn) demo aç/kapat
+        const id0 = tiles[0].id;
+        const i1 = tiles.findIndex((t, i) => i > 0 && t.val !== tiles[0].val);
+        const id1 = tiles[i1].id;
         const t1 = setTimeout(() => {
           setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
         }, 700);
