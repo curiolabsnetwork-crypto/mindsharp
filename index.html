@@ -2759,7 +2759,9 @@ Istanbul, Turkey 🇹🇷`
 
     function App() {
       const [forceRender, setForceRender] = React.useState(0);
-      const [screen, setScreen]     = useState('menu');
+      const _hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
+      const _initTiles = !_hasPlayedBefore ? (() => { const c = GRID_CONFIGS['8x4']; return generateTiles(c.pairs, c.maxNum); })() : [];
+      const [screen, setScreen]     = useState(_hasPlayedBefore ? 'menu' : 'game');
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
@@ -2768,7 +2770,7 @@ Istanbul, Turkey 🇹🇷`
       const [rank, setRank]         = useState(null);
       const scoresRef               = useRef([]);
       useEffect(() => { scoresRef.current = scores; }, [scores]);
-      const [tiles, setTiles]         = useState([]);
+      const [tiles, setTiles]         = useState(_initTiles);
       const [flipped, setFlipped]     = useState([]);
       const [moves, setMoves]         = useState(0);
       const [matched, setMatched]     = useState(0);
@@ -2925,42 +2927,28 @@ Istanbul, Turkey 🇹🇷`
         return () => clearInterval(id);
       }, [running]);
 
-      // İlk ziyarette direkt Klasik oyunu başlat
-      const autoplayDone = useRef(false);
+      // İlk ziyarette: tiles ve screen useState'de hazır, sadece demo taş açılışı yap
       useEffect(() => {
-        const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
-        if (hasPlayedBefore || autoplayDone.current) return;
-        autoplayDone.current = true;
-        const cfg = GRID_CONFIGS['8x4'];
-        const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
-        // Demo için 2 farklı taş seç
-        const i0 = 0;
-        const i1 = newTiles.findIndex((t, i) => i > 0 && t.val !== newTiles[0].val);
-        const id0 = newTiles[i0].id;
-        const id1 = newTiles[i1].id;
-        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
-        setRunning(false); setWon(false); lockRef.current = false;
-        setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
-        setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
-        setIsDailyMode(false); isDailyRef.current=false;
-        firstFlipTracked.current=false;
-        setTiles(newTiles);
+        if (_hasPlayedBefore) return;
         trackEvent('autoplay_start', {});
-        // Tiles render edildikten sonra screen'i değiştir, demo açılışı yap
-        requestAnimationFrame(() => {
-          setScreen('game');
-          setTimeout(() => {
-            setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
-          }, 700);
-          setTimeout(() => {
-            setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
-          }, 1500);
-          setTimeout(() => {
-            setTiles(prev => prev.map(t =>
-              t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
-            ));
-          }, 3200);
-        });
+        // _initTiles'tan demo taşları seç
+        if (_initTiles.length === 0) return;
+        const id0 = _initTiles[0].id;
+        const i1 = _initTiles.findIndex((t, i) => i > 0 && t.val !== _initTiles[0].val);
+        const id1 = _initTiles[i1].id;
+        // hint yazısı gösterilirken (5sn) demo aç/kapat
+        const t1 = setTimeout(() => {
+          setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
+        }, 700);
+        const t2 = setTimeout(() => {
+          setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
+        }, 1500);
+        const t3 = setTimeout(() => {
+          setTiles(prev => prev.map(t =>
+            t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
+          ));
+        }, 3200);
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
       }, []);
 
       const showToast = useCallback((msg) => {
