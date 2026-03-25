@@ -2919,25 +2919,45 @@ Istanbul, Turkey 🇹🇷`
 
       // İlk ziyarette direkt Klasik oyunu başlat
       const autoplayDone = useRef(false);
+      const demoIdRef = useRef(null); // demo açılacak taş id'leri
+
       useEffect(() => {
         const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
         if (hasPlayedBefore || autoplayDone.current) return;
         autoplayDone.current = true;
+
         const cfg = GRID_CONFIGS['8x4'];
         const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
-        setTiles(newTiles);
+
+        // Demo için 2 farklı taş seç ve ref'e kaydet
+        const id0 = newTiles[0].id;
+        const idx1 = newTiles.findIndex((tile, i) => i > 0 && tile.val !== newTiles[0].val);
+        const id1 = newTiles[idx1].id;
+        demoIdRef.current = { id0, id1 };
+
+        // Önce tüm state'leri set et
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
         setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
         setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
         setIsDailyMode(false); isDailyRef.current=false;
         firstFlipTracked.current=false;
+
+        // Tiles ve screen'i birlikte set et (React bunları batch'ler)
+        setTiles(newTiles);
         setScreen('game');
         trackEvent('autoplay_start', {});
-        // Demo: hint yazısı (5s) süresince 2 taş sırayla aç/kapat
-        const id0 = newTiles[0].id;
-        const idx1 = newTiles.findIndex((tile, i) => i > 0 && tile.val !== newTiles[0].val);
-        const id1 = newTiles[idx1].id;
+      }, []);
+
+      // Tiles render edildikten sonra demo taş açılışını yap
+      const demoFiredRef = useRef(false);
+      useEffect(() => {
+        if (demoFiredRef.current) return;
+        if (!demoIdRef.current) return;
+        if (tiles.length === 0) return;
+        demoFiredRef.current = true;
+        const { id0, id1 } = demoIdRef.current;
+        // 0.8s: 1. taş, 1.6s: 2. taş, 3.4s: ikisi kapanır
         setTimeout(() => {
           setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
           setTimeout(() => {
@@ -2949,7 +2969,7 @@ Istanbul, Turkey 🇹🇷`
             }, 1800);
           }, 800);
         }, 800);
-      }, []);
+      }, [tiles.length]);
 
       const showToast = useCallback((msg) => {
         setToast(msg);
