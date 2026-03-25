@@ -2932,15 +2932,34 @@ Istanbul, Turkey 🇹🇷`
         if (hasPlayedBefore || autoplayDone.current) return;
         autoplayDone.current = true;
         const cfg = GRID_CONFIGS['8x4'];
-        setTiles(generateTiles(cfg.pairs, cfg.maxNum));
+        const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
+        // Demo için 2 farklı taş seç
+        const i0 = 0;
+        const i1 = newTiles.findIndex((t, i) => i > 0 && t.val !== newTiles[0].val);
+        const id0 = newTiles[i0].id;
+        const id1 = newTiles[i1].id;
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
         setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
         setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
         setIsDailyMode(false); isDailyRef.current=false;
         firstFlipTracked.current=false;
+        setTiles(newTiles);
         setScreen('game');
         trackEvent('autoplay_start', {});
+        // Demo: 1. taş aç -> 2. taş aç -> ikisi kapat
+        // setTimeout garantili olarak tiles render sonrası çalışır
+        setTimeout(() => {
+          setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
+        }, 700);
+        setTimeout(() => {
+          setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
+        }, 1500);
+        setTimeout(() => {
+          setTiles(prev => prev.map(t =>
+            t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
+          ));
+        }, 3200);
       }, []);
 
       const showToast = useCallback((msg) => {
