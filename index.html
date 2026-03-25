@@ -2843,7 +2843,6 @@ Istanbul, Turkey 🇹🇷`
         bgSourceRef.current = null;
         bgPlayingRef.current = false;
       };
-      // Müzik yüklemesini ilk kullanıcı etkileşimine ertele (yükleme hızı için)
       const loadMusicOnce = useCallback(() => {
         if (bgLoadedRef.current) return;
         bgLoadedRef.current = true;
@@ -2863,9 +2862,9 @@ Istanbul, Turkey 🇹🇷`
         }).catch(() => {});
       }, []);
       useEffect(() => {
-        const handler = () => { loadMusicOnce(); };
-        window.addEventListener('pointerdown', handler, { once: true, passive: true });
-        return () => window.removeEventListener('pointerdown', handler);
+        const h = () => loadMusicOnce();
+        window.addEventListener('pointerdown', h, { once: true, passive: true });
+        return () => window.removeEventListener('pointerdown', h);
       }, []);
       useEffect(() => {
         if (!bgBufferRef.current) return;
@@ -2896,16 +2895,14 @@ Istanbul, Turkey 🇹🇷`
 
       useEffect(() => {
         if (!db) return;
-        // Firestore'u 3sn ertele - ilk render'ı engellemesin
         const timer = setTimeout(() => {
           const unsub = db.collection('scores').orderBy('score','desc').limit(500)
             .onSnapshot(snap => {
               setScores(snap.docs.map(d => ({ id:d.id, ...d.data() })));
             }, err => console.log('Firestore read error:', err));
-          // cleanup için ref'e kaydet
-          window._firestoreUnsub = unsub;
+          window._fsUnsub = unsub;
         }, 3000);
-        return () => { clearTimeout(timer); if (window._firestoreUnsub) window._firestoreUnsub(); };
+        return () => { clearTimeout(timer); if (window._fsUnsub) window._fsUnsub(); };
       }, []);
 
       const boardRef = useRef(null);
@@ -2935,34 +2932,15 @@ Istanbul, Turkey 🇹🇷`
         if (hasPlayedBefore || autoplayDone.current) return;
         autoplayDone.current = true;
         const cfg = GRID_CONFIGS['8x4'];
-        const newTiles = generateTiles(cfg.pairs, cfg.maxNum);
+        setTiles(generateTiles(cfg.pairs, cfg.maxNum));
         setFlipped([]); setMoves(0); setMatched(0); setTime(0);
         setRunning(false); setWon(false); lockRef.current = false;
         setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
         setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
         setIsDailyMode(false); isDailyRef.current=false;
         firstFlipTracked.current=false;
-        setTiles(newTiles);
         setScreen('game');
         trackEvent('autoplay_start', {});
-        // Demo: hint yazısı (5s) süresince 2 taş sırayla aç/kapat
-        const id0 = newTiles[0].id;
-        const idx1 = newTiles.findIndex((tile, i) => i > 0 && tile.val !== newTiles[0].val);
-        const id1 = newTiles[idx1].id;
-        // requestAnimationFrame ile tiles render bekliyoruz, sonra açıyoruz
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          setTimeout(() => {
-            setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
-            setTimeout(() => {
-              setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
-              setTimeout(() => {
-                setTiles(prev => prev.map(t =>
-                  t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
-                ));
-              }, 1800);
-            }, 800);
-          }, 600);
-        }));
       }, []);
 
       const showToast = useCallback((msg) => {
