@@ -101,29 +101,36 @@
     body.lang-tr::after{
       content:"© 2026 Mendebur Studios. Tüm hakları saklıdır.";
     }
+    @keyframes hintPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,224,0,0.0), 0 8px 18px rgba(0,0,0,0.35); }
+      50% { box-shadow: 0 0 0 4px rgba(255,224,0,0.25), 0 8px 24px rgba(0,0,0,0.45); }
+    }
     .ms-hint {
       width: calc(100% - 24px);
       margin: 0px 12px 6px;
-      padding: 8px 12px;
-      border-radius: 12px;
+      padding: 11px 14px;
+      border-radius: 14px;
       text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: #ffffff;
-      text-shadow: 0 0 12px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.8);
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
-      backdrop-filter: blur(4px);
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff9c4;
+      letter-spacing: 0.2px;
+      text-shadow: 0 0 16px rgba(255,220,0,0.5), 0 1px 4px rgba(0,0,0,0.9);
+      background: linear-gradient(135deg, rgba(20,10,0,0.75) 0%, rgba(60,35,0,0.7) 100%);
+      border: 1.5px solid rgba(255,200,50,0.45);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+      backdrop-filter: blur(6px);
       opacity: 1;
       transform: translateY(0);
       transition: opacity .35s ease, transform .35s ease;
       pointer-events: none;
       z-index: 50;
+      animation: hintPulse 2s ease-in-out infinite;
     }
     .ms-hint.hide {
       opacity: 0;
       transform: translateY(-6px);
+      animation: none;
     }
     .ms-confirm-overlay {
       position: fixed; inset: 0; z-index: 700;
@@ -279,7 +286,7 @@
         "moves_label": "MOVES",
         "time_label": "TIME",
         "pairs_label": "PAIRS",
-        "game_hint": "Match all pairs with minimum moves and maximum speed.",
+        "game_hint": "⚡ Tap tiles → Test your memory → Be the best!",
         "combo_x2": "⚡ Combo x{n}!",
         "combo_x3": "🔥 COMBO x{n} — AMAZING!",
         "quit_title": "Quit Game?",
@@ -420,7 +427,7 @@
         "moves_label": "HAMLE",
         "time_label": "SÜRE",
         "pairs_label": "ÇİFT",
-        "game_hint": "Tüm çiftleri en az hamlede ve en kısa sürede eşleştir.",
+        "game_hint": "⚡ Taşlara dokun → Hafızanı ölç → En iyisi sen ol!",
         "combo_x2": "⚡ Kombo x{n}!",
         "combo_x3": "🔥 KOMBO x{n} — MÜTHİŞ!",
         "quit_title": "Oyundan Çık?",
