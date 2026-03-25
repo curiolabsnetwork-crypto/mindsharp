@@ -2945,21 +2945,22 @@ Istanbul, Turkey 🇹🇷`
         setIsDailyMode(false); isDailyRef.current=false;
         firstFlipTracked.current=false;
         setTiles(newTiles);
-        setScreen('game');
         trackEvent('autoplay_start', {});
-        // Demo: 1. taş aç -> 2. taş aç -> ikisi kapat
-        // setTimeout garantili olarak tiles render sonrası çalışır
-        setTimeout(() => {
-          setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
-        }, 700);
-        setTimeout(() => {
-          setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
-        }, 1500);
-        setTimeout(() => {
-          setTiles(prev => prev.map(t =>
-            t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
-          ));
-        }, 3200);
+        // Tiles render edildikten sonra screen'i değiştir, demo açılışı yap
+        requestAnimationFrame(() => {
+          setScreen('game');
+          setTimeout(() => {
+            setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
+          }, 700);
+          setTimeout(() => {
+            setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
+          }, 1500);
+          setTimeout(() => {
+            setTiles(prev => prev.map(t =>
+              t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
+            ));
+          }, 3200);
+        });
       }, []);
 
       const showToast = useCallback((msg) => {
