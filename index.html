@@ -101,29 +101,36 @@
     body.lang-tr::after{
       content:"© 2026 Mendebur Studios. Tüm hakları saklıdır.";
     }
+    @keyframes hintPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,224,0,0.0), 0 8px 18px rgba(0,0,0,0.35); }
+      50% { box-shadow: 0 0 0 4px rgba(255,224,0,0.25), 0 8px 24px rgba(0,0,0,0.45); }
+    }
     .ms-hint {
       width: calc(100% - 24px);
       margin: 0px 12px 6px;
-      padding: 8px 12px;
-      border-radius: 12px;
+      padding: 11px 14px;
+      border-radius: 14px;
       text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: #ffffff;
-      text-shadow: 0 0 12px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.8);
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
-      backdrop-filter: blur(4px);
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff9c4;
+      letter-spacing: 0.2px;
+      text-shadow: 0 0 16px rgba(255,220,0,0.5), 0 1px 4px rgba(0,0,0,0.9);
+      background: linear-gradient(135deg, rgba(20,10,0,0.75) 0%, rgba(60,35,0,0.7) 100%);
+      border: 1.5px solid rgba(255,200,50,0.45);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+      backdrop-filter: blur(6px);
       opacity: 1;
       transform: translateY(0);
       transition: opacity .35s ease, transform .35s ease;
       pointer-events: none;
       z-index: 50;
+      animation: hintPulse 2s ease-in-out infinite;
     }
     .ms-hint.hide {
       opacity: 0;
       transform: translateY(-6px);
+      animation: none;
     }
     .ms-confirm-overlay {
       position: fixed; inset: 0; z-index: 700;
@@ -219,8 +226,8 @@
     document.addEventListener('deviceready', () => window.MindSharpAds.init(), false);
     window.addEventListener('load', () => { setTimeout(() => window.MindSharpAds.init(), 800); });
   </script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -279,7 +286,7 @@
         "moves_label": "MOVES",
         "time_label": "TIME",
         "pairs_label": "PAIRS",
-        "game_hint": "Match all pairs with minimum moves and maximum speed.",
+        "game_hint": "⚡ Tap tiles → Test your memory → Be the best!",
         "combo_x2": "⚡ Combo x{n}!",
         "combo_x3": "🔥 COMBO x{n} — AMAZING!",
         "quit_title": "Quit Game?",
@@ -332,6 +339,9 @@
         "sort_score": "Score",
         "sort_moves": "Moves",
         "sort_time": "Time",
+        "sort_date": "Date",
+        "hall_of_fame_title": "🏆 Hall of Fame",
+        "hall_of_fame_desc": "All-time best score per player",
         "no_games_category": "No games yet for this category",
         "clear_scores": "🗑 Clear {difficulty} Level Scores",
         "clear_confirm_title": "Clear Scores?",
@@ -420,7 +430,7 @@
         "moves_label": "HAMLE",
         "time_label": "SÜRE",
         "pairs_label": "ÇİFT",
-        "game_hint": "Tüm çiftleri en az hamlede ve en kısa sürede eşleştir.",
+        "game_hint": "⚡ Taşlara dokun → Hafızanı ölç → En iyisi sen ol!",
         "combo_x2": "⚡ Kombo x{n}!",
         "combo_x3": "🔥 KOMBO x{n} — MÜTHİŞ!",
         "quit_title": "Oyundan Çık?",
@@ -473,6 +483,9 @@
         "sort_score": "Skor",
         "sort_moves": "Hamle",
         "sort_time": "Süre",
+        "sort_date": "Tarih",
+        "hall_of_fame_title": "🏆 Şampiyonlar",
+        "hall_of_fame_desc": "Her oyuncunun en yüksek skoru",
         "no_games_category": "Bu kategoride henüz oyun yok",
         "clear_scores": "🗑 {difficulty} Seviye Skorlarını Temizle",
         "clear_confirm_title": "Skorları Temizle?",
@@ -1360,10 +1373,35 @@
     }
 
     function formatTime(s) { const m=Math.floor(s/60); return `${m}:${String(s%60).padStart(2,'0')}`; }
+
+    // Ardışık Guest ID — session boyunca sabit, localStorage'da tutulur
+    async function getOrCreateGuestId() {
+      try {
+        const stored = localStorage.getItem('memotiles_user');
+        if (stored) return stored; // Kullanıcı zaten isim seçmiş veya Guest ID var
+        // Firestore'dan atomic increment ile unique numara al
+        const counterRef = db.collection('counters').doc('guestId');
+        let guestNum = 1;
+        await db.runTransaction(async (tx) => {
+          const doc = await tx.get(counterRef);
+          if (doc.exists) {
+            guestNum = (doc.data().next || 1);
+            tx.update(counterRef, { next: guestNum + 1 });
+          } else {
+            tx.set(counterRef, { next: 2 });
+          }
+        });
+        const guestName = `Guest${guestNum}`;
+        try { localStorage.setItem('memotiles_user', guestName); } catch {}
+        return guestName;
+      } catch(e) {
+        return 'Guest';
+      }
+    }
     function formatDate(ts) {
       if (!ts) return "-";
       const d = ts.toDate ? ts.toDate() : new Date(ts);
-      return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getFullYear()).slice(-2)}`;
+      return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
     }
 
     function Tile({ tile, onClick, size }) {
@@ -1410,6 +1448,11 @@
         if (sortBy==='score') return b.score-a.score;
         if (sortBy==='time')  return a.time-b.time;
         if (sortBy==='moves') return a.moves-b.moves;
+        if (sortBy==='date') {
+          const ta = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+          const tb = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+          return tb - ta;
+        }
         return 0;
       });
       const tabStyle = (key) => ({
@@ -1436,6 +1479,7 @@
             <button style={sortBtnStyle('score')} onClick={() => onSortChange('score')}>{t("sort_score")}</button>
             <button style={sortBtnStyle('moves')} onClick={() => onSortChange('moves')}>{t("sort_moves")}</button>
             <button style={sortBtnStyle('time')}  onClick={() => onSortChange('time')}>{t("sort_time")}</button>
+            <button style={sortBtnStyle('date')}  onClick={() => onSortChange('date')}>{t("sort_date")}</button>
           </div>
           {sortedScores.length === 0
             ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:13, margin:'16px 0' }}>{t("no_games_category")}</p>
@@ -1475,6 +1519,71 @@
               )}
             </>
           )}
+        </div>
+      );
+    }
+
+    function HallOfFame({ scores }) {
+      const [hofCategory, setHofCategory] = React.useState('8x4');
+      const categories = Object.entries(GRID_CONFIGS).map(([key,val]) => ({ key, label:tDiff(val.difficulty) }));
+      // Her oyuncu için en yüksek skoru hesapla (client-side)
+      const filtered = scores.filter(s => s.mode === hofCategory);
+      const bestByUser = {};
+      filtered.forEach(s => {
+        const name = s.user || 'Guest';
+        if (!bestByUser[name] || s.score > bestByUser[name].score) {
+          bestByUser[name] = s;
+        }
+      });
+      const hofList = Object.values(bestByUser)
+        .sort((a,b) => b.score - a.score)
+        .slice(0, 50);
+
+      const tabStyle = (key) => ({
+        flex:1, padding:'7px 2px', border:'none', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700,
+        background: hofCategory===key ? 'linear-gradient(135deg,#f1c40f,#e67e22)' : 'rgba(255,255,255,0.08)',
+        color: hofCategory===key ? '#fff' : '#ffe082',
+        boxShadow: hofCategory===key ? '0 2px 8px rgba(241,196,15,0.4)' : 'none',
+        transition:'all 0.2s',
+      });
+
+      const medalColor = (i) => i===0 ? '#FFD700' : i===1 ? '#C0C0C0' : i===2 ? '#CD7F32' : '#fff';
+      const medalLabel = (i) => i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `#${i+1}`;
+
+      return (
+        <div style={{ width:'100%', marginTop:16 }}>
+          <div style={{ borderTop:'1px solid rgba(255,224,130,0.2)', paddingTop:14, marginBottom:10 }}>
+            <div style={{ textAlign:'center', marginBottom:8 }}>
+              <span style={{ color:'#ffe082', fontFamily:'Georgia,serif', fontSize:16, fontWeight:700 }}>{t('hall_of_fame_title')}</span>
+              <div style={{ color:'rgba(255,224,130,0.6)', fontSize:10, marginTop:2 }}>{t('hall_of_fame_desc')}</div>
+            </div>
+            <div style={{ display:'flex', gap:4, marginBottom:10 }}>
+              {categories.map(cat => (
+                <button key={cat.key} style={tabStyle(cat.key)} onClick={() => setHofCategory(cat.key)}>{cat.label}</button>
+              ))}
+            </div>
+            {hofList.length === 0
+              ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:12, margin:'12px 0' }}>{t('no_games_category')}</p>
+              : (
+                <div style={{ maxHeight:340, overflowY:'auto' }}>
+                  {hofList.map((s,i) => (
+                    <div key={i} style={{
+                      display:'flex', alignItems:'center', padding:'6px 8px', marginBottom:4, gap:4,
+                      background: i===0 ? 'rgba(255,215,0,0.18)' : i===1 ? 'rgba(192,192,192,0.12)' : i===2 ? 'rgba(205,127,50,0.12)' : 'rgba(255,255,255,0.07)',
+                      borderRadius:8, fontSize:11,
+                      border: i<3 ? `1px solid ${medalColor(i)}44` : '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <span style={{ fontWeight:700, color:medalColor(i), minWidth:36, flexShrink:0, fontSize:i<3?13:11 }}>{medalLabel(i)}</span>
+                      <span style={{ color:'#fff', fontWeight:600, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.user || 'Guest'}</span>
+                      <span style={{ color:'#ffe082', fontWeight:800, minWidth:44, textAlign:'right', flexShrink:0 }}>{s.score ? s.score.toLocaleString() : '-'}</span>
+                      <span style={{ color:'rgba(255,224,130,0.7)', minWidth:36, textAlign:'right', flexShrink:0 }}>{s.moves}mv</span>
+                      <span style={{ color:'rgba(255,224,130,0.7)', minWidth:36, textAlign:'right', flexShrink:0 }}>{formatTime(s.time)}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+          </div>
         </div>
       );
     }
@@ -2759,9 +2868,7 @@ Istanbul, Turkey 🇹🇷`
 
     function App() {
       const [forceRender, setForceRender] = React.useState(0);
-      const [screen, setScreen]     = useState(() => {
-        try { return localStorage.getItem('ms_played_before') ? 'menu' : 'game'; } catch { return 'menu'; }
-      });
+      const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
@@ -2770,13 +2877,7 @@ Istanbul, Turkey 🇹🇷`
       const [rank, setRank]         = useState(null);
       const scoresRef               = useRef([]);
       useEffect(() => { scoresRef.current = scores; }, [scores]);
-      const [tiles, setTiles]         = useState(() => {
-        try {
-          if (localStorage.getItem('ms_played_before')) return [];
-          const c = GRID_CONFIGS['8x4'];
-          return generateTiles(c.pairs, c.maxNum);
-        } catch { return []; }
-      });
+      const [tiles, setTiles]         = useState([]);
       const [flipped, setFlipped]     = useState([]);
       const [moves, setMoves]         = useState(0);
       const [matched, setMatched]     = useState(0);
@@ -2851,7 +2952,7 @@ Istanbul, Turkey 🇹🇷`
         bgSourceRef.current = null;
         bgPlayingRef.current = false;
       };
-      const loadMusicOnce = useCallback(() => {
+      useEffect(() => {
         if (bgLoadedRef.current) return;
         bgLoadedRef.current = true;
         fetch('./music.mp3').then(r => r.arrayBuffer()).then(ab => {
@@ -2868,11 +2969,6 @@ Istanbul, Turkey 🇹🇷`
             }
           }
         }).catch(() => {});
-      }, []);
-      useEffect(() => {
-        const h = () => loadMusicOnce();
-        window.addEventListener('pointerdown', h, { once: true, passive: true });
-        return () => window.removeEventListener('pointerdown', h);
       }, []);
       useEffect(() => {
         if (!bgBufferRef.current) return;
@@ -2903,14 +2999,11 @@ Istanbul, Turkey 🇹🇷`
 
       useEffect(() => {
         if (!db) return;
-        const timer = setTimeout(() => {
-          const unsub = db.collection('scores').orderBy('score','desc').limit(500)
-            .onSnapshot(snap => {
-              setScores(snap.docs.map(d => ({ id:d.id, ...d.data() })));
-            }, err => console.log('Firestore read error:', err));
-          window._fsUnsub = unsub;
-        }, 3000);
-        return () => { clearTimeout(timer); if (window._fsUnsub) window._fsUnsub(); };
+        const unsub = db.collection('scores').orderBy('score','desc').limit(500)
+          .onSnapshot(snap => {
+            setScores(snap.docs.map(d => ({ id:d.id, ...d.data() })));
+          }, err => console.log('Firestore read error:', err));
+        return () => unsub();
       }, []);
 
       const boardRef = useRef(null);
@@ -2933,26 +3026,22 @@ Istanbul, Turkey 🇹🇷`
         return () => clearInterval(id);
       }, [running]);
 
-      // İlk ziyarette demo taş açılışı — tiles zaten useState'de hazır
+      // İlk ziyarette direkt Klasik oyunu başlat
+      const autoplayDone = useRef(false);
       useEffect(() => {
-        try { if (localStorage.getItem('ms_played_before')) return; } catch {}
-        if (tiles.length === 0) return;
+        const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
+        if (hasPlayedBefore || autoplayDone.current) return;
+        autoplayDone.current = true;
+        const cfg = GRID_CONFIGS['8x4'];
+        setTiles(generateTiles(cfg.pairs, cfg.maxNum));
+        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+        setRunning(false); setWon(false); lockRef.current = false;
+        setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
+        setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
+        setIsDailyMode(false); isDailyRef.current=false;
+        firstFlipTracked.current=false;
+        setScreen('game');
         trackEvent('autoplay_start', {});
-        const id0 = tiles[0].id;
-        const i1 = tiles.findIndex((t, i) => i > 0 && t.val !== tiles[0].val);
-        const id1 = tiles[i1].id;
-        const t1 = setTimeout(() => {
-          setTiles(prev => prev.map(t => t.id === id0 ? {...t, flipped: true} : t));
-        }, 700);
-        const t2 = setTimeout(() => {
-          setTiles(prev => prev.map(t => t.id === id1 ? {...t, flipped: true} : t));
-        }, 1500);
-        const t3 = setTimeout(() => {
-          setTiles(prev => prev.map(t =>
-            t.id === id0 || t.id === id1 ? {...t, flipped: false} : t
-          ));
-        }, 3200);
-        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
       }, []);
 
       const showToast = useCallback((msg) => {
@@ -2997,9 +3086,8 @@ Istanbul, Turkey 🇹🇷`
             firstFlipTracked.current = true;
             trackEvent('game_first_flip',{mode,type:isDailyRef.current?'daily':'regular'});
           }
-          // İlk dokunuşta müzik yükle ve başlat (iOS gesture şartı)
+          // İlk dokunuşta müziği başlat (iOS gesture şartı)
           try {
-            loadMusicOnce();
             if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) {
               const ctx = getAudioCtx();
               if (ctx.state === 'suspended') {
@@ -3078,8 +3166,7 @@ Istanbul, Turkey 🇹🇷`
                           const newStreak = updateStreak();
                           setDailyStreak(newStreak);
                           setDailyResult(result);
-                          submitDailyScore({user:user||t('guest'),moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey})
-                            .then(docId => { if(docId) setDailyDocId(docId); });
+                          (async () => { const u = user || (await getOrCreateGuestId()); submitDailyScore({user:u,moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey}).then(docId => { if(docId) setDailyDocId(docId); }); })();
                           (async () => {
                             try {
                               if (db) {
@@ -3100,8 +3187,7 @@ Istanbul, Turkey 🇹🇷`
                             setTimeout(() => { setWon(false); setScreen('menu'); setShowDailyModal(true); }, 800);
                           })();
                         } else {
-                          submitScoreToCloud({user:user||"Guest",mode,moves:mv,time:tm,score:finalScore})
-                            .then(docId => { if(docId) setScoreDocId(docId); });
+                          (async () => { const u = user || (await getOrCreateGuestId()); submitScoreToCloud({user:u,mode,moves:mv,time:tm,score:finalScore}).then(docId => { if(docId) setScoreDocId(docId); }); })();
                         }
                         recordGameStats({mode,moves:mv,time:tm,score:finalScore,comboBonus:comboBonusRef.current});
                         setTimeout(async () => {
@@ -3409,6 +3495,7 @@ Istanbul, Turkey 🇹🇷`
                   <ScoreBoard scores={scores} sortBy={sortBy} onSortChange={setSortBy}
                     activeCategory={scoreCategory} onCategoryChange={setScoreCategory}
                     onClearCategory={async (cat) => { setScores(prev => prev.filter(s => s.mode!==cat)); }} />
+                  <HallOfFame scores={scores} />
                 </div>
                 {showInstallBanner && <InstallBanner onDismiss={() => setShowInstallBanner(false)} />}
               </div>
@@ -3494,8 +3581,11 @@ Istanbul, Turkey 🇹🇷`
               }}
               onScoreDoubled={() => {
                 const boosted = score+100; setScore(boosted);
-                submitScoreToCloud({user:user||t('guest'),mode,moves,time,score:boosted})
-                  .then(docId => { if(docId) setScoreDocId(docId); });
+                (async () => {
+                  const u = user || (await getOrCreateGuestId());
+                  submitScoreToCloud({user:u,mode,moves,time,score:boosted})
+                    .then(docId => { if(docId) setScoreDocId(docId); });
+                })();
                 showToast('🎬 +100 ' + t('pts_label') + '!');
               }}
             />
