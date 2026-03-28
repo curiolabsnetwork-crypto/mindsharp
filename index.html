@@ -339,6 +339,9 @@
         "sort_score": "Score",
         "sort_moves": "Moves",
         "sort_time": "Time",
+        "sort_date": "Date",
+        "hall_of_fame_title": "🏆 Hall of Fame",
+        "hall_of_fame_desc": "All-time best score per player",
         "no_games_category": "No games yet for this category",
         "clear_scores": "🗑 Clear {difficulty} Level Scores",
         "clear_confirm_title": "Clear Scores?",
@@ -480,6 +483,9 @@
         "sort_score": "Skor",
         "sort_moves": "Hamle",
         "sort_time": "Süre",
+        "sort_date": "Tarih",
+        "hall_of_fame_title": "🏆 Şampiyonlar",
+        "hall_of_fame_desc": "Her oyuncunun en yüksek skoru",
         "no_games_category": "Bu kategoride henüz oyun yok",
         "clear_scores": "🗑 {difficulty} Seviye Skorlarını Temizle",
         "clear_confirm_title": "Skorları Temizle?",
@@ -1367,10 +1373,35 @@
     }
 
     function formatTime(s) { const m=Math.floor(s/60); return `${m}:${String(s%60).padStart(2,'0')}`; }
+
+    // Ardışık Guest ID — session boyunca sabit, localStorage'da tutulur
+    async function getOrCreateGuestId() {
+      try {
+        const stored = localStorage.getItem('memotiles_user');
+        if (stored) return stored; // Kullanıcı zaten isim seçmiş veya Guest ID var
+        // Firestore'dan atomic increment ile unique numara al
+        const counterRef = db.collection('counters').doc('guestId');
+        let guestNum = 1;
+        await db.runTransaction(async (tx) => {
+          const doc = await tx.get(counterRef);
+          if (doc.exists) {
+            guestNum = (doc.data().next || 1);
+            tx.update(counterRef, { next: guestNum + 1 });
+          } else {
+            tx.set(counterRef, { next: 2 });
+          }
+        });
+        const guestName = `Guest${guestNum}`;
+        try { localStorage.setItem('memotiles_user', guestName); } catch {}
+        return guestName;
+      } catch(e) {
+        return 'Guest';
+      }
+    }
     function formatDate(ts) {
       if (!ts) return "-";
       const d = ts.toDate ? ts.toDate() : new Date(ts);
-      return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getFullYear()).slice(-2)}`;
+      return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
     }
 
     function Tile({ tile, onClick, size }) {
@@ -1417,6 +1448,11 @@
         if (sortBy==='score') return b.score-a.score;
         if (sortBy==='time')  return a.time-b.time;
         if (sortBy==='moves') return a.moves-b.moves;
+        if (sortBy==='date') {
+          const ta = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+          const tb = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+          return tb - ta;
+        }
         return 0;
       });
       const tabStyle = (key) => ({
@@ -1443,6 +1479,7 @@
             <button style={sortBtnStyle('score')} onClick={() => onSortChange('score')}>{t("sort_score")}</button>
             <button style={sortBtnStyle('moves')} onClick={() => onSortChange('moves')}>{t("sort_moves")}</button>
             <button style={sortBtnStyle('time')}  onClick={() => onSortChange('time')}>{t("sort_time")}</button>
+            <button style={sortBtnStyle('date')}  onClick={() => onSortChange('date')}>{t("sort_date")}</button>
           </div>
           {sortedScores.length === 0
             ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:13, margin:'16px 0' }}>{t("no_games_category")}</p>
@@ -1464,24 +1501,72 @@
               </div>
             )
           }
-          {filtered.length > 0 && (
-            <>
-              <button onClick={() => setConfirmClear(true)}
-                style={{ width:'100%', marginTop:8, padding:'8px', borderRadius:10, border:'1.5px solid #c0392b',
-                  background:'rgba(0,0,0,0.3)', color:'#e74c3c', fontWeight:600, fontSize:12, cursor:'pointer' }}>
-                {t('clear_scores', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
-              </button>
-              {confirmClear && (
-                <ConfirmDialog
-                  title={t("clear_confirm_title")}
-                  message={t('clear_confirm_msg', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
-                  confirmLabel={t("delete_all")}
-                  onConfirm={() => { setConfirmClear(false); onClearCategory(activeCategory); }}
-                  onCancel={() => setConfirmClear(false)}
-                />
-              )}
-            </>
-          )}
+
+        </div>
+      );
+    }
+
+    function HallOfFame({ scores }) {
+      const [hofCategory, setHofCategory] = React.useState('8x4');
+      const categories = Object.entries(GRID_CONFIGS).map(([key,val]) => ({ key, label:tDiff(val.difficulty) }));
+      // Her oyuncu için en yüksek skoru hesapla (client-side)
+      const filtered = scores.filter(s => s.mode === hofCategory);
+      const bestByUser = {};
+      filtered.forEach(s => {
+        const name = s.user || 'Guest';
+        if (!bestByUser[name] || s.score > bestByUser[name].score) {
+          bestByUser[name] = s;
+        }
+      });
+      const hofList = Object.values(bestByUser)
+        .sort((a,b) => b.score - a.score)
+        .slice(0, 50);
+
+      const tabStyle = (key) => ({
+        flex:1, padding:'7px 2px', border:'none', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700,
+        background: hofCategory===key ? 'linear-gradient(135deg,#f1c40f,#e67e22)' : 'rgba(255,255,255,0.08)',
+        color: hofCategory===key ? '#fff' : '#ffe082',
+        boxShadow: hofCategory===key ? '0 2px 8px rgba(241,196,15,0.4)' : 'none',
+        transition:'all 0.2s',
+      });
+
+      const medalColor = (i) => i===0 ? '#FFD700' : i===1 ? '#C0C0C0' : i===2 ? '#CD7F32' : '#fff';
+      const medalLabel = (i) => i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `#${i+1}`;
+
+      return (
+        <div style={{ width:'100%', marginTop:16 }}>
+          <div style={{ borderTop:'1px solid rgba(255,224,130,0.2)', paddingTop:14, marginBottom:10, marginTop:20 }}>
+            <div style={{ textAlign:'center', marginBottom:8 }}>
+              <span style={{ color:'#ffe082', fontFamily:'Georgia,serif', fontSize:16, fontWeight:700 }}>{t('hall_of_fame_title')}</span>
+              <div style={{ color:'rgba(255,224,130,0.6)', fontSize:10, marginTop:2 }}>{t('hall_of_fame_desc')}</div>
+            </div>
+            <div style={{ display:'flex', gap:4, marginBottom:10 }}>
+              {categories.map(cat => (
+                <button key={cat.key} style={tabStyle(cat.key)} onClick={() => setHofCategory(cat.key)}>{cat.label}</button>
+              ))}
+            </div>
+            {hofList.length === 0
+              ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:12, margin:'12px 0' }}>{t('no_games_category')}</p>
+              : (
+                <div style={{ maxHeight:340, overflowY:'auto' }}>
+                  {hofList.map((s,i) => (
+                    <div key={i} style={{
+                      display:'flex', alignItems:'center', padding:'6px 8px', marginBottom:4, gap:4,
+                      background: i===0 ? 'rgba(255,215,0,0.18)' : i===1 ? 'rgba(192,192,192,0.12)' : i===2 ? 'rgba(205,127,50,0.12)' : 'rgba(255,255,255,0.07)',
+                      borderRadius:8, fontSize:11,
+                      border: i<3 ? `1px solid ${medalColor(i)}44` : '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <span style={{ fontWeight:700, color:medalColor(i), minWidth:36, flexShrink:0, fontSize:i<3?13:11 }}>{medalLabel(i)}</span>
+                      <span style={{ color:'#fff', fontWeight:600, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.user || 'Guest'}</span>
+                      <span style={{ color:'#ffe082', fontWeight:800, minWidth:44, textAlign:'right', flexShrink:0 }}>{s.score ? s.score.toLocaleString() : '-'}</span>
+                      <span style={{ color:'rgba(255,224,130,0.7)', minWidth:36, textAlign:'right', flexShrink:0 }}>{s.moves}mv</span>
+                      <span style={{ color:'rgba(255,224,130,0.7)', minWidth:36, textAlign:'right', flexShrink:0 }}>{formatTime(s.time)}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+          </div>
         </div>
       );
     }
@@ -3064,8 +3149,7 @@ Istanbul, Turkey 🇹🇷`
                           const newStreak = updateStreak();
                           setDailyStreak(newStreak);
                           setDailyResult(result);
-                          submitDailyScore({user:user||t('guest'),moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey})
-                            .then(docId => { if(docId) setDailyDocId(docId); });
+                          (async () => { const u = user || (await getOrCreateGuestId()); submitDailyScore({user:u,moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey}).then(docId => { if(docId) setDailyDocId(docId); }); })();
                           (async () => {
                             try {
                               if (db) {
@@ -3086,8 +3170,7 @@ Istanbul, Turkey 🇹🇷`
                             setTimeout(() => { setWon(false); setScreen('menu'); setShowDailyModal(true); }, 800);
                           })();
                         } else {
-                          submitScoreToCloud({user:user||"Guest",mode,moves:mv,time:tm,score:finalScore})
-                            .then(docId => { if(docId) setScoreDocId(docId); });
+                          (async () => { const u = user || (await getOrCreateGuestId()); submitScoreToCloud({user:u,mode,moves:mv,time:tm,score:finalScore}).then(docId => { if(docId) setScoreDocId(docId); }); })();
                         }
                         recordGameStats({mode,moves:mv,time:tm,score:finalScore,comboBonus:comboBonusRef.current});
                         setTimeout(async () => {
@@ -3395,6 +3478,7 @@ Istanbul, Turkey 🇹🇷`
                   <ScoreBoard scores={scores} sortBy={sortBy} onSortChange={setSortBy}
                     activeCategory={scoreCategory} onCategoryChange={setScoreCategory}
                     onClearCategory={async (cat) => { setScores(prev => prev.filter(s => s.mode!==cat)); }} />
+                  <HallOfFame scores={scores} />
                 </div>
                 {showInstallBanner && <InstallBanner onDismiss={() => setShowInstallBanner(false)} />}
               </div>
@@ -3480,8 +3564,11 @@ Istanbul, Turkey 🇹🇷`
               }}
               onScoreDoubled={() => {
                 const boosted = score+100; setScore(boosted);
-                submitScoreToCloud({user:user||t('guest'),mode,moves,time,score:boosted})
-                  .then(docId => { if(docId) setScoreDocId(docId); });
+                (async () => {
+                  const u = user || (await getOrCreateGuestId());
+                  submitScoreToCloud({user:u,mode,moves,time,score:boosted})
+                    .then(docId => { if(docId) setScoreDocId(docId); });
+                })();
                 showToast('🎬 +100 ' + t('pts_label') + '!');
               }}
             />
