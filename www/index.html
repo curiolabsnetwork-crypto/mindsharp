@@ -101,29 +101,36 @@
     body.lang-tr::after{
       content:"© 2026 Mendebur Studios. Tüm hakları saklıdır.";
     }
+    @keyframes hintPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,224,0,0.0), 0 8px 18px rgba(0,0,0,0.35); }
+      50% { box-shadow: 0 0 0 4px rgba(255,224,0,0.25), 0 8px 24px rgba(0,0,0,0.45); }
+    }
     .ms-hint {
       width: calc(100% - 24px);
       margin: 0px 12px 6px;
-      padding: 8px 12px;
-      border-radius: 12px;
+      padding: 11px 14px;
+      border-radius: 14px;
       text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: #ffffff;
-      text-shadow: 0 0 12px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.8);
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
-      backdrop-filter: blur(4px);
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff9c4;
+      letter-spacing: 0.2px;
+      text-shadow: 0 0 16px rgba(255,220,0,0.5), 0 1px 4px rgba(0,0,0,0.9);
+      background: linear-gradient(135deg, rgba(20,10,0,0.75) 0%, rgba(60,35,0,0.7) 100%);
+      border: 1.5px solid rgba(255,200,50,0.45);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+      backdrop-filter: blur(6px);
       opacity: 1;
       transform: translateY(0);
       transition: opacity .35s ease, transform .35s ease;
       pointer-events: none;
       z-index: 50;
+      animation: hintPulse 2s ease-in-out infinite;
     }
     .ms-hint.hide {
       opacity: 0;
       transform: translateY(-6px);
+      animation: none;
     }
     .ms-confirm-overlay {
       position: fixed; inset: 0; z-index: 700;
@@ -279,7 +286,7 @@
         "moves_label": "MOVES",
         "time_label": "TIME",
         "pairs_label": "PAIRS",
-        "game_hint": "Match all pairs with minimum moves and maximum speed.",
+        "game_hint": "⚡ Tap tiles → Test your memory → Be the best!",
         "combo_x2": "⚡ Combo x{n}!",
         "combo_x3": "🔥 COMBO x{n} — AMAZING!",
         "quit_title": "Quit Game?",
@@ -296,6 +303,12 @@
         "rank_label": "Rank",
         "save_score_prompt": "Save your score — enter a name:",
         "skip_for_now": "Skip for now",
+        "name_required_hint": "Enter your name to continue",
+        "name_rank_prompt": "You're #{rank} — save your name!",
+        "name_rank_prompt_norank": "Save your name to the leaderboard!",
+        "daily_name_rank_prompt": "#{rank} of {total} today — leave your name!",
+        "daily_name_norank_prompt": "Add your name to today's leaderboard!",
+        "name_skip": "Skip",
         "high_scores": "🏆 High Scores",
         "share_button": "📤 Share",
         "menu_button": "← Menu",
@@ -331,6 +344,9 @@
         "sort_score": "Score",
         "sort_moves": "Moves",
         "sort_time": "Time",
+        "sort_date": "Date",
+        "hall_of_fame_title": "🏆 Hall of Fame",
+        "hall_of_fame_desc": "All-time best score per player",
         "no_games_category": "No games yet for this category",
         "clear_scores": "🗑 Clear {difficulty} Level Scores",
         "clear_confirm_title": "Clear Scores?",
@@ -419,7 +435,7 @@
         "moves_label": "HAMLE",
         "time_label": "SÜRE",
         "pairs_label": "ÇİFT",
-        "game_hint": "Tüm çiftleri en az hamlede ve en kısa sürede eşleştir.",
+        "game_hint": "⚡ Taşlara dokun → Hafızanı ölç → En iyisi sen ol!",
         "combo_x2": "⚡ Kombo x{n}!",
         "combo_x3": "🔥 KOMBO x{n} — MÜTHİŞ!",
         "quit_title": "Oyundan Çık?",
@@ -436,6 +452,12 @@
         "rank_label": "Sıralama",
         "save_score_prompt": "Skorunu kaydetmek için ismini gir:",
         "skip_for_now": "Şimdilik geç",
+        "name_required_hint": "Devam etmek için isim girmelisin",
+        "name_rank_prompt": "#{rank}. sıradasın — ismini kaydet!",
+        "name_rank_prompt_norank": "Sıralamaya ismini ekle!",
+        "daily_name_rank_prompt": "Bugün {total} kişi arasında #{rank} — ismini bırak!",
+        "daily_name_norank_prompt": "Bugünkü sıralamaya ismini ekle!",
+        "name_skip": "Geç",
         "high_scores": "🏆 En Yüksek Skorlar",
         "share_button": "📤 Paylaş",
         "menu_button": "← Menü",
@@ -471,6 +493,9 @@
         "sort_score": "Skor",
         "sort_moves": "Hamle",
         "sort_time": "Süre",
+        "sort_date": "Tarih",
+        "hall_of_fame_title": "🏆 Şampiyonlar",
+        "hall_of_fame_desc": "Her oyuncunun en yüksek skoru",
         "no_games_category": "Bu kategoride henüz oyun yok",
         "clear_scores": "🗑 {difficulty} Seviye Skorlarını Temizle",
         "clear_confirm_title": "Skorları Temizle?",
@@ -1358,10 +1383,35 @@
     }
 
     function formatTime(s) { const m=Math.floor(s/60); return `${m}:${String(s%60).padStart(2,'0')}`; }
+
+    // Ardışık Guest ID — session boyunca sabit, localStorage'da tutulur
+    async function getOrCreateGuestId() {
+      try {
+        const stored = localStorage.getItem('memotiles_user');
+        if (stored) return stored; // Kullanıcı zaten isim seçmiş veya Guest ID var
+        // Firestore'dan atomic increment ile unique numara al
+        const counterRef = db.collection('counters').doc('guestId');
+        let guestNum = 1;
+        await db.runTransaction(async (tx) => {
+          const doc = await tx.get(counterRef);
+          if (doc.exists) {
+            guestNum = (doc.data().next || 1);
+            tx.update(counterRef, { next: guestNum + 1 });
+          } else {
+            tx.set(counterRef, { next: 2 });
+          }
+        });
+        const guestName = `Guest${guestNum}`;
+        try { localStorage.setItem('memotiles_user', guestName); } catch {}
+        return guestName;
+      } catch(e) {
+        return 'Guest';
+      }
+    }
     function formatDate(ts) {
       if (!ts) return "-";
       const d = ts.toDate ? ts.toDate() : new Date(ts);
-      return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getFullYear()).slice(-2)}`;
+      return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
     }
 
     function Tile({ tile, onClick, size }) {
@@ -1408,6 +1458,11 @@
         if (sortBy==='score') return b.score-a.score;
         if (sortBy==='time')  return a.time-b.time;
         if (sortBy==='moves') return a.moves-b.moves;
+        if (sortBy==='date') {
+          const ta = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+          const tb = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+          return tb - ta;
+        }
         return 0;
       });
       const tabStyle = (key) => ({
@@ -1434,6 +1489,7 @@
             <button style={sortBtnStyle('score')} onClick={() => onSortChange('score')}>{t("sort_score")}</button>
             <button style={sortBtnStyle('moves')} onClick={() => onSortChange('moves')}>{t("sort_moves")}</button>
             <button style={sortBtnStyle('time')}  onClick={() => onSortChange('time')}>{t("sort_time")}</button>
+            <button style={sortBtnStyle('date')}  onClick={() => onSortChange('date')}>{t("sort_date")}</button>
           </div>
           {sortedScores.length === 0
             ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:13, margin:'16px 0' }}>{t("no_games_category")}</p>
@@ -1455,24 +1511,72 @@
               </div>
             )
           }
-          {filtered.length > 0 && (
-            <>
-              <button onClick={() => setConfirmClear(true)}
-                style={{ width:'100%', marginTop:8, padding:'8px', borderRadius:10, border:'1.5px solid #c0392b',
-                  background:'rgba(0,0,0,0.3)', color:'#e74c3c', fontWeight:600, fontSize:12, cursor:'pointer' }}>
-                {t('clear_scores', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
-              </button>
-              {confirmClear && (
-                <ConfirmDialog
-                  title={t("clear_confirm_title")}
-                  message={t('clear_confirm_msg', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
-                  confirmLabel={t("delete_all")}
-                  onConfirm={() => { setConfirmClear(false); onClearCategory(activeCategory); }}
-                  onCancel={() => setConfirmClear(false)}
-                />
-              )}
-            </>
-          )}
+
+        </div>
+      );
+    }
+
+    function HallOfFame({ scores }) {
+      const [hofCategory, setHofCategory] = React.useState('8x4');
+      const categories = Object.entries(GRID_CONFIGS).map(([key,val]) => ({ key, label:tDiff(val.difficulty) }));
+      // Her oyuncu için en yüksek skoru hesapla (client-side)
+      const filtered = scores.filter(s => s.mode === hofCategory);
+      const bestByUser = {};
+      filtered.forEach(s => {
+        const name = s.user || 'Guest';
+        if (!bestByUser[name] || s.score > bestByUser[name].score) {
+          bestByUser[name] = s;
+        }
+      });
+      const hofList = Object.values(bestByUser)
+        .sort((a,b) => b.score - a.score)
+        .slice(0, 50);
+
+      const tabStyle = (key) => ({
+        flex:1, padding:'7px 2px', border:'none', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700,
+        background: hofCategory===key ? 'linear-gradient(135deg,#f1c40f,#e67e22)' : 'rgba(255,255,255,0.08)',
+        color: hofCategory===key ? '#fff' : '#ffe082',
+        boxShadow: hofCategory===key ? '0 2px 8px rgba(241,196,15,0.4)' : 'none',
+        transition:'all 0.2s',
+      });
+
+      const medalColor = (i) => i===0 ? '#FFD700' : i===1 ? '#C0C0C0' : i===2 ? '#CD7F32' : '#fff';
+      const medalLabel = (i) => i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `#${i+1}`;
+
+      return (
+        <div style={{ width:'100%', marginTop:16 }}>
+          <div style={{ borderTop:'1px solid rgba(255,224,130,0.2)', paddingTop:14, marginBottom:10, marginTop:20 }}>
+            <div style={{ textAlign:'center', marginBottom:8 }}>
+              <span style={{ color:'#ffe082', fontFamily:'Georgia,serif', fontSize:16, fontWeight:700 }}>{t('hall_of_fame_title')}</span>
+              <div style={{ color:'rgba(255,224,130,0.6)', fontSize:10, marginTop:2 }}>{t('hall_of_fame_desc')}</div>
+            </div>
+            <div style={{ display:'flex', gap:4, marginBottom:10 }}>
+              {categories.map(cat => (
+                <button key={cat.key} style={tabStyle(cat.key)} onClick={() => setHofCategory(cat.key)}>{cat.label}</button>
+              ))}
+            </div>
+            {hofList.length === 0
+              ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:12, margin:'12px 0' }}>{t('no_games_category')}</p>
+              : (
+                <div style={{ maxHeight:340, overflowY:'auto' }}>
+                  {hofList.map((s,i) => (
+                    <div key={i} style={{
+                      display:'flex', alignItems:'center', padding:'6px 8px', marginBottom:4, gap:4,
+                      background: i===0 ? 'rgba(255,215,0,0.18)' : i===1 ? 'rgba(192,192,192,0.12)' : i===2 ? 'rgba(205,127,50,0.12)' : 'rgba(255,255,255,0.07)',
+                      borderRadius:8, fontSize:11,
+                      border: i<3 ? `1px solid ${medalColor(i)}44` : '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <span style={{ fontWeight:700, color:medalColor(i), minWidth:36, flexShrink:0, fontSize:i<3?13:11 }}>{medalLabel(i)}</span>
+                      <span style={{ color:'#fff', fontWeight:600, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.user || 'Guest'}</span>
+                      <span style={{ color:'#ffe082', fontWeight:800, minWidth:44, textAlign:'right', flexShrink:0 }}>{s.score ? s.score.toLocaleString() : '-'}</span>
+                      <span style={{ color:'rgba(255,224,130,0.7)', minWidth:36, textAlign:'right', flexShrink:0 }}>{s.moves}mv</span>
+                      <span style={{ color:'rgba(255,224,130,0.7)', minWidth:36, textAlign:'right', flexShrink:0 }}>{formatTime(s.time)}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+          </div>
         </div>
       );
     }
@@ -1629,10 +1733,15 @@
               {/* İsim */}
               {(!nameSaved || !nameInput.trim()) ? (
                 <div style={{ marginBottom:8, borderRadius:12,
-                  background:'linear-gradient(135deg,rgba(200,169,110,0.15),rgba(243,156,18,0.1))',
-                  border:'1.5px solid rgba(200,169,110,0.5)', padding:'10px 12px' }}>
-                  <div style={{ color:'#7a5c2e', fontWeight:800, fontSize:12, marginBottom:6, textAlign:'center' }}>
-                    👤 {t("daily_add_name")}
+                  background:'rgba(255,248,220,0.9)',
+                  border:'1.5px solid #f0c040', padding:'10px 12px' }}>
+                  <div style={{ color:'#7a3e00', fontWeight:700, fontSize:12, marginBottom:3, textAlign:'center' }}>
+                    {lang==='tr' ? 'Bugünkü sıralamada görün' : "Appear on today's leaderboard"}
+                  </div>
+                  <div style={{ color:'#b8860b', fontWeight:600, fontSize:11, textAlign:'center', marginBottom:8 }}>
+                    {dailyRank && dailyTotal
+                      ? t('daily_name_rank_prompt').replace('{rank}', dailyRank).replace('{total}', dailyTotal)
+                      : t('daily_name_norank_prompt')}
                   </div>
                   <div style={{ display:'flex', gap:6 }}>
                     <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
@@ -1640,14 +1749,19 @@
                       onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
                       onBlur={() => { document.body.style.overflow=''; }}
                       placeholder={t("name_placeholder")} maxLength={20}
-                      style={{ flex:1, padding:'8px 10px', borderRadius:9, border:'1.5px solid #c8a96e',
-                        background:'rgba(255,255,255,0.9)', fontSize:16, fontWeight:700, color:'#3d1a00',
+                      style={{ flex:1, padding:'8px 10px', borderRadius:9, border:'1.5px solid #e67e22',
+                        background:'rgba(255,255,255,0.95)', fontSize:16, fontWeight:700, color:'#3d1a00',
                         outline:'none', textAlign:'center', transform:'translateZ(0)' }}/>
                     <button onClick={() => { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} }}
-                      style={{ padding:'8px 12px', borderRadius:9, border:'none', flexShrink:0,
+                      style={{ padding:'8px 14px', borderRadius:9, border:'none', flexShrink:0,
                         background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.3)',
-                        color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
-                      {t("save_button")}
+                        color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer' }}>✓
+                    </button>
+                  </div>
+                  <div style={{ textAlign:'center', marginTop:6 }}>
+                    <button onClick={() => setNameSaved(true)} style={{ background:'none', border:'none',
+                      color:'rgba(120,80,20,0.45)', fontSize:10, cursor:'pointer', textDecoration:'underline' }}>
+                      {t('name_skip')}
                     </button>
                   </div>
                 </div>
@@ -1963,7 +2077,16 @@
       const [adWatched, setAdWatched] = React.useState(false);
       const [adLoading, setAdLoading] = React.useState(false);
       const [adAvailable, setAdAvailable] = React.useState(false);
+      const [nameShake, setNameShake] = React.useState(false);
       const needsName = !user || user.trim() === '';
+      const requireName = () => {
+        if (needsName && !nameSaved) {
+          setNameShake(true);
+          setTimeout(() => setNameShake(false), 600);
+          return true;
+        }
+        return false;
+      };
 
       // Character & fact — sabit kalsın, her render'da değişmesin
       const character = React.useMemo(() => getCharacter(score), [score]);
@@ -2154,6 +2277,8 @@
             @keyframes cardSlideUp{from{transform:translateY(40px) scale(0.94);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
             @keyframes scorePop{0%{transform:scale(0.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
             @keyframes rankGlow{0%,100%{box-shadow:0 0 8px currentColor}50%{box-shadow:0 0 22px currentColor,0 0 40px rgba(241,196,15,0.4)}}
+            @keyframes nameGlow{0%,100%{box-shadow:0 0 0 3px rgba(230,126,34,0.25)}50%{box-shadow:0 0 0 5px rgba(230,126,34,0.55),0 0 16px rgba(230,126,34,0.3)}}
+            @keyframes nameShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-8px)}35%{transform:translateX(8px)}55%{transform:translateX(-6px)}75%{transform:translateX(6px)}90%{transform:translateX(-3px)}}
             @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
           `}</style>
           {confetti.map(p => (
@@ -2168,9 +2293,9 @@
             animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
             overflow:'hidden', maxHeight:'calc(100vh - 32px)', overflowY:'auto' }}>
             <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
-            <button onClick={onMenu} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
+            <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
               background:'rgba(200,169,110,0.18)', border:'1.5px solid rgba(200,169,110,0.4)', borderRadius:'50%',
-              color:'#7a5c2e', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+              color: needsName && !nameSaved ? '#ccc' : '#7a5c2e', fontSize:16, cursor: needsName && !nameSaved ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center',
               fontWeight:700, lineHeight:1 }}>✕</button>
             <div style={{ position:'absolute', inset:8, borderRadius:18, border:'1.5px solid rgba(200,169,110,0.35)', pointerEvents:'none', zIndex:1 }}/>
             {[{top:14,left:14},{top:14,right:14},{bottom:14,left:14},{bottom:14,right:14}].map((pos,i) => (
@@ -2202,23 +2327,38 @@
               <div style={{ textAlign:'center', marginBottom:10 }}>
                 {needsName && !nameSaved ? (
                   <div style={{ marginTop:5, marginBottom:2 }}>
-                    <div style={{ color:'rgba(100,60,10,0.55)', fontSize:11, marginBottom:5 }}>{t("save_score_prompt")}</div>
-                    <div style={{ display:'flex', gap:6 }}>
-                      <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
-                        onKeyDown={e => e.key==='Enter' && handleSaveName()}
-                        onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
-                        onBlur={() => { document.body.style.overflow=''; }}
-                        placeholder={t("name_placeholder")} maxLength={20}
-                        style={{ flex:1, padding:'8px 10px', borderRadius:9, border:'1.5px solid #c8a96e',
-                          background:'rgba(255,255,255,0.9)', fontSize:16, fontWeight:700, color:'#3d1a00',
-                          outline:'none', textAlign:'center', transform:'translateZ(0)' }}/>
-                      <button onClick={handleSaveName} style={{ padding:'8px 12px', borderRadius:9, border:'none',
-                        background:'linear-gradient(135deg,#f39c12,#e67e22)', color:'#fff', fontWeight:800,
-                        fontSize:13, cursor:'pointer', flexShrink:0 }}>{t("save_button")}</button>
-                    </div>
-                    <div onClick={() => setNameSaved(true)}
-                      style={{ color:'rgba(120,80,20,0.4)', fontSize:10, marginTop:5, cursor:'pointer', textDecoration:'underline' }}>
-                      {t("skip_for_now")}
+                    <div style={{
+                      background:'rgba(255,248,220,0.9)', border: nameShake ? '1.5px solid #e74c3c' : '1.5px solid #f0c040',
+                      borderRadius:12, padding:'10px 12px',
+                      animation: nameShake ? 'nameShake 0.5s ease' : 'none',
+                    }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:'#7a3e00', textAlign:'center', marginBottom:3 }}>
+                        {lang==='tr' ? 'Skoru sıralamaya ekle' : 'Add your score to the leaderboard'}
+                      </div>
+                      <div style={{ fontSize:11, color:'#b8860b', textAlign:'center', marginBottom:8, fontWeight:600 }}>
+                        {rank
+                          ? t('name_rank_prompt').replace('{rank}', rank)
+                          : t('name_rank_prompt_norank')}
+                      </div>
+                      <div style={{ display:'flex', gap:6 }}>
+                        <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
+                          onKeyDown={e => e.key==='Enter' && handleSaveName()}
+                          onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
+                          onBlur={() => { document.body.style.overflow=''; }}
+                          placeholder={t("name_placeholder")} maxLength={20}
+                          style={{ flex:1, padding:'9px 12px', borderRadius:9,
+                            border: nameShake ? '2px solid #e74c3c' : '2px solid #e67e22',
+                            background:'rgba(255,255,255,0.95)', fontSize:16, fontWeight:700, color:'#3d1a00',
+                            outline:'none', textAlign:'center', transform:'translateZ(0)',
+                            boxShadow: nameShake ? '0 0 0 3px rgba(231,76,60,0.3)' : '0 0 0 3px rgba(230,126,34,0.2)' }}/>
+                        <button onClick={handleSaveName} style={{ padding:'9px 14px', borderRadius:9, border:'none',
+                          background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.4)',
+                          color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer', flexShrink:0,
+                          boxShadow: nameInput.trim() ? '0 2px 8px rgba(230,126,34,0.4)' : 'none' }}>✓</button>
+                      </div>
+                      <div style={{ fontSize:10, color:'#c0392b', textAlign:'center', marginTop:6, fontWeight:600 }}>
+                        {t('name_required_hint')}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -2310,14 +2450,14 @@
                         marginBottom:6, letterSpacing:0.5 }}>
                         {lang==='tr' ? '🔥 Arkadaşlarına meydan oku!' : '🔥 Challenge your friends!'}
                       </div>
-                      <button onClick={handleShare} disabled={sharing} style={{ width:'100%', padding:'15px 0',
+                      <button onClick={() => { if(requireName()) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'15px 0',
                         borderRadius:14, border:'none', marginBottom:8,
                         background: sharing ? 'rgba(243,156,18,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22,#d35400)',
                         color:'#fff', fontWeight:900, fontSize:17, cursor:'pointer', letterSpacing:0.5,
                         animation: sharing ? 'none' : 'pulseGlow 1.8s ease-in-out infinite' }}>
                         {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : (lang==='tr' ? '📤 Paylaş — Skoru Gönder!' : '📤 Share — Send Your Score!')}
                       </button>
-                      <button onClick={onReplay} style={{ width:'100%', padding:'11px 0', borderRadius:12,
+                      <button onClick={() => { if(requireName()) return; onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
                         border:'none', marginBottom:6,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:14, cursor:'pointer' }}>{t('play_again')}</button>
@@ -2326,7 +2466,7 @@
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={onMenu} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2337,13 +2477,13 @@
                 } else {
                   return (
                     <div>
-                      <button onClick={onReplay} style={{ width:'100%', padding:'14px 0', borderRadius:14,
+                      <button onClick={() => { if(requireName()) return; onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
                         border:'none', marginBottom:7,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:16, cursor:'pointer', boxShadow:'0 4px 16px rgba(46,204,113,0.4)' }}>
                         {t('play_again')}
                       </button>
-                      <button onClick={handleShare} disabled={sharing} style={{ width:'100%', padding:'11px 0',
+                      <button onClick={() => { if(requireName()) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'11px 0',
                         borderRadius:12, border:'none', marginBottom:7,
                         background: sharing ? 'rgba(230,126,34,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
                         color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
@@ -2354,7 +2494,7 @@
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={onMenu} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2744,6 +2884,7 @@ Istanbul, Turkey 🇹🇷`
       const [forceRender, setForceRender] = React.useState(0);
       const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
+      const [demoFlippedIds, setDemoFlippedIds] = useState([]);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
       const [showInstallBanner, setShowInstallBanner] = useState(true);
@@ -2867,8 +3008,34 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         if (screen !== 'game') return;
         setShowHint(true);
-        const timer = setTimeout(() => setShowHint(false), 5000);
-        return () => clearTimeout(timer);
+        setDemoFlippedIds([]);
+        const timers = [];
+        // Demo animasyon: tiles hazır olana kadar bekle, sonra 2 taş aç/kapat
+        timers.push(setTimeout(() => {
+          setTiles(cur => {
+            if (!cur || cur.length < 4) return cur;
+            // Farklı sayıya sahip iki taş seç
+            const id0 = cur[0].id;
+            const id1 = cur.find(t => t.number !== cur[0].number)?.id ?? cur[2].id;
+            // İlk taş açılır
+            setDemoFlippedIds([id0]);
+            timers.push(setTimeout(() => {
+              // İkinci taş açılır
+              setDemoFlippedIds([id0, id1]);
+              // 900ms sonra oyundaki mismatch gibi ikisi aynı anda kapanır
+              timers.push(setTimeout(() => {
+                setDemoFlippedIds([]);
+              }, 900));
+            }, 700));
+            return cur;
+          });
+        }, 600));
+        const hideTimer = setTimeout(() => {
+          setShowHint(false);
+          setDemoFlippedIds([]);
+        }, 5000);
+        timers.push(hideTimer);
+        return () => timers.forEach(t => clearTimeout(t));
       }, [screen]);
 
       useEffect(() => {
@@ -2899,6 +3066,24 @@ Istanbul, Turkey 🇹🇷`
         const id = setInterval(() => setTime(t => t+1), 1000);
         return () => clearInterval(id);
       }, [running]);
+
+      // İlk ziyarette direkt Klasik oyunu başlat
+      const autoplayDone = useRef(false);
+      useEffect(() => {
+        const hasPlayedBefore = (() => { try { return !!localStorage.getItem('ms_played_before'); } catch { return false; } })();
+        if (hasPlayedBefore || autoplayDone.current) return;
+        autoplayDone.current = true;
+        const cfg = GRID_CONFIGS['8x4'];
+        setTiles(generateTiles(cfg.pairs, cfg.maxNum));
+        setFlipped([]); setMoves(0); setMatched(0); setTime(0);
+        setRunning(false); setWon(false); lockRef.current = false;
+        setMode('8x4'); setScore(0); setComboBonus(0); setCombo(0);
+        setScoreDocId(null); comboBonusRef.current=0; comboRef.current=0;
+        setIsDailyMode(false); isDailyRef.current=false;
+        firstFlipTracked.current=false;
+        setScreen('game');
+        trackEvent('autoplay_start', {});
+      }, []);
 
       const showToast = useCallback((msg) => {
         setToast(msg);
@@ -2942,6 +3127,17 @@ Istanbul, Turkey 🇹🇷`
             firstFlipTracked.current = true;
             trackEvent('game_first_flip',{mode,type:isDailyRef.current?'daily':'regular'});
           }
+          // İlk dokunuşta müziği başlat (iOS gesture şartı)
+          try {
+            if (musicEnabledRef.current && !bgPlayingRef.current && bgBufferRef.current) {
+              const ctx = getAudioCtx();
+              if (ctx.state === 'suspended') {
+                ctx.resume().then(() => { if (musicEnabledRef.current && !bgPlayingRef.current) startBgMusic(); });
+              } else {
+                startBgMusic();
+              }
+            }
+          } catch(e) {}
         }
         if (settings.sfx) play('flip');
         setTiles(prev => prev.map(t => t.id===id ? {...t,flipped:true} : t));
@@ -2985,7 +3181,7 @@ Istanbul, Turkey 🇹🇷`
                     if (!isDailyRef.current) {
                       // Son komboyu göster, sonra modal aç
                       const comboDelay = comboRef.current >= 2 ? 1800 : 0;
-                      setTimeout(() => setWon(true), comboDelay);
+                      setTimeout(() => { try { localStorage.setItem("ms_played_before", "1"); } catch {} setWon(true); }, comboDelay);
                     }
                     setMoves((mv) => {
                       setTime((tm) => {
@@ -3011,8 +3207,7 @@ Istanbul, Turkey 🇹🇷`
                           const newStreak = updateStreak();
                           setDailyStreak(newStreak);
                           setDailyResult(result);
-                          submitDailyScore({user:user||t('guest'),moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey})
-                            .then(docId => { if(docId) setDailyDocId(docId); });
+                          (async () => { const u = user || (await getOrCreateGuestId()); submitDailyScore({user:u,moves:mv,time:tm,score:finalScore,gridMode:dailyModeKey}).then(docId => { if(docId) setDailyDocId(docId); }); })();
                           (async () => {
                             try {
                               if (db) {
@@ -3033,8 +3228,7 @@ Istanbul, Turkey 🇹🇷`
                             setTimeout(() => { setWon(false); setScreen('menu'); setShowDailyModal(true); }, 800);
                           })();
                         } else {
-                          submitScoreToCloud({user:user||"Guest",mode,moves:mv,time:tm,score:finalScore})
-                            .then(docId => { if(docId) setScoreDocId(docId); });
+                          (async () => { const u = user || (await getOrCreateGuestId()); submitScoreToCloud({user:u,mode,moves:mv,time:tm,score:finalScore}).then(docId => { if(docId) setScoreDocId(docId); }); })();
                         }
                         recordGameStats({mode,moves:mv,time:tm,score:finalScore,comboBonus:comboBonusRef.current});
                         setTimeout(async () => {
@@ -3342,6 +3536,7 @@ Istanbul, Turkey 🇹🇷`
                   <ScoreBoard scores={scores} sortBy={sortBy} onSortChange={setSortBy}
                     activeCategory={scoreCategory} onCategoryChange={setScoreCategory}
                     onClearCategory={async (cat) => { setScores(prev => prev.filter(s => s.mode!==cat)); }} />
+                  <HallOfFame scores={scores} />
                 </div>
                 {showInstallBanner && <InstallBanner onDismiss={() => setShowInstallBanner(false)} />}
               </div>
@@ -3403,11 +3598,15 @@ Istanbul, Turkey 🇹🇷`
                   border:'2px solid rgba(90,54,32,0.6)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:`repeat(${cfg.cols},${tileW}px)`,
                     gap:`${GAP}px`, justifyContent:'center' }}>
-                    {tiles.map(tile => (
-                      <div key={tile.id} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
-                        <Tile tile={tile} onClick={handleTile} size={tileW} />
-                      </div>
-                    ))}
+                    {tiles.map(tile => {
+                      const demoFlipped = demoFlippedIds.includes(tile.id);
+                      const displayTile = demoFlipped ? {...tile, flipped: true} : tile;
+                      return (
+                        <div key={tile.id} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
+                          <Tile tile={displayTile} onClick={handleTile} size={tileW} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -3427,8 +3626,11 @@ Istanbul, Turkey 🇹🇷`
               }}
               onScoreDoubled={() => {
                 const boosted = score+100; setScore(boosted);
-                submitScoreToCloud({user:user||t('guest'),mode,moves,time,score:boosted})
-                  .then(docId => { if(docId) setScoreDocId(docId); });
+                (async () => {
+                  const u = user || (await getOrCreateGuestId());
+                  submitScoreToCloud({user:u,mode,moves,time,score:boosted})
+                    .then(docId => { if(docId) setScoreDocId(docId); });
+                })();
                 showToast('🎬 +100 ' + t('pts_label') + '!');
               }}
             />
