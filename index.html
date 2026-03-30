@@ -2884,6 +2884,7 @@ Istanbul, Turkey 🇹🇷`
       const [forceRender, setForceRender] = React.useState(0);
       const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
+      const [demoFlippedIds, setDemoFlippedIds] = useState([]);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
       const [showInstallBanner, setShowInstallBanner] = useState(true);
@@ -3007,8 +3008,34 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         if (screen !== 'game') return;
         setShowHint(true);
-        const timer = setTimeout(() => setShowHint(false), 5000);
-        return () => clearTimeout(timer);
+        setDemoFlippedIds([]);
+        const timers = [];
+        // Demo animasyon: tiles hazır olana kadar bekle, sonra 2 taş aç/kapat
+        timers.push(setTimeout(() => {
+          setTiles(cur => {
+            if (!cur || cur.length < 4) return cur;
+            // Farklı sayıya sahip iki taş seç
+            const id0 = cur[0].id;
+            const id1 = cur.find(t => t.number !== cur[0].number)?.id ?? cur[2].id;
+            // İlk taş açılır
+            setDemoFlippedIds([id0]);
+            timers.push(setTimeout(() => {
+              // İkinci taş açılır
+              setDemoFlippedIds([id0, id1]);
+              // 900ms sonra oyundaki mismatch gibi ikisi aynı anda kapanır
+              timers.push(setTimeout(() => {
+                setDemoFlippedIds([]);
+              }, 900));
+            }, 700));
+            return cur;
+          });
+        }, 600));
+        const hideTimer = setTimeout(() => {
+          setShowHint(false);
+          setDemoFlippedIds([]);
+        }, 5000);
+        timers.push(hideTimer);
+        return () => timers.forEach(t => clearTimeout(t));
       }, [screen]);
 
       useEffect(() => {
@@ -3571,11 +3598,15 @@ Istanbul, Turkey 🇹🇷`
                   border:'2px solid rgba(90,54,32,0.6)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:`repeat(${cfg.cols},${tileW}px)`,
                     gap:`${GAP}px`, justifyContent:'center' }}>
-                    {tiles.map(tile => (
-                      <div key={tile.id} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
-                        <Tile tile={tile} onClick={handleTile} size={tileW} />
-                      </div>
-                    ))}
+                    {tiles.map(tile => {
+                      const demoFlipped = demoFlippedIds.includes(tile.id);
+                      const displayTile = demoFlipped ? {...tile, flipped: true} : tile;
+                      return (
+                        <div key={tile.id} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
+                          <Tile tile={displayTile} onClick={handleTile} size={tileW} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
