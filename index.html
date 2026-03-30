@@ -3019,26 +3019,20 @@ Istanbul, Turkey 🇹🇷`
             // İlk taş açılır
             setDemoFlippedIds([id0]);
             timers.push(setTimeout(() => {
-              // İkinci taş da açılır (her ikisi aynı anda açık)
+              // İkinci taş açılır
               setDemoFlippedIds([id0, id1]);
+              // 900ms sonra oyundaki mismatch gibi ikisi aynı anda kapanır
               timers.push(setTimeout(() => {
-                // İlk taş kapanır
-                setDemoFlippedIds([id1]);
-                timers.push(setTimeout(() => {
-                  // İkinci taş kapanır
-                  setDemoFlippedIds([]);
-                }, 700));
-              }, 800));
+                setDemoFlippedIds([]);
+              }, 900));
             }, 700));
             return cur;
           });
         }, 600));
-        // Hint 5sn'de söner, demo biraz önce biter (4.8sn)
         const hideTimer = setTimeout(() => {
           setShowHint(false);
           setDemoFlippedIds([]);
         }, 5000);
-        timers.push(setTimeout(() => setDemoFlippedIds([]), 4800));
         timers.push(hideTimer);
         return () => timers.forEach(t => clearTimeout(t));
       }, [screen]);
