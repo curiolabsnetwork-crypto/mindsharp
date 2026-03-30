@@ -304,6 +304,11 @@
         "save_score_prompt": "Save your score — enter a name:",
         "skip_for_now": "Skip for now",
         "name_required_hint": "Enter your name to continue",
+        "name_rank_prompt": "You're #{rank} — save your name!",
+        "name_rank_prompt_norank": "Save your name to the leaderboard!",
+        "daily_name_rank_prompt": "#{rank} of {total} today — leave your name!",
+        "daily_name_norank_prompt": "Add your name to today's leaderboard!",
+        "name_skip": "Skip",
         "high_scores": "🏆 High Scores",
         "share_button": "📤 Share",
         "menu_button": "← Menu",
@@ -448,6 +453,11 @@
         "save_score_prompt": "Skorunu kaydetmek için ismini gir:",
         "skip_for_now": "Şimdilik geç",
         "name_required_hint": "Devam etmek için isim girmelisin",
+        "name_rank_prompt": "#{rank}. sıradasın — ismini kaydet!",
+        "name_rank_prompt_norank": "Sıralamaya ismini ekle!",
+        "daily_name_rank_prompt": "Bugün {total} kişi arasında #{rank} — ismini bırak!",
+        "daily_name_norank_prompt": "Bugünkü sıralamaya ismini ekle!",
+        "name_skip": "Geç",
         "high_scores": "🏆 En Yüksek Skorlar",
         "share_button": "📤 Paylaş",
         "menu_button": "← Menü",
@@ -1501,24 +1511,7 @@
               </div>
             )
           }
-          {filtered.length > 0 && (
-            <>
-              <button onClick={() => setConfirmClear(true)}
-                style={{ width:'100%', marginTop:8, padding:'8px', borderRadius:10, border:'1.5px solid #c0392b',
-                  background:'rgba(0,0,0,0.3)', color:'#e74c3c', fontWeight:600, fontSize:12, cursor:'pointer' }}>
-                {t('clear_scores', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
-              </button>
-              {confirmClear && (
-                <ConfirmDialog
-                  title={t("clear_confirm_title")}
-                  message={t('clear_confirm_msg', {difficulty: tDiff(GRID_CONFIGS[activeCategory].difficulty)})}
-                  confirmLabel={t("delete_all")}
-                  onConfirm={() => { setConfirmClear(false); onClearCategory(activeCategory); }}
-                  onCancel={() => setConfirmClear(false)}
-                />
-              )}
-            </>
-          )}
+
         </div>
       );
     }
@@ -1552,7 +1545,7 @@
 
       return (
         <div style={{ width:'100%', marginTop:16 }}>
-          <div style={{ borderTop:'1px solid rgba(255,224,130,0.2)', paddingTop:14, marginBottom:10 }}>
+          <div style={{ borderTop:'1px solid rgba(255,224,130,0.2)', paddingTop:14, marginBottom:10, marginTop:20 }}>
             <div style={{ textAlign:'center', marginBottom:8 }}>
               <span style={{ color:'#ffe082', fontFamily:'Georgia,serif', fontSize:16, fontWeight:700 }}>{t('hall_of_fame_title')}</span>
               <div style={{ color:'rgba(255,224,130,0.6)', fontSize:10, marginTop:2 }}>{t('hall_of_fame_desc')}</div>
@@ -1740,10 +1733,15 @@
               {/* İsim */}
               {(!nameSaved || !nameInput.trim()) ? (
                 <div style={{ marginBottom:8, borderRadius:12,
-                  background:'linear-gradient(135deg,rgba(200,169,110,0.15),rgba(243,156,18,0.1))',
-                  border:'1.5px solid rgba(200,169,110,0.5)', padding:'10px 12px' }}>
-                  <div style={{ color:'#7a5c2e', fontWeight:800, fontSize:12, marginBottom:6, textAlign:'center' }}>
-                    👤 {t("daily_add_name")}
+                  background:'rgba(255,248,220,0.9)',
+                  border:'1.5px solid #f0c040', padding:'10px 12px' }}>
+                  <div style={{ color:'#7a3e00', fontWeight:700, fontSize:12, marginBottom:3, textAlign:'center' }}>
+                    {lang==='tr' ? 'Bugünkü sıralamada görün' : "Appear on today's leaderboard"}
+                  </div>
+                  <div style={{ color:'#b8860b', fontWeight:600, fontSize:11, textAlign:'center', marginBottom:8 }}>
+                    {dailyRank && dailyTotal
+                      ? t('daily_name_rank_prompt').replace('{rank}', dailyRank).replace('{total}', dailyTotal)
+                      : t('daily_name_norank_prompt')}
                   </div>
                   <div style={{ display:'flex', gap:6 }}>
                     <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
@@ -1751,14 +1749,19 @@
                       onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
                       onBlur={() => { document.body.style.overflow=''; }}
                       placeholder={t("name_placeholder")} maxLength={20}
-                      style={{ flex:1, padding:'8px 10px', borderRadius:9, border:'1.5px solid #c8a96e',
-                        background:'rgba(255,255,255,0.9)', fontSize:16, fontWeight:700, color:'#3d1a00',
+                      style={{ flex:1, padding:'8px 10px', borderRadius:9, border:'1.5px solid #e67e22',
+                        background:'rgba(255,255,255,0.95)', fontSize:16, fontWeight:700, color:'#3d1a00',
                         outline:'none', textAlign:'center', transform:'translateZ(0)' }}/>
                     <button onClick={() => { const n=nameInput.trim(); if(n){onSaveName(n);setNameSaved(true);} }}
-                      style={{ padding:'8px 12px', borderRadius:9, border:'none', flexShrink:0,
+                      style={{ padding:'8px 14px', borderRadius:9, border:'none', flexShrink:0,
                         background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.3)',
-                        color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
-                      {t("save_button")}
+                        color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer' }}>✓
+                    </button>
+                  </div>
+                  <div style={{ textAlign:'center', marginTop:6 }}>
+                    <button onClick={() => setNameSaved(true)} style={{ background:'none', border:'none',
+                      color:'rgba(120,80,20,0.45)', fontSize:10, cursor:'pointer', textDecoration:'underline' }}>
+                      {t('name_skip')}
                     </button>
                   </div>
                 </div>
@@ -2324,26 +2327,37 @@
               <div style={{ textAlign:'center', marginBottom:10 }}>
                 {needsName && !nameSaved ? (
                   <div style={{ marginTop:5, marginBottom:2 }}>
-                    <div style={{ color:'#c0392b', fontWeight:700, fontSize:12, marginBottom:6 }}>{t("name_required_hint")}</div>
                     <div style={{
-                      animation: nameShake ? 'nameShake 0.5s ease' : 'nameGlow 2s ease-in-out infinite',
-                      borderRadius:11, padding:3
+                      background:'rgba(255,248,220,0.9)', border: nameShake ? '1.5px solid #e74c3c' : '1.5px solid #f0c040',
+                      borderRadius:12, padding:'10px 12px',
+                      animation: nameShake ? 'nameShake 0.5s ease' : 'none',
                     }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:'#7a3e00', textAlign:'center', marginBottom:3 }}>
+                        {lang==='tr' ? 'Skoru sıralamaya ekle' : 'Add your score to the leaderboard'}
+                      </div>
+                      <div style={{ fontSize:11, color:'#b8860b', textAlign:'center', marginBottom:8, fontWeight:600 }}>
+                        {rank
+                          ? t('name_rank_prompt').replace('{rank}', rank)
+                          : t('name_rank_prompt_norank')}
+                      </div>
                       <div style={{ display:'flex', gap:6 }}>
                         <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
                           onKeyDown={e => e.key==='Enter' && handleSaveName()}
                           onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
                           onBlur={() => { document.body.style.overflow=''; }}
                           placeholder={t("name_placeholder")} maxLength={20}
-                          style={{ flex:1, padding:'10px 12px', borderRadius:9,
+                          style={{ flex:1, padding:'9px 12px', borderRadius:9,
                             border: nameShake ? '2px solid #e74c3c' : '2px solid #e67e22',
                             background:'rgba(255,255,255,0.95)', fontSize:16, fontWeight:700, color:'#3d1a00',
                             outline:'none', textAlign:'center', transform:'translateZ(0)',
-                            boxShadow: nameShake ? '0 0 0 3px rgba(231,76,60,0.3)' : '0 0 0 3px rgba(230,126,34,0.25)' }}/>
-                        <button onClick={handleSaveName} style={{ padding:'10px 14px', borderRadius:9, border:'none',
-                          background:'linear-gradient(135deg,#f39c12,#e67e22)', color:'#fff', fontWeight:800,
-                          fontSize:14, cursor:'pointer', flexShrink:0,
-                          boxShadow:'0 2px 8px rgba(230,126,34,0.4)' }}>{t("save_button")}</button>
+                            boxShadow: nameShake ? '0 0 0 3px rgba(231,76,60,0.3)' : '0 0 0 3px rgba(230,126,34,0.2)' }}/>
+                        <button onClick={handleSaveName} style={{ padding:'9px 14px', borderRadius:9, border:'none',
+                          background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.4)',
+                          color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer', flexShrink:0,
+                          boxShadow: nameInput.trim() ? '0 2px 8px rgba(230,126,34,0.4)' : 'none' }}>✓</button>
+                      </div>
+                      <div style={{ fontSize:10, color:'#c0392b', textAlign:'center', marginTop:6, fontWeight:600 }}>
+                        {t('name_required_hint')}
                       </div>
                     </div>
                   </div>
@@ -2870,6 +2884,7 @@ Istanbul, Turkey 🇹🇷`
       const [forceRender, setForceRender] = React.useState(0);
       const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
+      const [demoFlippedIds, setDemoFlippedIds] = useState([]);
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
       const [showInstallBanner, setShowInstallBanner] = useState(true);
@@ -2993,8 +3008,34 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         if (screen !== 'game') return;
         setShowHint(true);
-        const timer = setTimeout(() => setShowHint(false), 5000);
-        return () => clearTimeout(timer);
+        setDemoFlippedIds([]);
+        const timers = [];
+        // Demo animasyon: tiles hazır olana kadar bekle, sonra 2 taş aç/kapat
+        timers.push(setTimeout(() => {
+          setTiles(cur => {
+            if (!cur || cur.length < 4) return cur;
+            // İlk 2 benzersiz taşı seç (eşleşmeyen)
+            const id0 = cur[0].id;
+            const id1 = cur[2].id; // farklı çift
+            setDemoFlippedIds([id0]);
+            timers.push(setTimeout(() => {
+              setDemoFlippedIds([id0, id1]);
+              timers.push(setTimeout(() => {
+                setDemoFlippedIds([id1]);
+                timers.push(setTimeout(() => {
+                  setDemoFlippedIds([]);
+                }, 400));
+              }, 400));
+            }, 400));
+            return cur; // tiles state'ini değiştirme!
+          });
+        }, 600));
+        const hideTimer = setTimeout(() => {
+          setShowHint(false);
+          setDemoFlippedIds([]);
+        }, 5000);
+        timers.push(hideTimer);
+        return () => timers.forEach(t => clearTimeout(t));
       }, [screen]);
 
       useEffect(() => {
@@ -3557,11 +3598,15 @@ Istanbul, Turkey 🇹🇷`
                   border:'2px solid rgba(90,54,32,0.6)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:`repeat(${cfg.cols},${tileW}px)`,
                     gap:`${GAP}px`, justifyContent:'center' }}>
-                    {tiles.map(tile => (
-                      <div key={tile.id} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
-                        <Tile tile={tile} onClick={handleTile} size={tileW} />
-                      </div>
-                    ))}
+                    {tiles.map(tile => {
+                      const demoFlipped = demoFlippedIds.includes(tile.id);
+                      const displayTile = demoFlipped ? {...tile, flipped: true} : tile;
+                      return (
+                        <div key={tile.id} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
+                          <Tile tile={displayTile} onClick={handleTile} size={tileW} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
