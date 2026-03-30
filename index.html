@@ -3014,8 +3014,9 @@ Istanbul, Turkey 🇹🇷`
         timers.push(setTimeout(() => {
           setTiles(cur => {
             if (!cur || cur.length < 4) return cur;
+            // Farklı sayıya sahip iki taş seç
             const id0 = cur[0].id;
-            const id1 = cur[2].id;
+            const id1 = cur.find(t => t.number !== cur[0].number)?.id ?? cur[2].id;
             // İlk taş açılır
             setDemoFlippedIds([id0]);
             timers.push(setTimeout(() => {
