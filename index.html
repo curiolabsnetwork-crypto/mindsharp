@@ -1544,12 +1544,8 @@
       const medalLabel = (i) => i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `#${i+1}`;
 
       return (
-        <div style={{ width:'100%', marginTop:16 }}>
-          <div style={{ borderTop:'1px solid rgba(255,224,130,0.2)', paddingTop:14, marginBottom:10, marginTop:20 }}>
-            <div style={{ textAlign:'center', marginBottom:8 }}>
-              <span style={{ color:'#ffe082', fontFamily:'Georgia,serif', fontSize:16, fontWeight:700 }}>{t('hall_of_fame_title')}</span>
-              <div style={{ color:'rgba(255,224,130,0.6)', fontSize:10, marginTop:2 }}>{t('hall_of_fame_desc')}</div>
-            </div>
+        <div style={{ width:'100%' }}>
+          <div>
             <div style={{ display:'flex', gap:4, marginBottom:10 }}>
               {categories.map(cat => (
                 <button key={cat.key} style={tabStyle(cat.key)} onClick={() => setHofCategory(cat.key)}>{cat.label}</button>
