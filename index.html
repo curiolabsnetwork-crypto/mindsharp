@@ -1494,8 +1494,8 @@
           {sortedScores.length === 0
             ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:13, margin:'16px 0' }}>{t("no_games_category")}</p>
             : (
-              <div style={{ maxHeight:600, overflowY:'auto' }}>
-                {sortedScores.slice(0,20).map((s,i) => (
+              <div style={{ maxHeight:396, overflowY:'auto' }}>
+                {sortedScores.map((s,i) => (
                   <div key={i} style={{ display:'flex', alignItems:'center', padding:'6px 8px', marginBottom:4, gap:4,
                     background: i===0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
                     borderRadius:8, fontSize:11,
@@ -1558,7 +1558,7 @@
             {hofList.length === 0
               ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:12, margin:'12px 0' }}>{t('no_games_category')}</p>
               : (
-                <div style={{ maxHeight:340, overflowY:'auto' }}>
+                <div style={{ maxHeight:396, overflowY:'auto' }}>
                   {hofList.map((s,i) => (
                     <div key={i} style={{
                       display:'flex', alignItems:'center', padding:'6px 8px', marginBottom:4, gap:4,
@@ -3556,7 +3556,7 @@ Istanbul, Turkey 🇹🇷`
             {screen === 'champions' && (
               <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
-                  <button onClick={() => setScreen('scores')} style={{ background:'rgba(0,0,0,0.35)',
+                  <button onClick={() => setScreen('menu')} style={{ background:'rgba(0,0,0,0.35)',
                     border:'1px solid rgba(255,255,255,0.2)', color:'#ffe082', borderRadius:10,
                     padding:'7px 13px', cursor:'pointer', fontSize:16 }}>←</button>
                   <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:20,
@@ -3566,6 +3566,12 @@ Istanbul, Turkey 🇹🇷`
                   border:'1px solid rgba(255,255,255,0.15)', backdropFilter:'blur(4px)' }}>
                   <HallOfFame scores={scores} />
                 </div>
+                <button onClick={() => setScreen('scores')} style={{ width:'100%', padding:'12px', borderRadius:14,
+                  border:'1.5px solid rgba(255,224,130,0.3)', background:'rgba(255,224,130,0.06)',
+                  color:'#ffe082', fontWeight:700, fontSize:14, cursor:'pointer',
+                  fontFamily:'Georgia,serif' }}>
+                  📋 {t('scores_title')}
+                </button>
               </div>
             )}
 
