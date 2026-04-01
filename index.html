@@ -2249,6 +2249,7 @@
       };
 
       const handleShare = async () => {
+        trackEvent('share_click',{mode,score,character:character.key});
         try {
           setSharing(true);
           const dataUrl = await buildCertificate();
@@ -2257,15 +2258,16 @@
           const file = new File([blob],'mindsharp-certificate.png',{type:'image/png'});
           if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
             await navigator.share({title:t('share_certificate_title'),text:t('share_certificate_text',{score:score}),files:[file]});
+            trackEvent('share_completed',{method:'native',mode,score,character:character.key});
             return;
           }
           const a = document.createElement('a');
           a.href=dataUrl; a.download='mindsharp-certificate.png';
           document.body.appendChild(a); a.click(); a.remove();
+          trackEvent('share_completed',{method:'download',mode,score,character:character.key});
         } catch(e) { console.warn(e); }
         finally { setSharing(false); }
       };
-      React.useEffect(() => { if(sharing) trackEvent('certificate_share_attempt',{mode,score,character:character.key}); }, [sharing]);
       const diffLabel = tDiff(GRID_CONFIGS[mode]?.difficulty || mode);
 
       return (
@@ -3202,6 +3204,7 @@ Istanbul, Turkey 🇹🇷`
                             const p = {mode:_modeKey,score:finalScore,moves:mv,time:tm,combo_bonus:comboBonusRef.current,type:_type,session_time_sec:Math.round((Date.now()-_sessionStart)/1000)};
                             if (typeof gtag !== 'undefined') gtag('event','game_complete',p);
                           } catch(e) {}
+                          try { localStorage.setItem("ms_played_before", "1"); } catch {}
                           saveDailyResult(result,dailyModeKey);
                           setDailyDoneMap(prev => ({...prev,[dailyModeKey]:true}));
                           const newStreak = updateStreak();
@@ -3536,6 +3539,8 @@ Istanbul, Turkey 🇹🇷`
                   <ScoreBoard scores={scores} sortBy={sortBy} onSortChange={setSortBy}
                     activeCategory={scoreCategory} onCategoryChange={setScoreCategory}
                     onClearCategory={async (cat) => { setScores(prev => prev.filter(s => s.mode!==cat)); }} />
+                </div>
+                <div style={{ marginTop:20 }}>
                   <HallOfFame scores={scores} />
                 </div>
                 {showInstallBanner && <InstallBanner onDismiss={() => setShowInstallBanner(false)} />}
