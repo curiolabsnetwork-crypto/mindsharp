@@ -1494,8 +1494,8 @@
           {sortedScores.length === 0
             ? <p style={{ color:'#ffe082', textAlign:'center', fontSize:13, margin:'16px 0' }}>{t("no_games_category")}</p>
             : (
-              <div style={{ maxHeight:340, overflowY:'auto' }}>
-                {sortedScores.map((s,i) => (
+              <div style={{ maxHeight:600, overflowY:'auto' }}>
+                {sortedScores.slice(0,20).map((s,i) => (
                   <div key={i} style={{ display:'flex', alignItems:'center', padding:'6px 8px', marginBottom:4, gap:4,
                     background: i===0 ? 'rgba(241,196,15,0.25)' : 'rgba(255,255,255,0.1)',
                     borderRadius:8, fontSize:11,
@@ -2079,10 +2079,12 @@
       const [adAvailable, setAdAvailable] = React.useState(false);
       const [nameShake, setNameShake] = React.useState(false);
       const needsName = !user || user.trim() === '';
-      const requireName = () => {
+      const [pendingAction, setPendingAction] = React.useState(null);
+      const requireName = (action) => {
         if (needsName && !nameSaved) {
           setNameShake(true);
           setTimeout(() => setNameShake(false), 600);
+          if (action) setPendingAction(() => action);
           return true;
         }
         return false;
@@ -2117,6 +2119,7 @@
         onSaveName(n);
         if (scoreDocId) updateScoreUsername(scoreDocId, n);
         setNameSaved(true);
+        if (pendingAction) { setTimeout(() => { pendingAction(); setPendingAction(null); }, 50); }
       };
       React.useEffect(() => {
         const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f','#1abc9c','#e67e22'];
@@ -2295,7 +2298,7 @@
             animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
             overflow:'hidden', maxHeight:'calc(100vh - 32px)', overflowY:'auto' }}>
             <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
-            <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
+            <button onClick={() => { if(requireName(onMenu)) return; onMenu(); }} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
               background:'rgba(200,169,110,0.18)', border:'1.5px solid rgba(200,169,110,0.4)', borderRadius:'50%',
               color: needsName && !nameSaved ? '#ccc' : '#7a5c2e', fontSize:16, cursor: needsName && !nameSaved ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center',
               fontWeight:700, lineHeight:1 }}>✕</button>
@@ -2452,23 +2455,23 @@
                         marginBottom:6, letterSpacing:0.5 }}>
                         {lang==='tr' ? '🔥 Arkadaşlarına meydan oku!' : '🔥 Challenge your friends!'}
                       </div>
-                      <button onClick={() => { if(requireName()) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'15px 0',
+                      <button onClick={() => { if(requireName(handleShare)) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'15px 0',
                         borderRadius:14, border:'none', marginBottom:8,
                         background: sharing ? 'rgba(243,156,18,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22,#d35400)',
                         color:'#fff', fontWeight:900, fontSize:17, cursor:'pointer', letterSpacing:0.5,
                         animation: sharing ? 'none' : 'pulseGlow 1.8s ease-in-out infinite' }}>
                         {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : (lang==='tr' ? '📤 Paylaş — Skoru Gönder!' : '📤 Share — Send Your Score!')}
                       </button>
-                      <button onClick={() => { if(requireName()) return; onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
+                      <button onClick={() => { if(requireName(onReplay)) return; onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
                         border:'none', marginBottom:6,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:14, cursor:'pointer' }}>{t('play_again')}</button>
                       <div style={{ display:'flex', gap:6, marginBottom:6 }}>
-                        <button onClick={onScores} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
+                        <button onClick={() => { if(requireName(onScores)) return; onScores(); }} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { if(requireName(onMenu)) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2479,24 +2482,24 @@
                 } else {
                   return (
                     <div>
-                      <button onClick={() => { if(requireName()) return; onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
+                      <button onClick={() => { if(requireName(onReplay)) return; onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
                         border:'none', marginBottom:7,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:16, cursor:'pointer', boxShadow:'0 4px 16px rgba(46,204,113,0.4)' }}>
                         {t('play_again')}
                       </button>
-                      <button onClick={() => { if(requireName()) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'11px 0',
+                      <button onClick={() => { if(requireName(handleShare)) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'11px 0',
                         borderRadius:12, border:'none', marginBottom:7,
                         background: sharing ? 'rgba(230,126,34,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
                         color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
                         {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : t('share_button')}
                       </button>
                       <div style={{ display:'flex', gap:6, marginBottom:6 }}>
-                        <button onClick={onScores} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
+                        <button onClick={() => { if(requireName(onScores)) return; onScores(); }} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(requireName()) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { if(requireName(onMenu)) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -3540,10 +3543,29 @@ Istanbul, Turkey 🇹🇷`
                     activeCategory={scoreCategory} onCategoryChange={setScoreCategory}
                     onClearCategory={async (cat) => { setScores(prev => prev.filter(s => s.mode!==cat)); }} />
                 </div>
-                <div style={{ marginTop:20 }}>
+                <button onClick={() => setScreen('champions')} style={{ width:'100%', padding:'12px', borderRadius:14,
+                  border:'1.5px solid rgba(255,215,0,0.4)', background:'rgba(255,215,0,0.08)',
+                  color:'#ffe082', fontWeight:700, fontSize:14, cursor:'pointer', marginTop:4,
+                  fontFamily:'Georgia,serif' }}>
+                  🏆 {t('hall_of_fame_title')}
+                </button>
+                {showInstallBanner && <InstallBanner onDismiss={() => setShowInstallBanner(false)} />}
+              </div>
+            )}
+
+            {screen === 'champions' && (
+              <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:10 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+                  <button onClick={() => setScreen('scores')} style={{ background:'rgba(0,0,0,0.35)',
+                    border:'1px solid rgba(255,255,255,0.2)', color:'#ffe082', borderRadius:10,
+                    padding:'7px 13px', cursor:'pointer', fontSize:16 }}>←</button>
+                  <h2 style={{ color:'#ffe082', fontFamily:'Georgia,serif', margin:0, fontSize:20,
+                    textShadow:'0 2px 6px rgba(0,0,0,0.8)' }}>{t('hall_of_fame_title')}</h2>
+                </div>
+                <div style={{ background:'rgba(0,0,0,0.5)', borderRadius:16, padding:'14px 10px',
+                  border:'1px solid rgba(255,255,255,0.15)', backdropFilter:'blur(4px)' }}>
                   <HallOfFame scores={scores} />
                 </div>
-                {showInstallBanner && <InstallBanner onDismiss={() => setShowInstallBanner(false)} />}
               </div>
             )}
 
