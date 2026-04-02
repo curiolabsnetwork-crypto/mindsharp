@@ -2065,26 +2065,19 @@
       return FACTS[Math.floor(Math.random() * FACTS.length)];
     }
 
-    function WinModal({ moves, time, mode, score, comboBonus, rank, user, scoreDocId, onReplay, onMenu, onScores, onSaveName, onScoreDoubled }) {
+    function WinModal({ moves, time, mode, score, comboBonus, rank, user, scoreDocId, onReplay, onMenu, onScores, onSaveName, onScoreDoubled, onNameSkipped }) {
       const [sharing, setSharing] = React.useState(false);
       const [confetti, setConfetti] = React.useState([]);
       const [nameInput, setNameInput] = React.useState('');
-      const [nameSaved, setNameSaved] = React.useState(false);
+      const [nameInputShake, setNameInputShake] = React.useState(false);
       const [adWatched, setAdWatched] = React.useState(false);
       const [adLoading, setAdLoading] = React.useState(false);
       const [adAvailable, setAdAvailable] = React.useState(false);
-      const [nameShake, setNameShake] = React.useState(false);
-      const needsName = !user || user.trim() === '';
-      const [pendingAction, setPendingAction] = React.useState(null);
-      const requireName = (action) => {
-        if (needsName && !nameSaved) {
-          setNameShake(true);
-          setTimeout(() => setNameShake(false), 600);
-          if (action) setPendingAction(() => action);
-          return true;
-        }
-        return false;
-      };
+      // Popup: ilk kez isim sorma — localStorage'da kayıtlı değilse ve user boşsa göster
+      const [showNamePopup, setShowNamePopup] = React.useState(() => {
+        try { return !localStorage.getItem('mindsharp_username') && (!user || user.trim() === ''); } catch { return false; }
+      });
+      const [popupNameInput, setPopupNameInput] = React.useState('');
 
       // Character & fact — sabit kalsın, her render'da değişmesin
       const character = React.useMemo(() => getCharacter(score), [score]);
@@ -2108,14 +2101,19 @@
           if (rewarded) { setAdWatched(true); onScoreDoubled && onScoreDoubled(); }
         });
       };
-      const displayName = needsName ? (nameSaved ? nameInput : t('well_played')) : user;
-      const handleSaveName = () => {
-        const n = nameInput.trim();
-        if (!n) return;
+      const displayName = user || t('well_played');
+      // Popup handlers
+      const handlePopupSave = () => {
+        const n = popupNameInput.trim();
+        if (!n) { setNameInputShake(true); setTimeout(() => setNameInputShake(false), 600); return; }
+        try { localStorage.setItem('mindsharp_username', n); } catch {}
         onSaveName(n);
         if (scoreDocId) updateScoreUsername(scoreDocId, n);
-        setNameSaved(true);
-        if (pendingAction) { setTimeout(() => { pendingAction(); setPendingAction(null); }, 50); }
+        setShowNamePopup(false);
+      };
+      const handlePopupSkip = () => {
+        setShowNamePopup(false);
+        if (onNameSkipped) onNameSkipped();
       };
       React.useEffect(() => {
         const colors = ['#f39c12','#e74c3c','#2ecc71','#3498db','#9b59b6','#f1c40f','#1abc9c','#e67e22'];
@@ -2273,6 +2271,51 @@
         <div style={{ position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,0.72)',
           display:'flex', alignItems:'flex-start', justifyContent:'center', overflowY:'auto',
           padding:'12px 0 24px', WebkitOverflowScrolling:'touch', overscrollBehavior:'contain' }}>
+
+          {/* İsim Giriş Popup Overlay */}
+          {showNamePopup && (
+            <div style={{ position:'fixed', inset:0, zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.55)' }}
+              onClick={(e) => { if(e.target===e.currentTarget) handlePopupSkip(); }}>
+              <div style={{ background:'linear-gradient(160deg,#fdf8ec,#fef5da,#f5e6c3)', borderRadius:20, border:'3px solid #c8a96e',
+                boxShadow:'0 0 0 6px rgba(200,169,110,0.2),0 20px 60px rgba(0,0,0,0.6)',
+                padding:'28px 24px 24px', width:'88%', maxWidth:320, position:'relative',
+                animation:'cardSlideUp 0.35s cubic-bezier(.22,1.2,.36,1) both' }}>
+                <div style={{ height:4, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)', borderRadius:4, marginBottom:18 }}/>
+                <button onClick={handlePopupSkip} style={{ position:'absolute', top:12, right:12, width:28, height:28,
+                  background:'rgba(200,169,110,0.18)', border:'1.5px solid rgba(200,169,110,0.4)', borderRadius:'50%',
+                  color:'#7a5c2e', fontSize:15, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>✕</button>
+                <div style={{ textAlign:'center', marginBottom:14 }}>
+                  <div style={{ fontSize:28, marginBottom:4 }}>🏆</div>
+                  <div style={{ fontFamily:'Georgia,serif', fontSize:18, fontWeight:900, color:'#7a3e00', marginBottom:4 }}>
+                    {getLang()==='tr' ? 'Adını listeye ekle!' : 'Add your name to the board!'}
+                  </div>
+                  <div style={{ fontSize:12, color:'#b8860b', fontWeight:600 }}>
+                    {getLang()==='tr' ? 'Skorun kaydedildi. Adını gir!' : 'Your score is saved. Enter your name!'}
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:8, animation: nameInputShake ? 'nameShake 0.5s ease' : 'none' }}>
+                  <input type="text" value={popupNameInput} onChange={e => setPopupNameInput(e.target.value)}
+                    onKeyDown={e => { if(e.key==='Enter') handlePopupSave(); }}
+                    onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
+                    onBlur={() => { document.body.style.overflow=''; }}
+                    placeholder={getLang()==='tr' ? 'Adın...' : 'Your name...'}
+                    maxLength={20} autoFocus
+                    style={{ flex:1, padding:'10px 12px', borderRadius:10,
+                      border: nameInputShake ? '2px solid #e74c3c' : '2px solid #e67e22',
+                      background:'rgba(255,255,255,0.95)', fontSize:16, fontWeight:700, color:'#3d1a00',
+                      outline:'none', textAlign:'center',
+                      boxShadow: nameInputShake ? '0 0 0 3px rgba(231,76,60,0.3)' : '0 0 0 3px rgba(230,126,34,0.2)' }}/>
+                  <button onClick={handlePopupSave} style={{ padding:'10px 16px', borderRadius:10, border:'none',
+                    background: popupNameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.3)',
+                    color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer',
+                    boxShadow: popupNameInput.trim() ? '0 2px 8px rgba(230,126,34,0.4)' : 'none' }}>✓</button>
+                </div>
+                <div style={{ textAlign:'center', marginTop:10, fontSize:11, color:'rgba(120,80,20,0.55)' }}>
+                  {getLang()==='tr' ? 'Bir kez gir, hep hatırlayalım 🧠' : "Enter once, we'll remember you 🧠"}
+                </div>
+              </div>
+            </div>
+          )}
           <style>{`
             @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(380px) rotate(var(--rot));opacity:0}}
             @keyframes cardSlideUp{from{transform:translateY(40px) scale(0.94);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
@@ -2294,9 +2337,9 @@
             animation:'cardSlideUp 0.45s cubic-bezier(.22,1.2,.36,1) both',
             overflow:'hidden', maxHeight:'calc(100vh - 32px)', overflowY:'auto' }}>
             <div style={{ height:5, background:'linear-gradient(90deg,#b8860b,#f0c040,#b8860b)' }}/>
-            <button onClick={() => { if(requireName(onMenu)) return; onMenu(); }} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
+            <button onClick={onMenu} style={{ position:'absolute', top:12, right:12, zIndex:10, width:30, height:30,
               background:'rgba(200,169,110,0.18)', border:'1.5px solid rgba(200,169,110,0.4)', borderRadius:'50%',
-              color: needsName && !nameSaved ? '#ccc' : '#7a5c2e', fontSize:16, cursor: needsName && !nameSaved ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+              color:'#7a5c2e', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
               fontWeight:700, lineHeight:1 }}>✕</button>
             <div style={{ position:'absolute', inset:8, borderRadius:18, border:'1.5px solid rgba(200,169,110,0.35)', pointerEvents:'none', zIndex:1 }}/>
             {[{top:14,left:14},{top:14,right:14},{bottom:14,left:14},{bottom:14,right:14}].map((pos,i) => (
@@ -2326,45 +2369,7 @@
 
               {/* Name */}
               <div style={{ textAlign:'center', marginBottom:10 }}>
-                {needsName && !nameSaved ? (
-                  <div style={{ marginTop:5, marginBottom:2 }}>
-                    <div style={{
-                      background:'rgba(255,248,220,0.9)', border: nameShake ? '1.5px solid #e74c3c' : '1.5px solid #f0c040',
-                      borderRadius:12, padding:'10px 12px',
-                      animation: nameShake ? 'nameShake 0.5s ease' : 'none',
-                    }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:'#7a3e00', textAlign:'center', marginBottom:3 }}>
-                        {lang==='tr' ? 'Skoru sıralamaya ekle' : 'Add your score to the leaderboard'}
-                      </div>
-                      <div style={{ fontSize:11, color:'#b8860b', textAlign:'center', marginBottom:8, fontWeight:600 }}>
-                        {rank
-                          ? t('name_rank_prompt').replace('{rank}', rank)
-                          : t('name_rank_prompt_norank')}
-                      </div>
-                      <div style={{ display:'flex', gap:6 }}>
-                        <input type="text" value={nameInput} onChange={e => setNameInput(e.target.value)}
-                          onKeyDown={e => e.key==='Enter' && handleSaveName()}
-                          onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
-                          onBlur={() => { document.body.style.overflow=''; }}
-                          placeholder={t("name_placeholder")} maxLength={20}
-                          style={{ flex:1, padding:'9px 12px', borderRadius:9,
-                            border: nameShake ? '2px solid #e74c3c' : '2px solid #e67e22',
-                            background:'rgba(255,255,255,0.95)', fontSize:16, fontWeight:700, color:'#3d1a00',
-                            outline:'none', textAlign:'center', transform:'translateZ(0)',
-                            boxShadow: nameShake ? '0 0 0 3px rgba(231,76,60,0.3)' : '0 0 0 3px rgba(230,126,34,0.2)' }}/>
-                        <button onClick={handleSaveName} style={{ padding:'9px 14px', borderRadius:9, border:'none',
-                          background: nameInput.trim() ? 'linear-gradient(135deg,#f39c12,#e67e22)' : 'rgba(200,169,110,0.4)',
-                          color:'#fff', fontWeight:800, fontSize:16, cursor:'pointer', flexShrink:0,
-                          boxShadow: nameInput.trim() ? '0 2px 8px rgba(230,126,34,0.4)' : 'none' }}>✓</button>
-                      </div>
-                      <div style={{ fontSize:10, color:'#c0392b', textAlign:'center', marginTop:6, fontWeight:600 }}>
-                        {t('name_required_hint')}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ color:'#3d1a00', fontWeight:900, fontSize:22, fontFamily:'Georgia,serif' }}>{displayName}</div>
-                )}
+                <div style={{ color:'#3d1a00', fontWeight:900, fontSize:22, fontFamily:'Georgia,serif' }}>{displayName}</div>
                 <div style={{ color:'rgba(120,80,20,0.5)', fontSize:10, marginTop:2 }}>{diffLabel} · {dateStr}</div>
               </div>
 
@@ -2451,23 +2456,23 @@
                         marginBottom:6, letterSpacing:0.5 }}>
                         {lang==='tr' ? '🔥 Arkadaşlarına meydan oku!' : '🔥 Challenge your friends!'}
                       </div>
-                      <button onClick={() => { if(requireName(handleShare)) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'15px 0',
+                      <button onClick={() => { handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'15px 0',
                         borderRadius:14, border:'none', marginBottom:8,
                         background: sharing ? 'rgba(243,156,18,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22,#d35400)',
                         color:'#fff', fontWeight:900, fontSize:17, cursor:'pointer', letterSpacing:0.5,
                         animation: sharing ? 'none' : 'pulseGlow 1.8s ease-in-out infinite' }}>
                         {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : (lang==='tr' ? '📤 Paylaş — Skoru Gönder!' : '📤 Share — Send Your Score!')}
                       </button>
-                      <button onClick={() => { if(requireName(onReplay)) return; onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
+                      <button onClick={() => { onReplay(); }} style={{ width:'100%', padding:'11px 0', borderRadius:12,
                         border:'none', marginBottom:6,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:14, cursor:'pointer' }}>{t('play_again')}</button>
                       <div style={{ display:'flex', gap:6, marginBottom:6 }}>
-                        <button onClick={() => { if(requireName(onScores)) return; onScores(); }} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
+                        <button onClick={() => { onScores(); }} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(requireName(onMenu)) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2478,24 +2483,24 @@
                 } else {
                   return (
                     <div>
-                      <button onClick={() => { if(requireName(onReplay)) return; onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
+                      <button onClick={() => { onReplay(); }} style={{ width:'100%', padding:'14px 0', borderRadius:14,
                         border:'none', marginBottom:7,
                         background:'linear-gradient(135deg,#27ae60,#2ecc71)', color:'#fff', fontWeight:900,
                         fontSize:16, cursor:'pointer', boxShadow:'0 4px 16px rgba(46,204,113,0.4)' }}>
                         {t('play_again')}
                       </button>
-                      <button onClick={() => { if(requireName(handleShare)) return; handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'11px 0',
+                      <button onClick={() => { handleShare(); }} disabled={sharing} style={{ width:'100%', padding:'11px 0',
                         borderRadius:12, border:'none', marginBottom:7,
                         background: sharing ? 'rgba(230,126,34,0.5)' : 'linear-gradient(135deg,#f39c12,#e67e22)',
                         color:'#fff', fontWeight:800, fontSize:13, cursor:'pointer' }}>
                         {sharing ? (lang==='tr' ? 'Paylaşılıyor...' : 'Sharing...') : t('share_button')}
                       </button>
                       <div style={{ display:'flex', gap:6, marginBottom:6 }}>
-                        <button onClick={() => { if(requireName(onScores)) return; onScores(); }} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
+                        <button onClick={() => { onScores(); }} style={{ flex:1, padding:'8px 0', borderRadius:10, border:'none',
                           background:'rgba(41,128,185,0.15)', color:'#2980b9', fontWeight:700, fontSize:11, cursor:'pointer' }}>
                           🏆 {t('high_scores')}
                         </button>
-                        <button onClick={() => { if(requireName(onMenu)) return; onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
+                        <button onClick={() => { onMenu(); }} style={{ flex:1, padding:'8px 0', borderRadius:10,
                           border:'1.5px solid rgba(200,169,110,0.4)', background:'transparent',
                           color:'rgba(120,80,20,0.55)', fontWeight:600, fontSize:11, cursor:'pointer' }}>
                           {t('menu_button')}
@@ -2907,7 +2912,7 @@ Istanbul, Turkey 🇹🇷`
       const [combo, setCombo]         = useState(0);
       const [sortBy, setSortBy]       = useState('score');
       const [scoreCategory, setScoreCategory] = useState('8x4');
-      const [user, setUser]           = useState(() => { try { return localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
+      const [user, setUser]           = useState(() => { try { return localStorage.getItem('mindsharp_username') || localStorage.getItem('memotiles_user') || ''; } catch { return ''; } });
       const [tempUser, setTempUser]   = useState('');
       const [scoreDocId, setScoreDocId] = useState(null);
       const [dailyDocId, setDailyDocId] = useState(null);
@@ -3230,7 +3235,7 @@ Istanbul, Turkey 🇹🇷`
                             setTimeout(() => { setWon(false); setScreen('menu'); setShowDailyModal(true); }, 800);
                           })();
                         } else {
-                          (async () => { const u = user || (await getOrCreateGuestId()); submitScoreToCloud({user:u,mode,moves:mv,time:tm,score:finalScore}).then(docId => { if(docId) setScoreDocId(docId); }); })();
+                          (async () => { const savedName = (() => { try { return localStorage.getItem('mindsharp_username'); } catch { return null; } })(); const u = savedName || user || (await getOrCreateGuestId()); submitScoreToCloud({user:u,mode,moves:mv,time:tm,score:finalScore}).then(docId => { if(docId) setScoreDocId(docId); }); })();
                         }
                         recordGameStats({mode,moves:mv,time:tm,score:finalScore,comboBonus:comboBonusRef.current});
                         setTimeout(async () => {
@@ -3373,7 +3378,7 @@ Istanbul, Turkey 🇹🇷`
                         ) : null;
                       })()}
                     </div>
-                    <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); } catch {} }}
+                    <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); localStorage.removeItem('mindsharp_username'); } catch {} }}
                       style={{ background:'none', border:'1px solid rgba(255,255,255,0.2)', borderRadius:6,
                         color:'rgba(255,255,255,0.45)', fontSize:11, cursor:'pointer',
                         padding:'3px 8px', whiteSpace:'nowrap', flexShrink:0, marginLeft:8 }}>{t("change_button")}</button>
@@ -3389,7 +3394,7 @@ Istanbul, Turkey 🇹🇷`
                         onKeyDown={e => {
                           if (e.key==='Enter' && tempUser.trim()) {
                             const n=tempUser.trim(); setUser(n);
-                            try { localStorage.setItem('memotiles_user',n); } catch {}
+                            try { localStorage.setItem('memotiles_user',n); localStorage.setItem('mindsharp_username',n); } catch {}
                             setTempUser(''); trackEvent('name_entered',{source:'menu'});
                             showToast(t('name_saved_toast'));
                           }
@@ -3404,7 +3409,7 @@ Istanbul, Turkey 🇹🇷`
                       />
                       <button onClick={() => {
                         const n=tempUser.trim(); if(!n) return;
-                        setUser(n); try { localStorage.setItem('memotiles_user',n); } catch {}
+                        setUser(n); try { localStorage.setItem('memotiles_user',n); localStorage.setItem('mindsharp_username',n); } catch {}
                         setTempUser(''); trackEvent('name_entered',{source:'menu'});
                         showToast(t('name_saved_toast'));
                       }} style={{ padding:'9px 14px', borderRadius:10, border:'none', flexShrink:0,
@@ -3649,9 +3654,20 @@ Istanbul, Turkey 🇹🇷`
               onMenu={() => { trackEvent('menu_return',{source:'win_modal',mode,score}); setWon(false); setScreen('menu'); }}
               onScores={() => { trackEvent('scores_click',{source:'win_modal'}); setWon(false); setScreen('scores'); }}
               onSaveName={(name) => {
-                setUser(name); try { localStorage.setItem('memotiles_user',name); } catch {}
+                setUser(name);
+                try { localStorage.setItem('memotiles_user',name); } catch {}
+                try { localStorage.setItem('mindsharp_username',name); } catch {}
                 trackEvent('name_saved_postgame',{source:'win_modal'});
                 showToast(t('name_saved_toast'));
+              }}
+              onNameSkipped={async () => {
+                // Popup kapatıldı — Guest# ata, listeye ekle
+                const guestName = await getOrCreateGuestId();
+                setUser(guestName);
+                try { localStorage.setItem('memotiles_user', guestName); } catch {}
+                // Skoru güncelle (Guest adıyla)
+                if (scoreDocId) updateScoreUsername(scoreDocId, guestName);
+                trackEvent('name_skipped_postgame',{source:'win_modal'});
               }}
               onScoreDoubled={() => {
                 const boosted = score+100; setScore(boosted);
