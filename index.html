@@ -2290,12 +2290,12 @@
                     {getLang()==='tr' ? 'Adını listeye ekle!' : 'Add your name to the board!'}
                   </div>
                   <div style={{ fontSize:12, color:'#b8860b', fontWeight:600 }}>
-                    {getLang()==='tr' ? 'Skorun tabloya kaydedildi. Adını gir!' : 'Your score is saved. Enter your name!'}
+                    {getLang()==='tr' ? 'Skorun kaydedildi. Adını gir!' : 'Your score is saved. Enter your name!'}
                   </div>
                 </div>
                 <div style={{ display:'flex', gap:8, animation: nameInputShake ? 'nameShake 0.5s ease' : 'none' }}>
                   <input type="text" value={popupNameInput} onChange={e => setPopupNameInput(e.target.value)}
-                    onKeyDown={e => e.key==='Enter' && handlePopupSave()}
+                    onKeyDown={e => { if(e.key==='Enter') handlePopupSave(); }}
                     onFocus={() => { window.scrollTo(0,0); document.body.style.overflow='hidden'; }}
                     onBlur={() => { document.body.style.overflow=''; }}
                     placeholder={getLang()==='tr' ? 'Adın...' : 'Your name...'}
@@ -2311,12 +2311,11 @@
                     boxShadow: popupNameInput.trim() ? '0 2px 8px rgba(230,126,34,0.4)' : 'none' }}>✓</button>
                 </div>
                 <div style={{ textAlign:'center', marginTop:10, fontSize:11, color:'rgba(120,80,20,0.55)' }}>
-                  {getLang()==='tr' ? 'Bir kez gir, hep hatırlayalım 🧠' : 'Enter once, we'll remember you 🧠'}
+                  {getLang()==='tr' ? 'Bir kez gir, hep hatırlayalım 🧠' : "Enter once, we'll remember you 🧠"}
                 </div>
               </div>
             </div>
           )}
-
           <style>{`
             @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(380px) rotate(var(--rot));opacity:0}}
             @keyframes cardSlideUp{from{transform:translateY(40px) scale(0.94);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
