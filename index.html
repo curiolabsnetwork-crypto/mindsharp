@@ -2775,20 +2775,29 @@ Istanbul, Turkey 🇹🇷`
       );
     }
 
-    function FingerHint({ show, tile0Ref, tile1Ref }) {
+    function FingerHint({ show, tile0Ref, tile1Ref, onPress0, onPress1 }) {
       const [pos, setPos] = React.useState({ x: -999, y: -999 });
       const [opacity, setOpacity] = React.useState(0);
       const [scale, setScale] = React.useState(1);
 
+      // Parmak ucunu taşın tam ortasına hizala
+      // 👆 emojisinde parmak ucu yaklaşık %20 solda, %85 üstte
       const getCenter = (ref) => {
         if (!ref || !ref.current) return null;
         const r = ref.current.getBoundingClientRect();
-        return { x: r.left + r.width/2 - 10, y: r.top + r.height/2 - 42 };
+        // Parmak ucunun taş merkezine denk gelmesi için:
+        // fontSize 44 → emoji kutusu ~44x44
+        // Parmak ucu emoji kutusunun yaklaşık x:50%, y:0% noktasında
+        const emojiSize = 44;
+        return { 
+          x: r.left + r.width / 2 - emojiSize / 2, 
+          y: r.top + r.height / 2 - 4
+        };
       };
 
       const press = () => {
-        setScale(0.75);
-        setTimeout(() => setScale(1), 320);
+        setScale(0.78);
+        setTimeout(() => setScale(1), 300);
       };
 
       React.useEffect(() => {
@@ -2809,9 +2818,10 @@ Istanbul, Turkey 🇹🇷`
           setOpacity(1);
         }, 1750));
 
-        // 1800ms: press (tile0 açılıyor)
+        // 1800ms: press + tile0 aç (senkron)
         timers.push(setTimeout(() => {
           press();
+          if (onPress0) onPress0();
         }, 1800));
 
         // 2400ms: tile1'e kay
@@ -2820,9 +2830,10 @@ Istanbul, Turkey 🇹🇷`
           if (c) setPos(c);
         }, 2400));
 
-        // 2500ms: press (tile1 açılıyor)
+        // 2500ms: press + tile1 aç (senkron)
         timers.push(setTimeout(() => {
           press();
+          if (onPress1) onPress1();
         }, 2500));
 
         // 3400ms: kaybol
@@ -2839,12 +2850,16 @@ Istanbul, Turkey 🇹🇷`
           position: 'fixed',
           left: pos.x,
           top: pos.y,
-          fontSize: 48,
+          fontSize: 44,
+          lineHeight: '44px',
+          width: 44,
+          height: 44,
+          textAlign: 'center',
           zIndex: 9999,
           pointerEvents: 'none',
           filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.7))',
           transform: `scale(${scale})`,
-          transformOrigin: '10px 42px',
+          transformOrigin: 'center top',
           opacity: opacity,
           transition: 'left 0.30s cubic-bezier(0.4,0,0.2,1), top 0.30s cubic-bezier(0.4,0,0.2,1), transform 0.18s ease, opacity 0.2s ease',
         }}>👆</div>
@@ -2985,27 +3000,16 @@ Istanbul, Turkey 🇹🇷`
         setShowHint(true);
         setDemoFlippedIds([]);
         const timers = [];
-        // Demo animasyon: tiles hazır olana kadar bekle, sonra 2 taş aç/kapat
+        // Demo: taşları seç (refs için) — flip'ler FingerHint callback'leriyle senkron tetiklenir
         timers.push(setTimeout(() => {
           setTiles(cur => {
             if (!cur || cur.length < 4) return cur;
-            // Farklı sayıya sahip iki taş seç
             const id0 = cur[0].id;
             const id1 = cur.find(t => t.number !== cur[0].number)?.id ?? cur[2].id;
-            // İlk taş açılır
             setDemoTileIds({ id0, id1 });
-            setDemoFlippedIds([id0]);
-            timers.push(setTimeout(() => {
-              // İkinci taş açılır
-              setDemoFlippedIds([id0, id1]);
-              // 900ms sonra oyundaki mismatch gibi ikisi aynı anda kapanır
-              timers.push(setTimeout(() => {
-                setDemoFlippedIds([]);
-              }, 900));
-            }, 700));
             return cur;
           });
-        }, 1800));
+        }, 1600));
         const hideTimer = setTimeout(() => {
           setShowHint(false);
           setDemoFlippedIds([]);
@@ -3597,7 +3601,15 @@ Istanbul, Turkey 🇹🇷`
                   )}
                 </div>
                 <div className={"ms-hint"+(showHint?"":" hide")}>{t("game_hint")}</div>
-                <FingerHint show={showHint} tile0Ref={demoTile0Ref} tile1Ref={demoTile1Ref} />
+                <FingerHint show={showHint} tile0Ref={demoTile0Ref} tile1Ref={demoTile1Ref}
+                  onPress0={() => {
+                    setDemoFlippedIds([demoTileIds.id0]);
+                  }}
+                  onPress1={() => {
+                    setDemoFlippedIds([demoTileIds.id0, demoTileIds.id1]);
+                    setTimeout(() => setDemoFlippedIds([]), 900);
+                  }}
+                />
                 <div ref={boardRef} style={{ padding:'8px', width:'100%', maxWidth:'100%', boxSizing:'border-box',
                   overflow:'hidden', boxShadow:'inset 0 2px 10px rgba(0,0,0,0.5)', borderRadius:12,
                   border:'2px solid rgba(90,54,32,0.6)' }}>
