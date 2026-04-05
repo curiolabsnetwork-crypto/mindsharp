@@ -186,30 +186,7 @@
     ::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.5); border-radius: 2px; }
   
   
-  @keyframes fingerPress {
-    0%   { transform: scale(1);    opacity: 1; }
-    35%  { transform: scale(0.78); opacity: 0.9; }
-    65%  { transform: scale(1);    opacity: 1; }
-    100% { transform: scale(1);    opacity: 1; }
-  }
-  @keyframes fingerMove {
-    0%   { opacity: 0; }
-    5%   { opacity: 1; }
-    95%  { opacity: 1; }
-    100% { opacity: 0; }
-  }
-  .finger-hint {
-    position: fixed;
-    pointer-events: none;
-    font-size: 48px;
-    z-index: 9999;
-    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.7));
-    transition: left 0.35s cubic-bezier(0.4,0,0.2,1), top 0.35s cubic-bezier(0.4,0,0.2,1);
-    animation: fingerMove 3.5s ease forwards;
-  }
-  .finger-hint.pressing {
-    animation: fingerPress 0.4s ease;
-  }
+  /* finger hint - inline styles */
 
   </style>
   <script>
@@ -2799,53 +2776,72 @@ Istanbul, Turkey 🇹🇷`
     }
 
     function FingerHint({ show, tile0Ref, tile1Ref }) {
-      const ref = React.useRef(null);
-      const [pos, setPos] = React.useState({ x: -200, y: -200 });
-      const [pressing, setPressing] = React.useState(false);
+      const [pos, setPos] = React.useState({ x: -999, y: -999 });
+      const [visible, setVisible] = React.useState(false);
+      const [scale, setScale] = React.useState(1);
+
+      const getCenter = (ref) => {
+        if (!ref || !ref.current) return null;
+        const r = ref.current.getBoundingClientRect();
+        // Parmak ucunun tam taş merkezine gelmesi için:
+        // emoji 48px, parmak ucu emojiyin sol alt ~%20,%90 noktasında
+        return { x: r.left + r.width/2 - 10, y: r.top + r.height/2 - 42 };
+      };
+
+      const press = (setS) => {
+        setS(0.75);
+        setTimeout(() => setS(1), 350);
+      };
 
       React.useEffect(() => {
-        if (!show) return;
-        // Get tile positions from DOM
-        const getCenter = (el) => {
-          if (!el) return null;
-          const r = el.getBoundingClientRect();
-          return { x: r.left + r.width/2, y: r.top + r.height/2 };
-        };
+        if (!show) { setVisible(false); return; }
+        const timers = [];
 
-        // Phase 1: appear at tile0 after 1800ms
-        const t1 = setTimeout(() => {
-          const c = getCenter(tile0Ref.current);
-          if (c) setPos({ x: c.x - 24, y: c.y - 48 });
-        }, 1800);
+        // 1700ms: parmak tile0'ın üzerinde hazır, görünmez
+        timers.push(setTimeout(() => {
+          const c = getCenter(tile0Ref);
+          if (c) { setPos(c); setVisible(true); }
+        }, 1700));
 
-        // Phase 2: press tile0 at 1900ms
-        const t2 = setTimeout(() => {
-          setPressing(true);
-          setTimeout(() => setPressing(false), 400);
-        }, 1900);
+        // 1800ms: tile0 açılıyor — parmak press
+        timers.push(setTimeout(() => {
+          press(setScale);
+        }, 1800));
 
-        // Phase 3: move to tile1 at 2500ms
-        const t3 = setTimeout(() => {
-          const c = getCenter(tile1Ref.current);
-          if (c) setPos({ x: c.x - 24, y: c.y - 48 });
-        }, 2500);
+        // 2400ms: parmak tile1'e kayıyor (smooth CSS transition)
+        timers.push(setTimeout(() => {
+          const c = getCenter(tile1Ref);
+          if (c) setPos(c);
+        }, 2400));
 
-        // Phase 4: press tile1 at 2650ms
-        const t4 = setTimeout(() => {
-          setPressing(true);
-          setTimeout(() => setPressing(false), 400);
-        }, 2650);
+        // 2500ms: tile1 açılıyor — parmak press
+        timers.push(setTimeout(() => {
+          press(setScale);
+        }, 2500));
 
-        return () => [t1,t2,t3,t4].forEach(clearTimeout);
+        // 3500ms: parmak kayboluyor
+        timers.push(setTimeout(() => {
+          setVisible(false);
+        }, 3500));
+
+        return () => timers.forEach(clearTimeout);
       }, [show]);
 
-      if (!show) return null;
+      if (!visible) return null;
       return (
-        <div
-          ref={ref}
-          className={"finger-hint" + (pressing ? " pressing" : "")}
-          style={{ left: pos.x, top: pos.y }}
-        >👆</div>
+        <div style={{
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y,
+          fontSize: 48,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.7))',
+          transform: `scale(${scale})`,
+          transformOrigin: '10px 42px',
+          transition: 'left 0.32s cubic-bezier(0.4,0,0.2,1), top 0.32s cubic-bezier(0.4,0,0.2,1), transform 0.18s ease',
+          opacity: visible ? 1 : 0,
+        }}>👆</div>
       );
     }
 
