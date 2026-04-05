@@ -186,10 +186,10 @@
     ::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.5); border-radius: 2px; }
   
   @keyframes fingerTap {
-    0%   { transform: scale(1)   translateY(0);   opacity: 1; }
-    40%  { transform: scale(0.85) translateY(6px); opacity: 0.9; }
-    70%  { transform: scale(1)   translateY(0);   opacity: 1; }
-    100% { transform: scale(1)   translateY(0);   opacity: 0; }
+    0%   { transform: scale(1) translateY(0);    opacity: 1; }
+    40%  { transform: scale(0.85) translateY(8px); opacity: 0.9; }
+    70%  { transform: scale(1) translateY(0);    opacity: 1; }
+    100% { transform: scale(1) translateY(0);    opacity: 0; }
   }
   .finger-hint {
     position: fixed;
@@ -1573,7 +1573,16 @@
                   </div>
                 </div>
               )}
-              {/* character removed */}
+              {/* Hayvan görseli */}
+              <div style={{ textAlign:'center', marginBottom:6 }}>
+                <img src={''}  style={{display:'none'}} alt=
+                  style={{ width:100, height:100, borderRadius:12, objectFit:'cover',
+                    border:'2px solid rgba(200,169,110,0.4)', boxShadow:'0 3px 12px rgba(0,0,0,0.2)' }} />
+                <div>
+                  <span style={{ display:'inline-block', marginTop:5, background:'rgba(80,50,20,0.12)',
+                    border:'1.5px solid rgba(200,169,110,0.5)', borderRadius:20, padding:'3px 14px',
+                    fontSize:12, fontWeight:900, color:'#5a4030', letterSpacing:0.8 }}></span>
+                </div>
               </div>
               {/* Skor + Sıralama aynı kutu */}
               <div style={{ background:character.bgGrad||'linear-gradient(135deg,#e67e22,#c0392b)',
@@ -1910,7 +1919,7 @@
     ];
 
     function getCharacter(score) {
-      if (!CHARACTERS || CHARACTERS.length === 0) return { img:'', en:'', tr:'', labelBg:'#5a4030' };
+      if (!CHARACTERS || CHARACTERS.length === 0) return { img:"", en:"", tr:"", labelBg:"#5a4030", bgGrad:"linear-gradient(135deg,#e67e22,#c0392b)" };
       const eligible = CHARACTERS.filter(c => score >= c.minScore);
       if (eligible.length === 0) return CHARACTERS[CHARACTERS.length - 1];
       return eligible.reduce((best, c) => c.minScore > best.minScore ? c : best, eligible[0]);
@@ -2272,9 +2281,9 @@
                 <div style={{ color:'rgba(120,80,20,0.5)', fontSize:10, marginTop:2 }}>{diffLabel} · {dateStr}</div>
               </div>
 
-              {/* character removed */}haracter — centered */}
+              {/* Character — centered */}
               <div style={{ textAlign:'center', marginBottom:4 }}>
-                <img src={character.img} alt={charName}
+                <img src={''}  style={{display:'none'}} alt={charName}
                   style={{ width:100, height:100, borderRadius:12, objectFit:'cover',
                     border:'2px solid rgba(200,169,110,0.4)', boxShadow:'0 3px 12px rgba(0,0,0,0.2)' }} />
                 <div>
