@@ -1049,113 +1049,7 @@
               })}
             </div>
           </Card>
-          <Card>
-            <Label>{getLang()==='tr'?'Aktivite — Son 30 Gün':'Activity — Last 30 Days'}</Label>
-            <div style={{ marginTop:8, display:'flex', flexWrap:'wrap', gap:4 }}>
-              {calDays.map(day => {
-                const played = playedSet.has(day);
-                const isToday = day === new Date().toISOString().slice(0,10);
-                return (
-                  <div key={day} title={day} style={{ width:16, height:16, borderRadius:4,
-                    background: played ? 'linear-gradient(135deg,#27ae60,#2ecc71)' : 'rgba(255,255,255,0.07)',
-                    border: isToday ? '1.5px solid #ffe082' : '1px solid rgba(255,255,255,0.06)',
-                    boxShadow: played ? '0 0 6px rgba(46,204,113,0.4)' : 'none' }}/>
-                );
-              })}
-            </div>
-            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8 }}>
-              <div style={{ width:12, height:12, borderRadius:3, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)' }}/>
-              <span style={{ color:'rgba(255,224,130,0.4)', fontSize:10 }}>{t("no_play")}</span>
-              <div style={{ width:12, height:12, borderRadius:3, background:'linear-gradient(135deg,#27ae60,#2ecc71)', marginLeft:10 }}/>
-              <span style={{ color:'rgba(255,224,130,0.4)', fontSize:10 }}>{t("played")}</span>
-            </div>
-          </Card>
-          {/* Koleksiyon */}
-          <Card>
-            <Label>{getLang()==='tr'?'Koleksiyon':'Collection'}</Label>
-            <div style={{ color:'rgba(255,224,130,0.4)', fontSize:10, marginBottom:8 }}>
-              {getLang()==='tr'
-                ? `En yüksek skoruna kadar kazandığın hayvanlar`
-                : `Animals unlocked up to your best score`}
-            </div>
-            {(() => {
-              const bestScore = Math.max(...Object.values(stats.bestScores||{}), 0);
-              const hasPlayed = (stats.totalGames || 0) > 0;
-              const allSorted = [...CHARACTERS].sort((a,b) => a.minScore - b.minScore);
-              // minScore:0 olan (snail) bile, hiç oynanmamışsa kilitli göster
-              const unlocked = allSorted.filter(c => hasPlayed && bestScore >= c.minScore);
-              const locked = allSorted.filter(c => !hasPlayed || bestScore < c.minScore);
-              const [zoomed, setZoomed] = React.useState(null);
-              const cLang = getLang();
-              return (
-                <div>
-                  {/* Zoom overlay */}
-                  {zoomed && (
-                    <div onClick={() => setZoomed(null)} style={{ position:'fixed', inset:0, zIndex:99999,
-                      background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center',
-                      justifyContent:'center', padding:20 }}>
-                      <div onClick={e => e.stopPropagation()} style={{ textAlign:'center' }}>
-                        <img src={zoomed.img} alt={cLang==='tr'?zoomed.tr:zoomed.en}
-                          style={{ width:220, height:220, borderRadius:20, objectFit:'cover',
-                            border:'3px solid rgba(200,169,110,0.6)',
-                            boxShadow:'0 8px 32px rgba(0,0,0,0.6)' }} />
-                        <div style={{ color:'#ffe082', fontWeight:900, fontSize:18, marginTop:10,
-                          fontFamily:'Georgia,serif' }}>{cLang==='tr'?zoomed.tr:zoomed.en}</div>
-                        <div style={{ color:'rgba(255,224,130,0.5)', fontSize:12, marginTop:3 }}>
-                          {zoomed.minScore}+ {cLang==='tr'?'puan':'pts'}
-                        </div>
-                        <div style={{ color:'rgba(255,255,255,0.35)', fontSize:11, marginTop:6 }}>
-                          {cLang==='tr'?'kapatmak için dokun':'tap to close'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <style>{`
-                    .col-item { transition: transform 0.15s ease; }
-                    .col-item:active { transform: scale(0.92); }
-                  `}</style>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:6, marginBottom:8 }}>
-                    {unlocked.map(c => (
-                      <div key={c.key} className="col-item" onClick={() => setZoomed(c)}
-                        style={{ textAlign:'center', cursor:'pointer' }}>
-                        <div style={{ width:'100%', paddingBottom:'100%', position:'relative', borderRadius:10,
-                          overflow:'hidden', border:'2px solid rgba(200,169,110,0.6)',
-                          boxShadow:'0 2px 8px rgba(0,0,0,0.3)' }}>
-                          <img src={c.img} alt={cLang==='tr'?c.tr:c.en}
-                            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
-                        </div>
-                        <div style={{ color:'rgba(255,224,130,0.7)', fontSize:7, fontWeight:700,
-                          marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                          {cLang==='tr'?c.tr:c.en}
-                        </div>
-                      </div>
-                    ))}
-                    {locked.map(c => (
-                      <div key={c.key} style={{ textAlign:'center' }}>
-                        <div style={{ width:'100%', paddingBottom:'100%', position:'relative', borderRadius:10,
-                          overflow:'hidden', background:'rgba(255,255,255,0.04)',
-                          border:'2px solid rgba(255,255,255,0.07)' }}>
-                          {/* Bulanık gri kare — hayvan hiç anlaşılmasın */}
-                          <div style={{ position:'absolute', inset:0,
-                            background:'linear-gradient(135deg,rgba(80,70,60,0.5),rgba(50,40,30,0.6))',
-                            backdropFilter:'blur(2px)' }}/>
-                          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
-                            justifyContent:'center', fontSize:12, color:'rgba(255,255,255,0.15)' }}>?</div>
-                        </div>
-                        <div style={{ color:'rgba(255,224,130,0.2)', fontSize:7, fontWeight:600, marginTop:3 }}>
-                          {c.minScore}+
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ color:'rgba(255,224,130,0.4)', fontSize:10, textAlign:'center' }}>
-                    {unlocked.length}/{CHARACTERS.length} {cLang==='tr'?'hayvan açık':'animals unlocked'}
-                    {bestScore > 0 && <span style={{ color:'rgba(255,224,130,0.3)' }}> · {bestScore.toLocaleString()} {cLang==='tr'?'en yüksek':'best'}</span>}
-                  </div>
-                </div>
-              );
-            })()}
-          </Card>
+          
           <div style={{ height:20 }}/>
         </div>
       );
@@ -2890,6 +2784,12 @@ Istanbul, Turkey 🇹🇷`
         </>
       );
     }
+
+    function FingerHint({ show }) {
+      if (!show) return null;
+      return <div className="finger-hint">👆</div>;
+    }
+
 
     function App() {
       const [forceRender, setForceRender] = React.useState(0);
