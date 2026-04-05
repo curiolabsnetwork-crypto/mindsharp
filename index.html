@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <link rel="preload" href="./wood_bg.png" as="image" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
   <title>MindSharp — Memory & Focus Game</title>
   <meta name="description" content="Train your memory with MindSharp! Flip tiles, find matching pairs, beat the leaderboard." />
 
@@ -232,9 +236,9 @@
   </script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script crossorigin src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <div id="root">
@@ -1312,7 +1316,7 @@
       return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
     }
 
-    function Tile({ tile, onClick, size }) {
+    const Tile = React.memo(function Tile({ tile, onClick, size }) {
       const isVisible = tile.flipped || tile.matched;
       const s = size, tileH = s*1.45, dimpleSize = s*0.28;
       return (
@@ -1346,7 +1350,7 @@
           </div>
         </div>
       );
-    }
+    });
 
     function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryChange, onClearCategory }) {
       const [confirmClear, setConfirmClear] = React.useState(false);
@@ -2781,13 +2785,9 @@ Istanbul, Turkey 🇹🇷`
       const [scale, setScale] = React.useState(1);
 
       // Parmak ucunu taşın tam ortasına hizala
-      // 👆 emojisinde parmak ucu yaklaşık %20 solda, %85 üstte
       const getCenter = (ref) => {
         if (!ref || !ref.current) return null;
         const r = ref.current.getBoundingClientRect();
-        // Parmak ucunun taş merkezine denk gelmesi için:
-        // fontSize 44 → emoji kutusu ~44x44
-        // Parmak ucu emoji kutusunun yaklaşık x:50%, y:0% noktasında
         const emojiSize = 44;
         return { 
           x: r.left + r.width / 2 - emojiSize / 2, 
@@ -2875,6 +2875,7 @@ Istanbul, Turkey 🇹🇷`
       const demoTile0Ref = useRef(null);
       const demoTile1Ref = useRef(null);
       const [demoTileIds, setDemoTileIds] = useState({ id0: null, id1: null });
+      const demoTileIdsRef = useRef({ id0: null, id1: null });
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
       const [showInstallBanner, setShowInstallBanner] = useState(true);
@@ -2960,20 +2961,24 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         if (bgLoadedRef.current) return;
         bgLoadedRef.current = true;
-        fetch('./music.mp3').then(r => r.arrayBuffer()).then(ab => {
-          const ctx = getAudioCtx();
-          return ctx.decodeAudioData(ab);
-        }).then(buffer => {
-          bgBufferRef.current = buffer;
-          if (musicEnabledRef.current) {
+        // Müziği 3sn geciktir — sayfa yüklenmesini yavaşlatmasın
+        const musicDelay = setTimeout(() => {
+          fetch('./music.mp3').then(r => r.arrayBuffer()).then(ab => {
             const ctx = getAudioCtx();
-            if (ctx.state === 'suspended') {
-              ctx.resume().then(() => { if (musicEnabledRef.current && !bgPlayingRef.current) startBgMusic(); });
-            } else {
-              startBgMusic();
+            return ctx.decodeAudioData(ab);
+          }).then(buffer => {
+            bgBufferRef.current = buffer;
+            if (musicEnabledRef.current) {
+              const ctx = getAudioCtx();
+              if (ctx.state === 'suspended') {
+                ctx.resume().then(() => { if (musicEnabledRef.current && !bgPlayingRef.current) startBgMusic(); });
+              } else {
+                startBgMusic();
+              }
             }
-          }
-        }).catch(() => {});
+          }).catch(() => {});
+        }, 3000);
+        return () => clearTimeout(musicDelay);
       }, []);
       useEffect(() => {
         if (!bgBufferRef.current) return;
@@ -3000,13 +3005,26 @@ Istanbul, Turkey 🇹🇷`
         setShowHint(true);
         setDemoFlippedIds([]);
         const timers = [];
-        // Demo: taşları seç (refs için) — flip'ler FingerHint callback'leriyle senkron tetiklenir
+        // Demo: rastgele ve birbirine uzak 2 taş seç
         timers.push(setTimeout(() => {
           setTiles(cur => {
             if (!cur || cur.length < 4) return cur;
-            const id0 = cur[0].id;
-            const id1 = cur.find(t => t.number !== cur[0].number)?.id ?? cur[2].id;
-            setDemoTileIds({ id0, id1 });
+            const cols = (GRID_CONFIGS[mode] || GRID_CONFIGS['8x4']).cols;
+            // Farklı numara taşıyan taşları bul
+            const firstIdx = Math.floor(Math.random() * cur.length);
+            const candidates = cur.filter((t, i) => {
+              if (t.number === cur[firstIdx].number) return false;
+              // Yanyana olmasın (aynı satır ±1 veya üst/alt satır aynı kolon)
+              const row0 = Math.floor(firstIdx / cols), col0 = firstIdx % cols;
+              const row1 = Math.floor(i / cols), col1 = i % cols;
+              return Math.abs(row0 - row1) + Math.abs(col0 - col1) > 2;
+            });
+            const second = candidates.length > 0
+              ? candidates[Math.floor(Math.random() * candidates.length)]
+              : cur.find(t => t.number !== cur[firstIdx].number) || cur[2];
+            const ids = { id0: cur[firstIdx].id, id1: second.id };
+            setDemoTileIds(ids);
+            demoTileIdsRef.current = ids;
             return cur;
           });
         }, 1600));
@@ -3603,11 +3621,15 @@ Istanbul, Turkey 🇹🇷`
                 <div className={"ms-hint"+(showHint?"":" hide")}>{t("game_hint")}</div>
                 <FingerHint show={showHint} tile0Ref={demoTile0Ref} tile1Ref={demoTile1Ref}
                   onPress0={() => {
-                    setDemoFlippedIds([demoTileIds.id0]);
+                    const ids = demoTileIdsRef.current;
+                    if (ids.id0 != null) setDemoFlippedIds([ids.id0]);
                   }}
                   onPress1={() => {
-                    setDemoFlippedIds([demoTileIds.id0, demoTileIds.id1]);
-                    setTimeout(() => setDemoFlippedIds([]), 900);
+                    const ids = demoTileIdsRef.current;
+                    if (ids.id0 != null && ids.id1 != null) {
+                      setDemoFlippedIds([ids.id0, ids.id1]);
+                      setTimeout(() => setDemoFlippedIds([]), 900);
+                    }
                   }}
                 />
                 <div ref={boardRef} style={{ padding:'8px', width:'100%', maxWidth:'100%', boxSizing:'border-box',
