@@ -3619,11 +3619,15 @@ Istanbul, Turkey 🇹🇷`
                 <FingerHint show={showHint} tile0Ref={demoTile0Ref} tile1Ref={demoTile1Ref}
                   onPress0={() => {
                     const ids = demoTileIdsRef.current;
-                    if (ids.id0 != null) setDemoFlippedIds([ids.id0]);
+                    if (ids.id0 != null) {
+                      if (settings.sfx) play('flip');
+                      setDemoFlippedIds([ids.id0]);
+                    }
                   }}
                   onPress1={() => {
                     const ids = demoTileIdsRef.current;
                     if (ids.id0 != null && ids.id1 != null) {
+                      if (settings.sfx) play('flip');
                       setDemoFlippedIds([ids.id0, ids.id1]);
                       setTimeout(() => setDemoFlippedIds([]), 900);
                     }
