@@ -2784,14 +2784,15 @@ Istanbul, Turkey 🇹🇷`
       const [opacity, setOpacity] = React.useState(0);
       const [scale, setScale] = React.useState(1);
 
-      // Parmak ucunu taşın tam ortasına hizala
-      const getCenter = (ref) => {
+      // Parmak ucu taşın ortası ile altı arasına (75% yükseklik) dokunur
+      // Böylece sayı ve renk simgesi görünür kalır
+      const getTouchPoint = (ref) => {
         if (!ref || !ref.current) return null;
         const r = ref.current.getBoundingClientRect();
         const emojiSize = 44;
         return { 
           x: r.left + r.width / 2 - emojiSize / 2, 
-          y: r.top + r.height / 2 - 4
+          y: r.top + r.height * 0.75 - 4
         };
       };
 
@@ -2809,37 +2810,37 @@ Istanbul, Turkey 🇹🇷`
 
         // 1650ms: pozisyonu ayarla (hâlâ görünmez)
         timers.push(setTimeout(() => {
-          const c = getCenter(tile0Ref);
+          const c = getTouchPoint(tile0Ref);
           if (c) setPos(c);
         }, 1650));
 
-        // 1750ms: belir
+        // 1800ms: belir
         timers.push(setTimeout(() => {
           setOpacity(1);
-        }, 1750));
+        }, 1800));
 
-        // 1800ms: press + tile0 aç (senkron)
+        // 1900ms: press + tile0 aç
         timers.push(setTimeout(() => {
           press();
           if (onPress0) onPress0();
-        }, 1800));
+        }, 1900));
 
-        // 2400ms: tile1'e kay
+        // 2800ms: tile1'e kay (daha yavaş geçiş)
         timers.push(setTimeout(() => {
-          const c = getCenter(tile1Ref);
+          const c = getTouchPoint(tile1Ref);
           if (c) setPos(c);
-        }, 2400));
+        }, 2800));
 
-        // 2500ms: press + tile1 aç (senkron)
+        // 3100ms: press + tile1 aç
         timers.push(setTimeout(() => {
           press();
           if (onPress1) onPress1();
-        }, 2500));
+        }, 3100));
 
-        // 3400ms: kaybol
+        // 4200ms: kaybol
         timers.push(setTimeout(() => {
           setOpacity(0);
-        }, 3400));
+        }, 4200));
 
         return () => timers.forEach(clearTimeout);
       }, [show]);
@@ -3005,24 +3006,20 @@ Istanbul, Turkey 🇹🇷`
         setShowHint(true);
         setDemoFlippedIds([]);
         const timers = [];
-        // Demo: rastgele ve birbirine uzak 2 taş seç
+        // Demo: her zaman sol üst köşe (index 0) + yakınındaki farklı numaralı taş
         timers.push(setTimeout(() => {
           setTiles(cur => {
             if (!cur || cur.length < 4) return cur;
             const cols = (GRID_CONFIGS[mode] || GRID_CONFIGS['8x4']).cols;
-            // Farklı numara taşıyan taşları bul
-            const firstIdx = Math.floor(Math.random() * cur.length);
-            const candidates = cur.filter((t, i) => {
-              if (t.number === cur[firstIdx].number) return false;
-              // Yanyana olmasın (aynı satır ±1 veya üst/alt satır aynı kolon)
-              const row0 = Math.floor(firstIdx / cols), col0 = firstIdx % cols;
-              const row1 = Math.floor(i / cols), col1 = i % cols;
-              return Math.abs(row0 - row1) + Math.abs(col0 - col1) > 2;
-            });
-            const second = candidates.length > 0
-              ? candidates[Math.floor(Math.random() * candidates.length)]
-              : cur.find(t => t.number !== cur[firstIdx].number) || cur[2];
-            const ids = { id0: cur[firstIdx].id, id1: second.id };
+            const id0 = cur[0].id;
+            // index 0'ın 3 komşusu: sağ (1), alt (cols), çapraz (cols+1)
+            const neighborIdxs = [1, cols, cols + 1].filter(i => i < cur.length);
+            // Farklı numaralı komşuları tercih et
+            const diffNeighbors = neighborIdxs.filter(i => cur[i].number !== cur[0].number);
+            const pickIdx = diffNeighbors.length > 0
+              ? diffNeighbors[Math.floor(Math.random() * diffNeighbors.length)]
+              : neighborIdxs[0];
+            const ids = { id0: id0, id1: cur[pickIdx].id };
             setDemoTileIds(ids);
             demoTileIdsRef.current = ids;
             return cur;
@@ -3031,7 +3028,7 @@ Istanbul, Turkey 🇹🇷`
         const hideTimer = setTimeout(() => {
           setShowHint(false);
           setDemoFlippedIds([]);
-        }, 5000);
+        }, 6000);
         timers.push(hideTimer);
         return () => timers.forEach(t => clearTimeout(t));
       }, [screen]);
