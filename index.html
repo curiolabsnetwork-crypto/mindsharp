@@ -2777,57 +2777,63 @@ Istanbul, Turkey 🇹🇷`
 
     function FingerHint({ show, tile0Ref, tile1Ref }) {
       const [pos, setPos] = React.useState({ x: -999, y: -999 });
-      const [visible, setVisible] = React.useState(false);
+      const [opacity, setOpacity] = React.useState(0);
       const [scale, setScale] = React.useState(1);
 
       const getCenter = (ref) => {
         if (!ref || !ref.current) return null;
         const r = ref.current.getBoundingClientRect();
-        // Parmak ucunun tam taş merkezine gelmesi için:
-        // emoji 48px, parmak ucu emojiyin sol alt ~%20,%90 noktasında
         return { x: r.left + r.width/2 - 10, y: r.top + r.height/2 - 42 };
       };
 
-      const press = (setS) => {
-        setS(0.75);
-        setTimeout(() => setS(1), 350);
+      const press = () => {
+        setScale(0.75);
+        setTimeout(() => setScale(1), 320);
       };
 
       React.useEffect(() => {
-        if (!show) { setVisible(false); return; }
+        if (!show) {
+          setOpacity(0);
+          return;
+        }
         const timers = [];
 
-        // 1700ms: parmak tile0'ın üzerinde hazır, görünmez
+        // 1650ms: pozisyonu ayarla (hâlâ görünmez)
         timers.push(setTimeout(() => {
           const c = getCenter(tile0Ref);
-          if (c) { setPos(c); setVisible(true); }
-        }, 1700));
+          if (c) setPos(c);
+        }, 1650));
 
-        // 1800ms: tile0 açılıyor — parmak press
+        // 1750ms: belir
         timers.push(setTimeout(() => {
-          press(setScale);
+          setOpacity(1);
+        }, 1750));
+
+        // 1800ms: press (tile0 açılıyor)
+        timers.push(setTimeout(() => {
+          press();
         }, 1800));
 
-        // 2400ms: parmak tile1'e kayıyor (smooth CSS transition)
+        // 2400ms: tile1'e kay
         timers.push(setTimeout(() => {
           const c = getCenter(tile1Ref);
           if (c) setPos(c);
         }, 2400));
 
-        // 2500ms: tile1 açılıyor — parmak press
+        // 2500ms: press (tile1 açılıyor)
         timers.push(setTimeout(() => {
-          press(setScale);
+          press();
         }, 2500));
 
-        // 3500ms: parmak kayboluyor
+        // 3400ms: kaybol
         timers.push(setTimeout(() => {
-          setVisible(false);
-        }, 3500));
+          setOpacity(0);
+        }, 3400));
 
         return () => timers.forEach(clearTimeout);
       }, [show]);
 
-      if (!visible) return null;
+      if (!show) return null;
       return (
         <div style={{
           position: 'fixed',
@@ -2839,8 +2845,8 @@ Istanbul, Turkey 🇹🇷`
           filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.7))',
           transform: `scale(${scale})`,
           transformOrigin: '10px 42px',
-          transition: 'left 0.32s cubic-bezier(0.4,0,0.2,1), top 0.32s cubic-bezier(0.4,0,0.2,1), transform 0.18s ease',
-          opacity: visible ? 1 : 0,
+          opacity: opacity,
+          transition: 'left 0.30s cubic-bezier(0.4,0,0.2,1), top 0.30s cubic-bezier(0.4,0,0.2,1), transform 0.18s ease, opacity 0.2s ease',
         }}>👆</div>
       );
     }
