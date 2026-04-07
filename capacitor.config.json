@@ -1,1 +1,1 @@
-{"appId":"co.mindsharp.twa","appName":"MindSharp","webDir":"www","server":{"androidScheme":"https"},"plugins":{"AdMob":{"appId":"ca-app-pub-9758848686103243~6520878834","initializeForTesting":false}}}
+{"appId":"co.mindsharp.app","appName":"MindSharp","webDir":"www","server":{"androidScheme":"https"},"plugins":{"AdMob":{"appId":"ca-app-pub-9758848686103243~6520878834","initializeForTesting":false}}}
