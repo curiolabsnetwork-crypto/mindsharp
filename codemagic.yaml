@@ -10,16 +10,26 @@ workflows:
         distribution_type: app_store
         bundle_identifier: co.mindsharp.app
       node: 22
+      xcode: latest
+      cocoapods: default
     scripts:
       - name: Install dependencies
         script: npm install
       - name: Add iOS platform
         script: |
-          npx cap add ios
+          npx cap add ios || echo "iOS platform already exists"
           npx cap sync ios
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
       - name: Set bundle id
         script: |
           /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier co.mindsharp.app" ios/App/App/Info.plist
+      - name: Verify workspace exists
+        script: |
+          ls -la ios/App/
+          test -d ios/App/App.xcworkspace && echo "Workspace OK" || (echo "Workspace MISSING" && exit 1)
       - name: Set up code signing
         script: |
           keychain initialize
