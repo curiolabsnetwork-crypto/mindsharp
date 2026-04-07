@@ -15,11 +15,19 @@ workflows:
         script: |
           npx cap add ios
           npx cap sync ios
+      - name: Set up code signing
+        script: |
+          cd ios/App
+          # Set team ID and automatic signing
+          xcrun agvtool new-version -all 1
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier co.mindsharp.app" App/Info.plist
       - name: Build iOS
         script: |
-          xcode-project use-profiles
+          xcode-project use-profiles \
+            --project ios/App/App.xcodeproj
           xcode-project build-ipa \
             --workspace ios/App/App.xcodeproj/project.xcworkspace \
-            --scheme App
+            --scheme App \
+            --team-id F5XQNUNHRF
     artifacts:
       - build/ios/ipa/*.ipa
