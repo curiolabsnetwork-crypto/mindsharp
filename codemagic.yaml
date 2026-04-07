@@ -3,6 +3,8 @@ workflows:
     name: MindSharp iOS
     max_build_duration: 60
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic
     environment:
       ios_signing:
         distribution_type: app_store
@@ -15,19 +17,21 @@ workflows:
         script: |
           npx cap add ios
           npx cap sync ios
+      - name: Set bundle id
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier co.mindsharp.app" ios/App/App/Info.plist
       - name: Set up code signing
         script: |
-          cd ios/App
-          # Set team ID and automatic signing
-          xcrun agvtool new-version -all 1
-          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier co.mindsharp.app" App/Info.plist
+          keychain initialize
+          app-store-connect fetch-signing-files "co.mindsharp.app" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build iOS
         script: |
-          xcode-project use-profiles \
-            --project ios/App/App.xcodeproj
           xcode-project build-ipa \
-            --workspace ios/App/App.xcodeproj/project.xcworkspace \
-            --scheme App \
-            --team-id F5XQNUNHRF
+            --workspace ios/App/App.xcworkspace \
+            --scheme App
     artifacts:
       - build/ios/ipa/*.ipa
