@@ -14,11 +14,22 @@ workflows:
       cocoapods: default
     scripts:
       - name: Install dependencies
-        script: npm install
-      - name: Add iOS platform
         script: |
-          npx cap add ios || echo "iOS platform already exists"
+          npm install
+          npm install @capacitor/ios
+      - name: Clean and add iOS platform
+        script: |
+          rm -rf ios
+          npx cap add ios
           npx cap sync ios
+      - name: Debug iOS folder
+        script: |
+          echo "=== ios/ contents ==="
+          ls -la ios/ || echo "no ios folder"
+          echo "=== ios/App contents ==="
+          ls -la ios/App/ || echo "no ios/App folder"
+          echo "=== Podfile check ==="
+          find ios -name "Podfile" || echo "no Podfile found"
       - name: Install CocoaPods
         script: |
           cd ios/App
@@ -26,10 +37,6 @@ workflows:
       - name: Set bundle id
         script: |
           /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier co.mindsharp.app" ios/App/App/Info.plist
-      - name: Verify workspace exists
-        script: |
-          ls -la ios/App/
-          test -d ios/App/App.xcworkspace && echo "Workspace OK" || (echo "Workspace MISSING" && exit 1)
       - name: Set up code signing
         script: |
           keychain initialize
