@@ -7,7 +7,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: co.mindsharp.app
-      node: 20
+      node: 22
     scripts:
       - name: Install dependencies
         script: npm install
