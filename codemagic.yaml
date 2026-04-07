@@ -13,13 +13,14 @@ workflows:
         script: npm install
       - name: Add iOS platform
         script: |
-          npx cap add ios || true
+          npx cap add ios
           npx cap sync ios
       - name: Build iOS
         script: |
           xcode-project use-profiles
           xcode-project build-ipa \
             --workspace ios/App/App.xcworkspace \
-            --scheme App
+            --scheme App \
+            --config Release
     artifacts:
       - build/ios/ipa/*.ipa
