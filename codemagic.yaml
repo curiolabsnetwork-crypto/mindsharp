@@ -15,6 +15,10 @@ workflows:
         script: |
           npx cap add ios
           npx cap sync ios
+      - name: List iOS files
+        script: |
+          ls -la ios/App/
+          find ios -name "*.xcworkspace" -o -name "*.xcodeproj" 2>/dev/null
       - name: Build iOS
         script: |
           xcode-project use-profiles
