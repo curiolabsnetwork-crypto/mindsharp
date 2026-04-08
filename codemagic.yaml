@@ -23,11 +23,18 @@ workflows:
         script: |
           set -ex
           keychain initialize
+          # Build sırasında yeni bir RSA private key oluştur
+          ssh-keygen -t rsa -b 2048 -m PEM -f /tmp/codemagic_private.key -q -N ""
+          # Bu key'i kullanarak Apple'da iOS Distribution sertifikası oluştur (yoksa)
           app-store-connect certificates create \
             --type IOS_DISTRIBUTION \
-            --save || echo "Certificate may already exist, continuing"
+            --certificate-key=@file:/tmp/codemagic_private.key \
+            --save \
+            || echo "Certificate already exists, continuing"
+          # Provisioning profile'ı çek/oluştur ve sertifikaları indir
           app-store-connect fetch-signing-files "co.mindsharp.twa" \
             --type IOS_APP_STORE \
+            --certificate-key=@file:/tmp/codemagic_private.key \
             --create
           keychain add-certificates
           xcode-project use-profiles
