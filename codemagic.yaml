@@ -8,7 +8,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: co.mindsharp.app
+        bundle_identifier: co.mindsharp.twa
       node: 22
       xcode: latest
       cocoapods: default
@@ -16,31 +16,19 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
-          npm install @capacitor/ios
-      - name: Clean and add iOS platform
+      - name: Add iOS platform
         script: |
           rm -rf ios
           npx cap add ios
           npx cap sync ios
-      - name: Debug iOS folder
-        script: |
-          echo "=== ios/ contents ==="
-          ls -la ios/ || echo "no ios folder"
-          echo "=== ios/App contents ==="
-          ls -la ios/App/ || echo "no ios/App folder"
-          echo "=== Podfile check ==="
-          find ios -name "Podfile" || echo "no Podfile found"
       - name: Install CocoaPods
         script: |
           cd ios/App
           pod install
-      - name: Set bundle id
-        script: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier co.mindsharp.app" ios/App/App/Info.plist
       - name: Set up code signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "co.mindsharp.app" \
+          app-store-connect fetch-signing-files "co.mindsharp.twa" \
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
