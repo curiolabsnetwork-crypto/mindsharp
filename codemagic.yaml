@@ -12,26 +12,61 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
+          set -ex
+          node --version
+          npm --version
+          rm -rf node_modules package-lock.json
           npm install
+          npm install @capacitor/cli@latest @capacitor/ios@latest --save-dev
+          echo "=== node_modules/@capacitor contents ==="
+          ls -la node_modules/@capacitor/ || echo "NO @capacitor folder"
+          echo "=== @capacitor/ios exists? ==="
+          ls -la node_modules/@capacitor/ios/ 2>/dev/null | head -20 || echo "NO @capacitor/ios"
+          echo "=== cap CLI version ==="
+          npx cap --version
+
       - name: Add iOS platform
         script: |
+          set -ex
           rm -rf ios
-          npx cap add ios
-          npx cap sync ios
+          echo "=== Before cap add ==="
+          ls -la
+          cat capacitor.config.json
+          echo "=== Running cap add ios ==="
+          npx cap add ios 2>&1
+          echo "=== After cap add ==="
+          ls -la
+          echo "=== ios folder contents ==="
+          find ios -maxdepth 3 -type f 2>/dev/null || echo "NO ios folder created"
+          echo "=== Running cap sync ==="
+          npx cap sync ios 2>&1
+
+      - name: Verify Podfile exists
+        script: |
+          set -ex
+          test -f ios/App/Podfile || (echo "FATAL: Podfile not found after cap add" && find . -name "Podfile" 2>/dev/null && exit 1)
+          echo "=== Podfile contents ==="
+          cat ios/App/Podfile
+
       - name: Install CocoaPods
         script: |
+          set -ex
           cd ios/App
-          pod install
+          pod install --verbose
+
       - name: Set up code signing
         script: |
+          set -ex
           keychain initialize
           app-store-connect fetch-signing-files "co.mindsharp.twa" \
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
           xcode-project use-profiles
+
       - name: Build iOS
         script: |
+          set -ex
           xcode-project build-ipa \
             --workspace ios/App/App.xcworkspace \
             --scheme App
