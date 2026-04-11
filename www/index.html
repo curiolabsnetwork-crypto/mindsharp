@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <link rel="preload" href="./wood_bg.png" as="image" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
   <title>MindSharp — Memory & Focus Game</title>
   <meta name="description" content="Train your memory with MindSharp! Flip tiles, find matching pairs, beat the leaderboard." />
 
@@ -62,7 +66,7 @@
     body {
       margin: 0;
       font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
-      background: #2b1a10 url("./wood_bg.png") center / cover no-repeat fixed;
+      background: #2b1a10 url("./wood_bg.png") center / cover no-repeat;
       overflow-x: hidden;
       position: relative;
       width: 100%;
@@ -185,23 +189,8 @@
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 2px; }
     ::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.5); border-radius: 2px; }
   
-  @keyframes fingerTap {
-    0%   { transform: scale(1)   translateY(0);   opacity: 1; }
-    40%  { transform: scale(0.85) translateY(6px); opacity: 0.9; }
-    70%  { transform: scale(1)   translateY(0);   opacity: 1; }
-    100% { transform: scale(1)   translateY(0);   opacity: 0; }
-  }
-  .finger-hint {
-    position: fixed;
-    pointer-events: none;
-    font-size: 52px;
-    animation: fingerTap 1.1s ease-in-out 2.0s 3 forwards;
-    z-index: 9999;
-    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6));
-    top: 45%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
+  
+  /* finger hint - inline styles */
 
   </style>
   <script>
@@ -247,9 +236,9 @@
   </script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script crossorigin src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <div id="root">
@@ -571,14 +560,15 @@
       }
     };
 
+    let _cachedLang = null;
     function getLang() {
+      if (_cachedLang) return _cachedLang;
       const stored = localStorage.getItem('mindsharp_lang');
-      if (stored) return stored;
-      // Tarayıcı/cihaz dilini otomatik tespit et
       const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-      return browserLang.startsWith('tr') ? 'tr' : 'en';
+      _cachedLang = stored || (browserLang.startsWith('tr') ? 'tr' : 'en');
+      return _cachedLang;
     }
-    function setLang(lang) { localStorage.setItem('mindsharp_lang', lang); document.body.classList.toggle('lang-tr', lang === 'tr'); }
+    function setLang(lang) { _cachedLang = lang; localStorage.setItem('mindsharp_lang', lang); document.body.classList.toggle('lang-tr', lang === 'tr'); }
     // Set initial body class for copyright footer
     (function(){ var l = getLang(); document.body.classList.toggle('lang-tr', l === 'tr'); })();
     function t(key, params) {
@@ -967,7 +957,7 @@
     }
 
     function ProfileScreen({ user, onBack, scores }) {
-      const stats = loadStats();
+      const stats = React.useMemo(() => loadStats(), []);
       const lang = getLang();
       const streak = getStreakCount(stats.streak || []);
       const avgMoves = stats.totalGames > 0 ? Math.round(stats.totalMoves / stats.totalGames) : 0;
@@ -1251,13 +1241,10 @@
     }
 
     function useSound() {
-      const ctx = useRef(null);
-      const getCtx = () => {
-        if (!ctx.current) { try { ctx.current = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
-        return ctx.current;
-      };
-      const play = (type) => {
-        const ac = getCtx(); if (!ac) return;
+      const ctxRef = useRef(null);
+      const play = useCallback((type) => {
+        if (!ctxRef.current) { try { ctxRef.current = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+        const ac = ctxRef.current; if (!ac) return;
         if (type === 'win') {
           [523,659,784,1047].forEach((f,i) => {
             const o2=ac.createOscillator(); const g2=ac.createGain();
@@ -1291,7 +1278,7 @@
         else if (type==='match') { o.frequency.value=660; o.frequency.setValueAtTime(880,ac.currentTime+0.1); g.gain.setValueAtTime(0.15,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.3); }
         else if (type==='fail')  { o.frequency.value=220; g.gain.setValueAtTime(0.08,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.2); }
         o.start(); o.stop(ac.currentTime+0.3);
-      };
+      }, []);
       return play;
     }
 
@@ -1327,13 +1314,13 @@
       return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
     }
 
-    function Tile({ tile, onClick, size }) {
+    const Tile = React.memo(function Tile({ tile, onClick, size }) {
       const isVisible = tile.flipped || tile.matched;
       const s = size, tileH = s*1.45, dimpleSize = s*0.28;
       return (
         <div onClick={() => !tile.matched && !tile.flipped && onClick(tile.id)}
           style={{ width:s, height:tileH, perspective:'600px', cursor:tile.matched?'default':'pointer', flexShrink:0 }}>
-          <div style={{ width:'100%', height:'100%', position:'relative', transformStyle:'preserve-3d', willChange:'transform',
+          <div style={{ width:'100%', height:'100%', position:'relative', transformStyle:'preserve-3d', willChange: isVisible ? 'transform' : 'auto',
             transform: isVisible ? 'rotateY(180deg)' : 'rotateY(0deg)', transition:'transform 0.35s cubic-bezier(.4,2,.6,1)' }}>
             <div style={{ position:'absolute', width:'100%', height:'100%', backfaceVisibility:'hidden',
               borderRadius:8, background:'linear-gradient(160deg,#F8F3E2 60%,#EDE5C8 100%)',
@@ -1361,7 +1348,7 @@
           </div>
         </div>
       );
-    }
+    });
 
     function ScoreBoard({ scores, sortBy, onSortChange, activeCategory, onCategoryChange, onClearCategory }) {
       const [confirmClear, setConfirmClear] = React.useState(false);
@@ -1573,7 +1560,14 @@
                   </div>
                 </div>
               )}
-              {/* character removed */}
+              {/* Hayvan görseli */}
+              <div style={{ textAlign:'center', marginBottom:6 }}>
+                
+                <div>
+                  <span style={{ display:'inline-block', marginTop:5, background:'rgba(80,50,20,0.12)',
+                    border:'1.5px solid rgba(200,169,110,0.5)', borderRadius:20, padding:'3px 14px',
+                    fontSize:12, fontWeight:900, color:'#5a4030', letterSpacing:0.8 }}></span>
+                </div>
               </div>
               {/* Skor + Sıralama aynı kutu */}
               <div style={{ background:character.bgGrad||'linear-gradient(135deg,#e67e22,#c0392b)',
@@ -1910,7 +1904,7 @@
     ];
 
     function getCharacter(score) {
-      if (!CHARACTERS || CHARACTERS.length === 0) return { img:'', en:'', tr:'', labelBg:'#5a4030' };
+      if (!CHARACTERS || CHARACTERS.length === 0) return { img:"", en:"", tr:"", labelBg:"#5a4030", bgGrad:"linear-gradient(135deg,#e67e22,#c0392b)" };
       const eligible = CHARACTERS.filter(c => score >= c.minScore);
       if (eligible.length === 0) return CHARACTERS[CHARACTERS.length - 1];
       return eligible.reduce((best, c) => c.minScore > best.minScore ? c : best, eligible[0]);
@@ -2272,11 +2266,9 @@
                 <div style={{ color:'rgba(120,80,20,0.5)', fontSize:10, marginTop:2 }}>{diffLabel} · {dateStr}</div>
               </div>
 
-              {/* character removed */}haracter — centered */}
+              {/* Character — centered */}
               <div style={{ textAlign:'center', marginBottom:4 }}>
-                <img src={character.img} alt={charName}
-                  style={{ width:100, height:100, borderRadius:12, objectFit:'cover',
-                    border:'2px solid rgba(200,169,110,0.4)', boxShadow:'0 3px 12px rgba(0,0,0,0.2)' }} />
+                
                 <div>
                   <span style={{ display:'inline-block', marginTop:6, background:'rgba(80,50,20,0.12)',
                     border:'1.5px solid rgba(200,169,110,0.5)', borderRadius:20, padding:'4px 16px',
@@ -2785,9 +2777,92 @@ Istanbul, Turkey 🇹🇷`
       );
     }
 
-    function FingerHint({ show }) {
+    function FingerHint({ show, tile0Ref, tile1Ref, onPress0, onPress1 }) {
+      const [pos, setPos] = React.useState({ x: -999, y: -999 });
+      const [opacity, setOpacity] = React.useState(0);
+      const [scale, setScale] = React.useState(1);
+
+      // Parmak ucu taşın ortası ile altı arasına (75% yükseklik) dokunur
+      // Böylece sayı ve renk simgesi görünür kalır
+      const getTouchPoint = (ref) => {
+        if (!ref || !ref.current) return null;
+        const r = ref.current.getBoundingClientRect();
+        const emojiSize = 44;
+        return { 
+          x: r.left + r.width / 2 - emojiSize / 2, 
+          y: r.top + r.height * 0.75 - 4
+        };
+      };
+
+      const press = () => {
+        setScale(0.78);
+        setTimeout(() => setScale(1), 300);
+      };
+
+      React.useEffect(() => {
+        if (!show) {
+          setOpacity(0);
+          return;
+        }
+        const timers = [];
+
+        // 1650ms: pozisyonu ayarla (hâlâ görünmez)
+        timers.push(setTimeout(() => {
+          const c = getTouchPoint(tile0Ref);
+          if (c) setPos(c);
+        }, 1650));
+
+        // 1800ms: belir
+        timers.push(setTimeout(() => {
+          setOpacity(1);
+        }, 1800));
+
+        // 1900ms: press + tile0 aç
+        timers.push(setTimeout(() => {
+          press();
+          if (onPress0) onPress0();
+        }, 1900));
+
+        // 2800ms: tile1'e kay (daha yavaş geçiş)
+        timers.push(setTimeout(() => {
+          const c = getTouchPoint(tile1Ref);
+          if (c) setPos(c);
+        }, 2800));
+
+        // 3100ms: press + tile1 aç
+        timers.push(setTimeout(() => {
+          press();
+          if (onPress1) onPress1();
+        }, 3100));
+
+        // 4200ms: kaybol
+        timers.push(setTimeout(() => {
+          setOpacity(0);
+        }, 4200));
+
+        return () => timers.forEach(clearTimeout);
+      }, [show]);
+
       if (!show) return null;
-      return <div className="finger-hint">👆</div>;
+      return (
+        <div style={{
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y,
+          fontSize: 44,
+          lineHeight: '44px',
+          width: 44,
+          height: 44,
+          textAlign: 'center',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.7))',
+          transform: `scale(${scale})`,
+          transformOrigin: 'center top',
+          opacity: opacity,
+          transition: 'left 0.30s cubic-bezier(0.4,0,0.2,1), top 0.30s cubic-bezier(0.4,0,0.2,1), transform 0.18s ease, opacity 0.2s ease',
+        }}>👆</div>
+      );
     }
 
 
@@ -2796,6 +2871,10 @@ Istanbul, Turkey 🇹🇷`
       const [screen, setScreen]     = useState('menu');
       const [showHint, setShowHint] = useState(false);
       const [demoFlippedIds, setDemoFlippedIds] = useState([]);
+      const demoTile0Ref = useRef(null);
+      const demoTile1Ref = useRef(null);
+      const [demoTileIds, setDemoTileIds] = useState({ id0: null, id1: null });
+      const demoTileIdsRef = useRef({ id0: null, id1: null });
       const [mode, setMode]         = useState('8x4');
       const [showOnboarding, setShowOnboarding] = useState(false);
       const [showInstallBanner, setShowInstallBanner] = useState(true);
@@ -2845,6 +2924,11 @@ Istanbul, Turkey 🇹🇷`
       const isDailyRef    = useRef(false);
       const play          = useSound();
 
+      const menuStreak = React.useMemo(() => {
+        const s = loadStats();
+        return getStreakCount(s.streak || []);
+      }, [screen, won]);
+
       const bgAudioCtxRef = useRef(null);
       const bgSourceRef   = useRef(null);
       const bgBufferRef   = useRef(null);
@@ -2881,20 +2965,24 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         if (bgLoadedRef.current) return;
         bgLoadedRef.current = true;
-        fetch('./music.mp3').then(r => r.arrayBuffer()).then(ab => {
-          const ctx = getAudioCtx();
-          return ctx.decodeAudioData(ab);
-        }).then(buffer => {
-          bgBufferRef.current = buffer;
-          if (musicEnabledRef.current) {
+        // Müziği 3sn geciktir — sayfa yüklenmesini yavaşlatmasın
+        const musicDelay = setTimeout(() => {
+          fetch('./music.mp3').then(r => r.arrayBuffer()).then(ab => {
             const ctx = getAudioCtx();
-            if (ctx.state === 'suspended') {
-              ctx.resume().then(() => { if (musicEnabledRef.current && !bgPlayingRef.current) startBgMusic(); });
-            } else {
-              startBgMusic();
+            return ctx.decodeAudioData(ab);
+          }).then(buffer => {
+            bgBufferRef.current = buffer;
+            if (musicEnabledRef.current) {
+              const ctx = getAudioCtx();
+              if (ctx.state === 'suspended') {
+                ctx.resume().then(() => { if (musicEnabledRef.current && !bgPlayingRef.current) startBgMusic(); });
+              } else {
+                startBgMusic();
+              }
             }
-          }
-        }).catch(() => {});
+          }).catch(() => {});
+        }, 3000);
+        return () => clearTimeout(musicDelay);
       }, []);
       useEffect(() => {
         if (!bgBufferRef.current) return;
@@ -2921,42 +3009,39 @@ Istanbul, Turkey 🇹🇷`
         setShowHint(true);
         setDemoFlippedIds([]);
         const timers = [];
-        // Demo animasyon: tiles hazır olana kadar bekle, sonra 2 taş aç/kapat
+        // Demo: her zaman sol üst köşe (index 0) + yakınındaki farklı numaralı taş
         timers.push(setTimeout(() => {
           setTiles(cur => {
             if (!cur || cur.length < 4) return cur;
-            // Farklı sayıya sahip iki taş seç
+            const cols = (GRID_CONFIGS[mode] || GRID_CONFIGS['8x4']).cols;
             const id0 = cur[0].id;
-            const id1 = cur.find(t => t.number !== cur[0].number)?.id ?? cur[2].id;
-            // İlk taş açılır
-            setDemoFlippedIds([id0]);
-            timers.push(setTimeout(() => {
-              // İkinci taş açılır
-              setDemoFlippedIds([id0, id1]);
-              // 900ms sonra oyundaki mismatch gibi ikisi aynı anda kapanır
-              timers.push(setTimeout(() => {
-                setDemoFlippedIds([]);
-              }, 900));
-            }, 700));
+            // index 0'ın 3 komşusu: sağ (1), alt (cols), çapraz (cols+1)
+            const neighborIdxs = [1, cols, cols + 1].filter(i => i < cur.length);
+            // Farklı numaralı komşuları tercih et
+            const diffNeighbors = neighborIdxs.filter(i => cur[i].number !== cur[0].number);
+            const pickIdx = diffNeighbors.length > 0
+              ? diffNeighbors[Math.floor(Math.random() * diffNeighbors.length)]
+              : neighborIdxs[0];
+            const ids = { id0: id0, id1: cur[pickIdx].id };
+            setDemoTileIds(ids);
+            demoTileIdsRef.current = ids;
             return cur;
           });
-        }, 1800));
+        }, 1600));
         const hideTimer = setTimeout(() => {
           setShowHint(false);
           setDemoFlippedIds([]);
-        }, 5000);
+        }, 6000);
         timers.push(hideTimer);
         return () => timers.forEach(t => clearTimeout(t));
       }, [screen]);
 
       useEffect(() => {
         if (!db) return;
-        const unsub = db.collection('scores').orderBy('score','desc').limit(500)
-          .onSnapshot(snap => {
-            setScores(snap.docs.map(d => ({ id:d.id, ...d.data() })));
-          }, err => console.log('Firestore read error:', err));
-        return () => unsub();
-      }, []);
+        if (screen !== 'scores' && screen !== 'champions') return;
+        fetchScoresFromCloud('8x4').then(s4 => setScores(prev => [...prev.filter(s => s.mode !== '8x4'), ...s4]));
+        fetchScoresFromCloud('8x7').then(s7 => setScores(prev => [...prev.filter(s => s.mode !== '8x7'), ...s7]));
+      }, [screen]);
 
       const boardRef = useRef(null);
       const [boardWidth, setBoardWidth] = useState(330);
@@ -3273,15 +3358,12 @@ Istanbul, Turkey 🇹🇷`
                     border:'1px solid rgba(200,169,110,0.3)', marginBottom:10, width:'100%', boxSizing:'border-box' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'nowrap', minWidth:0 }}>
                       <span style={{ color:'#ffe082', fontSize:13, fontWeight:700, whiteSpace:'nowrap' }}>👤 {user}</span>
-                      {(() => {
-                        const s=loadStats(); const streak=getStreakCount(s.streak||[]);
-                        return streak>0 ? (
+                      {menuStreak > 0 && (
                           <span style={{ color:'rgba(255,224,130,0.6)', fontSize:11, fontWeight:700,
                             background:'rgba(255,150,0,0.15)', borderRadius:6, padding:'2px 7px', whiteSpace:'nowrap' }}>
-                            🔥 {streak} {t("day_streak")}
+                            🔥 {menuStreak} {t("day_streak")}
                           </span>
-                        ) : null;
-                      })()}
+                      )}
                     </div>
                     <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); localStorage.removeItem('mindsharp_username'); } catch {} }}
                       style={{ background:'none', border:'1px solid rgba(255,255,255,0.2)', borderRadius:6,
@@ -3532,7 +3614,23 @@ Istanbul, Turkey 🇹🇷`
                   )}
                 </div>
                 <div className={"ms-hint"+(showHint?"":" hide")}>{t("game_hint")}</div>
-                <FingerHint show={showHint} />
+                <FingerHint show={showHint} tile0Ref={demoTile0Ref} tile1Ref={demoTile1Ref}
+                  onPress0={() => {
+                    const ids = demoTileIdsRef.current;
+                    if (ids.id0 != null) {
+                      if (settings.sfx) play('flip');
+                      setDemoFlippedIds([ids.id0]);
+                    }
+                  }}
+                  onPress1={() => {
+                    const ids = demoTileIdsRef.current;
+                    if (ids.id0 != null && ids.id1 != null) {
+                      if (settings.sfx) play('flip');
+                      setDemoFlippedIds([ids.id0, ids.id1]);
+                      setTimeout(() => setDemoFlippedIds([]), 900);
+                    }
+                  }}
+                />
                 <div ref={boardRef} style={{ padding:'8px', width:'100%', maxWidth:'100%', boxSizing:'border-box',
                   overflow:'hidden', boxShadow:'inset 0 2px 10px rgba(0,0,0,0.5)', borderRadius:12,
                   border:'2px solid rgba(90,54,32,0.6)' }}>
@@ -3541,8 +3639,10 @@ Istanbul, Turkey 🇹🇷`
                     {tiles.map(tile => {
                       const demoFlipped = demoFlippedIds.includes(tile.id);
                       const displayTile = demoFlipped ? {...tile, flipped: true} : tile;
+                      const isDemoTile0 = tile.id === demoTileIds.id0;
+                      const isDemoTile1 = tile.id === demoTileIds.id1;
                       return (
-                        <div key={tile.id} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
+                        <div key={tile.id} ref={isDemoTile0 ? demoTile0Ref : isDemoTile1 ? demoTile1Ref : null} className={(shake&&shake.includes(tile.id)?'shake-tile ':'')+(matchAnim.includes(tile.id)?'match-tile':'')}>
                           <Tile tile={displayTile} onClick={handleTile} size={tileW} />
                         </div>
                       );
@@ -3685,7 +3785,7 @@ Istanbul, Turkey 🇹🇷`
                   // character image removedcatch(e2){} }
 
                   // Karakter ismi pill
-                  const pillY = imgY+340;
+                  const pillY = nameY+340;
                   const pillX=W/2-180, pillW=360, pillH=66;
                   rr(pillX,pillY,pillW,pillH,33);
                   ctx.fillStyle='rgba(80,50,20,0.12)'; ctx.fill();

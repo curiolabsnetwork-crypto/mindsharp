@@ -66,7 +66,7 @@
     body {
       margin: 0;
       font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
-      background: #2b1a10 url("./wood_bg.png") center / cover no-repeat fixed;
+      background: #2b1a10 url("./wood_bg.png") center / cover no-repeat;
       overflow-x: hidden;
       position: relative;
       width: 100%;
@@ -560,14 +560,15 @@
       }
     };
 
+    let _cachedLang = null;
     function getLang() {
+      if (_cachedLang) return _cachedLang;
       const stored = localStorage.getItem('mindsharp_lang');
-      if (stored) return stored;
-      // Tarayıcı/cihaz dilini otomatik tespit et
       const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-      return browserLang.startsWith('tr') ? 'tr' : 'en';
+      _cachedLang = stored || (browserLang.startsWith('tr') ? 'tr' : 'en');
+      return _cachedLang;
     }
-    function setLang(lang) { localStorage.setItem('mindsharp_lang', lang); document.body.classList.toggle('lang-tr', lang === 'tr'); }
+    function setLang(lang) { _cachedLang = lang; localStorage.setItem('mindsharp_lang', lang); document.body.classList.toggle('lang-tr', lang === 'tr'); }
     // Set initial body class for copyright footer
     (function(){ var l = getLang(); document.body.classList.toggle('lang-tr', l === 'tr'); })();
     function t(key, params) {
@@ -956,7 +957,7 @@
     }
 
     function ProfileScreen({ user, onBack, scores }) {
-      const stats = loadStats();
+      const stats = React.useMemo(() => loadStats(), []);
       const lang = getLang();
       const streak = getStreakCount(stats.streak || []);
       const avgMoves = stats.totalGames > 0 ? Math.round(stats.totalMoves / stats.totalGames) : 0;
@@ -1240,13 +1241,10 @@
     }
 
     function useSound() {
-      const ctx = useRef(null);
-      const getCtx = () => {
-        if (!ctx.current) { try { ctx.current = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
-        return ctx.current;
-      };
-      const play = (type) => {
-        const ac = getCtx(); if (!ac) return;
+      const ctxRef = useRef(null);
+      const play = useCallback((type) => {
+        if (!ctxRef.current) { try { ctxRef.current = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+        const ac = ctxRef.current; if (!ac) return;
         if (type === 'win') {
           [523,659,784,1047].forEach((f,i) => {
             const o2=ac.createOscillator(); const g2=ac.createGain();
@@ -1280,7 +1278,7 @@
         else if (type==='match') { o.frequency.value=660; o.frequency.setValueAtTime(880,ac.currentTime+0.1); g.gain.setValueAtTime(0.15,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.3); }
         else if (type==='fail')  { o.frequency.value=220; g.gain.setValueAtTime(0.08,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.2); }
         o.start(); o.stop(ac.currentTime+0.3);
-      };
+      }, []);
       return play;
     }
 
@@ -1322,7 +1320,7 @@
       return (
         <div onClick={() => !tile.matched && !tile.flipped && onClick(tile.id)}
           style={{ width:s, height:tileH, perspective:'600px', cursor:tile.matched?'default':'pointer', flexShrink:0 }}>
-          <div style={{ width:'100%', height:'100%', position:'relative', transformStyle:'preserve-3d', willChange:'transform',
+          <div style={{ width:'100%', height:'100%', position:'relative', transformStyle:'preserve-3d', willChange: isVisible ? 'transform' : 'auto',
             transform: isVisible ? 'rotateY(180deg)' : 'rotateY(0deg)', transition:'transform 0.35s cubic-bezier(.4,2,.6,1)' }}>
             <div style={{ position:'absolute', width:'100%', height:'100%', backfaceVisibility:'hidden',
               borderRadius:8, background:'linear-gradient(160deg,#F8F3E2 60%,#EDE5C8 100%)',
@@ -2926,6 +2924,11 @@ Istanbul, Turkey 🇹🇷`
       const isDailyRef    = useRef(false);
       const play          = useSound();
 
+      const menuStreak = React.useMemo(() => {
+        const s = loadStats();
+        return getStreakCount(s.streak || []);
+      }, [screen, won]);
+
       const bgAudioCtxRef = useRef(null);
       const bgSourceRef   = useRef(null);
       const bgBufferRef   = useRef(null);
@@ -3035,12 +3038,10 @@ Istanbul, Turkey 🇹🇷`
 
       useEffect(() => {
         if (!db) return;
-        const unsub = db.collection('scores').orderBy('score','desc').limit(500)
-          .onSnapshot(snap => {
-            setScores(snap.docs.map(d => ({ id:d.id, ...d.data() })));
-          }, err => console.log('Firestore read error:', err));
-        return () => unsub();
-      }, []);
+        if (screen !== 'scores' && screen !== 'champions') return;
+        fetchScoresFromCloud('8x4').then(s4 => setScores(prev => [...prev.filter(s => s.mode !== '8x4'), ...s4]));
+        fetchScoresFromCloud('8x7').then(s7 => setScores(prev => [...prev.filter(s => s.mode !== '8x7'), ...s7]));
+      }, [screen]);
 
       const boardRef = useRef(null);
       const [boardWidth, setBoardWidth] = useState(330);
@@ -3357,15 +3358,12 @@ Istanbul, Turkey 🇹🇷`
                     border:'1px solid rgba(200,169,110,0.3)', marginBottom:10, width:'100%', boxSizing:'border-box' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'nowrap', minWidth:0 }}>
                       <span style={{ color:'#ffe082', fontSize:13, fontWeight:700, whiteSpace:'nowrap' }}>👤 {user}</span>
-                      {(() => {
-                        const s=loadStats(); const streak=getStreakCount(s.streak||[]);
-                        return streak>0 ? (
+                      {menuStreak > 0 && (
                           <span style={{ color:'rgba(255,224,130,0.6)', fontSize:11, fontWeight:700,
                             background:'rgba(255,150,0,0.15)', borderRadius:6, padding:'2px 7px', whiteSpace:'nowrap' }}>
-                            🔥 {streak} {t("day_streak")}
+                            🔥 {menuStreak} {t("day_streak")}
                           </span>
-                        ) : null;
-                      })()}
+                      )}
                     </div>
                     <button onClick={() => { setUser(''); try { localStorage.removeItem('memotiles_user'); localStorage.removeItem('mindsharp_username'); } catch {} }}
                       style={{ background:'none', border:'1px solid rgba(255,255,255,0.2)', borderRadius:6,
@@ -3787,7 +3785,7 @@ Istanbul, Turkey 🇹🇷`
                   // character image removedcatch(e2){} }
 
                   // Karakter ismi pill
-                  const pillY = imgY+340;
+                  const pillY = nameY+340;
                   const pillX=W/2-180, pillW=360, pillH=66;
                   rr(pillX,pillY,pillW,pillH,33);
                   ctx.fillStyle='rgba(80,50,20,0.12)'; ctx.fill();
