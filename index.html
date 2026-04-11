@@ -3039,7 +3039,7 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         if (!db) return;
         if (screen !== 'scores' && screen !== 'champions') return;
-        db.collection('scores').orderBy('score', 'desc').limit(500).get()
+        db.collection('scores').orderBy('score', 'desc').limit(999).get()
           .then(snap => setScores(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
           .catch(() => {});
       }, [screen]);
