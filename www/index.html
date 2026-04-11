@@ -3039,8 +3039,9 @@ Istanbul, Turkey 🇹🇷`
       useEffect(() => {
         if (!db) return;
         if (screen !== 'scores' && screen !== 'champions') return;
-        fetchScoresFromCloud('8x4').then(s4 => setScores(prev => [...prev.filter(s => s.mode !== '8x4'), ...s4]));
-        fetchScoresFromCloud('8x7').then(s7 => setScores(prev => [...prev.filter(s => s.mode !== '8x7'), ...s7]));
+        db.collection('scores').orderBy('score', 'desc').limit(100).get()
+          .then(snap => setScores(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+          .catch(() => {});
       }, [screen]);
 
       const boardRef = useRef(null);
